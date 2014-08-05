@@ -1,0 +1,127 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.ntxdev.zuptecnico.PickMapLocationActivity"
+    android:id="@+id/container">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent">
+
+        <FrameLayout
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_weight="1">
+
+            <FrameLayout
+                android:layout_width="fill_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/mapcontainer"
+                android:layout_weight="1"></FrameLayout>
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/imageView"
+                android:src="@drawable/ic_marker"
+                android:layout_gravity="center"
+                android:layout_marginTop="-32dp" />
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="fill_parent"
+                android:layout_height="50dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginRight="60dp"
+                android:background="#ddffffff">
+
+                <AutoCompleteTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/pick_location_address"
+                    android:layout_weight="1"
+                    android:singleLine="true"
+                    android:background="#00ffffff"
+                    android:inputType="textNoSuggestions"
+                    android:paddingLeft="10dp"
+                    android:layout_gravity="center_vertical" />
+
+                <FrameLayout
+                    android:layout_width="1dp"
+                    android:layout_height="fill_parent"
+                    android:background="#ccc"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="10dp"
+                    android:layout_marginRight="10dp"></FrameLayout>
+
+                <EditText
+                    android:layout_width="80dp"
+                    android:layout_height="match_parent"
+                    android:inputType="number"
+                    android:ems="10"
+                    android:id="@+id/pick_location_number"
+                    android:background="#00000000"
+                    android:layout_gravity="center_vertical"
+                    android:text="0"
+                    android:textSize="15dp" />
+
+                <TextView
+                    android:layout_width="80dp"
+                    android:layout_height="match_parent"
+                    android:text="0"
+                    android:id="@+id/pick_location_number_old"
+                    android:gravity="center_vertical"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </FrameLayout>
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:padding="7dp"
+            android:background="#444">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Arraste o marcador para mover a posição"
+                android:id="@+id/textView"
+                android:layout_gravity="center_horizontal"
+                android:textColor="#fff"
+                android:layout_marginBottom="7dp" />
+
+            <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content">
+
+                <Button
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Cancelar"
+                    android:id="@+id/button"
+                    android:background="#888"
+                    android:layout_weight="1"
+                    android:layout_marginRight="7dp"
+                    android:textColor="#fff"
+                    android:onClick="cancel" />
+
+                <Button
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Enviar localização"
+                    android:id="@+id/button2"
+                    android:layout_weight="1"
+                    android:background="@color/zupblue"
+                    android:textColor="#fff"
+                    android:onClick="sendLocation" />
+            </LinearLayout>
+        </LinearLayout>
+
+    </LinearLayout>
+
+</RelativeLayout>

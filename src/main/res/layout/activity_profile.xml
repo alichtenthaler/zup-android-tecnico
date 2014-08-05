@@ -1,0 +1,265 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.ntxdev.zuptecnico.ProfileActivity"
+    android:id="@+id/container"
+    android:background="#f2f2f2">
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/imageView"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:src="@drawable/userpage_avatar_default"
+        android:layout_marginLeft="15dp"
+        android:layout_marginTop="15dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Engenheiro"
+        android:id="@+id/profile_name"
+        android:layout_alignTop="@+id/imageView"
+        android:layout_toRightOf="@+id/imageView"
+        android:layout_marginLeft="15dp"
+        android:layout_marginTop="27dp"
+        android:textColor="#222"
+        android:textSize="18dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Lorem Ipsum"
+        android:id="@+id/textView2"
+        android:layout_below="@+id/profile_name"
+        android:layout_alignLeft="@+id/profile_name"
+        android:layout_alignStart="@+id/profile_name"
+        android:textColor="#777"
+        android:textSize="13dp" />
+
+    <Button
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Sair da conta"
+        android:id="@+id/button"
+        android:layout_alignTop="@+id/profile_name"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginRight="10dp"
+        android:layout_alignBottom="@+id/textView2" />
+
+    <FrameLayout
+        android:layout_width="fill_parent"
+        android:layout_height="1dp"
+        android:layout_alignParentBottom="false"
+        android:clickable="false"
+        android:background="#ccc"
+        android:layout_below="@+id/imageView"
+        android:layout_marginTop="15dp"
+        android:id="@+id/frameLayout"></FrameLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/scrollView"
+        android:fillViewport="true"
+        android:layout_below="@+id/frameLayout">
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent">
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="CADASTRO"
+                    android:id="@+id/textView3"
+                    android:layout_below="@+id/frameLayout"
+                    android:layout_alignLeft="@+id/imageView"
+                    android:layout_alignStart="@+id/imageView"
+                    android:layout_marginTop="25dp"
+                    android:textColor="#666"
+                    android:textSize="11dp"
+                    android:textStyle="bold"
+                    android:layout_marginLeft="15dp" />
+
+                <FrameLayout
+                    android:layout_width="fill_parent"
+                    android:layout_height="2dp"
+                    android:layout_alignParentBottom="false"
+                    android:layout_below="@+id/textView3"
+                    android:background="#999"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginRight="10dp"
+                    android:layout_marginTop="2dp"></FrameLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/linearLayout">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="NOME DE USUÁRIO"
+                    android:id="@+id/textView4"
+                    android:layout_below="@+id/frameLayout"
+                    android:layout_alignLeft="@+id/imageView"
+                    android:layout_alignStart="@+id/imageView"
+                    android:layout_marginTop="15dp"
+                    android:textColor="#666"
+                    android:textSize="11dp"
+                    android:layout_marginLeft="15dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="marcoantonio.mendez"
+                    android:id="@+id/txt_profile_username"
+                    android:textColor="#222"
+                    android:textSize="14dp"
+                    android:layout_marginLeft="15dp"
+                    android:layout_marginBottom="15dp" />
+
+                <FrameLayout
+                    android:layout_width="fill_parent"
+                    android:layout_height="1dp"
+                    android:layout_alignParentBottom="false"
+                    android:layout_below="@+id/textView4"
+                    android:background="#ccc"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginRight="10dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/linearLayout2" >
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="EMAIL"
+                    android:id="@+id/textView6"
+                    android:layout_below="@+id/frameLayout"
+                    android:layout_alignLeft="@+id/imageView"
+                    android:layout_alignStart="@+id/imageView"
+                    android:layout_marginTop="15dp"
+                    android:textColor="#666"
+                    android:textSize="11dp"
+                    android:layout_marginLeft="15dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="marcoantonio.mendez@email.com"
+                    android:id="@+id/txt_profile_email"
+                    android:textColor="#222"
+                    android:textSize="14dp"
+                    android:layout_marginLeft="15dp"
+                    android:layout_marginBottom="15dp" />
+
+                <FrameLayout
+                    android:layout_width="fill_parent"
+                    android:layout_height="1dp"
+                    android:layout_alignParentBottom="false"
+                    android:layout_below="@+id/textView6"
+                    android:background="#ccc"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginRight="10dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/linearLayout3" >
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="GRUPO"
+                    android:id="@+id/textView8"
+                    android:layout_below="@+id/frameLayout"
+                    android:layout_alignLeft="@+id/imageView"
+                    android:layout_alignStart="@+id/imageView"
+                    android:layout_marginTop="15dp"
+                    android:textColor="#666"
+                    android:textSize="11dp"
+                    android:layout_marginLeft="15dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Engenheiros"
+                    android:id="@+id/txt_profile_group"
+                    android:textColor="#222"
+                    android:textSize="14dp"
+                    android:layout_marginLeft="15dp"
+                    android:layout_marginBottom="15dp" />
+
+                <FrameLayout
+                    android:layout_width="fill_parent"
+                    android:layout_height="1dp"
+                    android:layout_alignParentBottom="false"
+                    android:layout_below="@+id/textView8"
+                    android:background="#ccc"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginRight="10dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/linearLayout4" >
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="COORDENADOR RESPONSÁVEL"
+                    android:id="@+id/textView10"
+                    android:layout_below="@+id/frameLayout"
+                    android:layout_alignLeft="@+id/imageView"
+                    android:layout_alignStart="@+id/imageView"
+                    android:layout_marginTop="15dp"
+                    android:textColor="#666"
+                    android:textSize="11dp"
+                    android:layout_marginLeft="15dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Alberto de Oliveira Silva"
+                    android:id="@+id/txt_profile_coordinator"
+                    android:textColor="#222"
+                    android:textSize="14dp"
+                    android:layout_marginLeft="15dp"
+                    android:layout_marginBottom="15dp" />
+
+                <FrameLayout
+                    android:layout_width="fill_parent"
+                    android:layout_height="1dp"
+                    android:layout_alignParentBottom="false"
+                    android:layout_below="@+id/textView10"
+                    android:background="#ccc"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginRight="10dp" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+</RelativeLayout>

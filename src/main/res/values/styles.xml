@@ -1,0 +1,16 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat">
+        <item name="actionBarStyle">@style/ZupActionBar</item>
+        <item name="actionBarItemBackground">@drawable/actionbar_item_background</item>
+    </style>
+
+    <style name="ZupActionBar" parent="android:Widget.ActionBar">
+        <item name="android:background">@color/zupblue</item>
+    </style>
+
+    <style name="ZupLoginButton" parent="android:Widget.Button">
+        <item name="android:background">@color/zupblue</item>
+    </style>
+</resources>

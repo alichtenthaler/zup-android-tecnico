@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/sidebar_root">
+
+    <FrameLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:background="#000"
+        android:id="@+id/sidebar_overlay"
+        android:clickable="true"></FrameLayout>
+
+    <ScrollView
+        android:layout_width="300dp"
+        android:layout_height="match_parent"
+        android:id="@+id/sidebar_scroll"
+        android:background="#f2f2f2">
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="300dp"
+            android:layout_height="match_parent"
+            android:background="#f2f2f2"
+            android:id="@+id/sidebar_container"
+            android:clickable="true">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="85dp"
+                android:clickable="true"
+                android:id="@+id/sidebar_cell_profile"
+                android:background="@drawable/sidebar_cell">
+
+                <ImageView
+                    android:layout_width="65dp"
+                    android:layout_height="65dp"
+                    android:id="@+id/imageView"
+                    android:layout_centerVertical="true"
+                    android:layout_alignParentLeft="true"
+                    android:layout_alignParentStart="true"
+                    android:layout_marginLeft="10dp"
+                    android:background="#ddd"
+                    android:src="@drawable/userpage_avatar_default" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Marco Antônio Mendez"
+                    android:id="@+id/sidebar_label_name"
+                    android:layout_alignTop="@+id/imageView"
+                    android:layout_toRightOf="@+id/imageView"
+                    android:layout_marginLeft="13dp"
+                    android:textColor="#000"
+                    android:layout_marginTop="15dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Engenheiro"
+                    android:id="@+id/sidebar_label_group"
+                    android:layout_below="@+id/sidebar_label_name"
+                    android:layout_alignLeft="@+id/sidebar_label_name"
+                    android:layout_alignStart="@+id/sidebar_label_name"
+                    android:textColor="#999" />
+            </RelativeLayout>
+
+            <FrameLayout
+                android:layout_width="fill_parent"
+                android:layout_height="1dp"
+                android:background="#ddd"></FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="65dp"
+                android:id="@+id/sidebar_cell_documents"
+                android:clickable="true"
+                android:background="@drawable/sidebar_cell">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Casos"
+                    android:id="@+id/sidebar_label_documents"
+                    android:layout_gravity="left|center_vertical"
+                    android:textColor="#000"
+                    android:layout_marginLeft="65dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="2"
+                    android:id="@+id/textView4"
+                    android:layout_gravity="right|center_vertical"
+                    android:layout_marginRight="20dp"
+                    android:textColor="#000" />
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/sidebar_icon_documents"
+                    android:layout_gravity="left|center_vertical"
+                    android:src="@drawable/sidebar_icon_documentos_cinza"
+                    android:layout_marginLeft="20dp" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="fill_parent"
+                android:layout_height="1dp"
+                android:background="#ddd"></FrameLayout>
+
+            <FrameLayout
+                android:layout_width="fill_parent"
+                android:layout_height="65dp"
+                android:id="@+id/sidebar_cell_items"
+                android:clickable="true"
+                android:background="@drawable/sidebar_cell">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Itens de inventário"
+                    android:id="@+id/sidebar_label_items"
+                    android:layout_gravity="left|center_vertical"
+                    android:layout_marginLeft="65dp"
+                    android:textColor="#000" />
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/sidebar_icon_items"
+                    android:layout_gravity="left|center_vertical"
+                    android:layout_marginLeft="20dp"
+                    android:src="@drawable/sidebar_icon_inventario_cinza" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="fill_parent"
+                android:layout_height="1dp"
+                android:background="#ddd"></FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="65dp"
+                android:id="@+id/sidebar_cell_notifications"
+                android:clickable="true"
+                android:background="@drawable/sidebar_cell">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Notificações"
+                    android:id="@+id/sidebar_label_notifications"
+                    android:layout_gravity="left|center_vertical"
+                    android:layout_marginLeft="65dp"
+                    android:textColor="#000" />
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/sidebar_icon_notifications"
+                    android:layout_gravity="left|center_vertical"
+                    android:src="@drawable/sidebar_icon_notificacoes_cinza"
+                    android:layout_marginLeft="20dp" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="fill_parent"
+                android:layout_height="1dp"
+                android:background="#ddd"></FrameLayout>
+        </LinearLayout>
+    </ScrollView>
+
+</RelativeLayout>

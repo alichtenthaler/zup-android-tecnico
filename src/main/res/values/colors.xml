@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="zupblue">#2ab4dc</color>
+    <color name="zupblue_light">#4FBCDB</color>
+    <color name="tabhostbg">#dddddd</color>
+    <color name="tabborder">#bbbbbb</color>
+    <color name="tabtext">#666666</color>
+
+    <color name="halfwhite">#55ffffff</color>
+
+    <color name="sidebar_selected">#999999</color>
+    <color name="sidebar_notselected">#f2f2f2</color>
+    <color name="sidebar_selecting">#ddd</color>
+
+    <color name="document_list_default">#f2f2f2</color>
+    <color name="document_list_pending">#ffffff</color>
+    <color name="document_list_selecting">#ddd</color>
+    <color name="document_list_pending_selecting">#ccc</color>
+
+    <color name="tab_pressed">#cccccc</color>
+    <color name="tab_background">#dddddd</color>
+
+    <color name="editscreen_button_selecting">#ddd</color>
+    <color name="editscreen_button">#fff</color>
+
+    <color name="sidebar_item_bg">#2ab4dc</color>
+    <color name="sidebar_item_bg_pressed">#4FBCDB</color>
+</resources>

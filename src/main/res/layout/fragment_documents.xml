@@ -1,0 +1,79 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingLeft="0dp"
+    android:paddingRight="0dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="0dp"
+    tools:context="com.ntxdev.zup.DocumentsActivity$PlaceholderFragment"
+    android:background="@drawable/document_list_item_default">
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/fragment_document_stateicon"
+        android:src="@drawable/documentos_lista_status_icon_sync"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:focusableInTouchMode="true"
+        android:paddingLeft="16dp"
+        android:layout_marginTop="3dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Lorem Ipsum"
+        android:id="@+id/fragment_document_title"
+        android:layout_alignParentTop="true"
+        android:layout_toRightOf="@+id/fragment_document_stateicon"
+        android:layout_marginLeft="14dp"
+        android:textSize="18dp"
+        android:textColor="#222" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Lorem Ipsum"
+        android:id="@+id/fragment_document_type"
+        android:textSize="12dp"
+        android:layout_alignLeft="@+id/fragment_document_title"
+        android:textColor="#222"
+        android:layout_marginTop="0dp"
+        android:layout_below="@+id/fragment_document_title" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Lorem Ipsum"
+        android:id="@+id/fragment_document_desc"
+        android:layout_alignLeft="@+id/fragment_document_type"
+        android:textSize="12dp"
+        android:layout_below="@+id/fragment_document_type"
+        android:textColor="#777" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="New Text"
+        android:id="@+id/fragment_document_statedesc"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:background="#999"
+        android:textColor="#fff"
+        android:textSize="12dp"
+        android:paddingLeft="15dp"
+        android:paddingRight="15dp"
+        android:paddingTop="2dp"
+        android:paddingBottom="2dp" />
+
+    <FrameLayout
+        android:layout_width="fill_parent"
+        android:layout_height="1dp"
+        android:layout_below="@+id/fragment_document_stateicon"
+        android:layout_marginTop="17dp"
+        android:background="#ccc"></FrameLayout>
+
+</RelativeLayout>
