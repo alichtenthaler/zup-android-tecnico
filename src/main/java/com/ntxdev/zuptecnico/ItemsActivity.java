@@ -17,6 +17,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient;
@@ -35,6 +36,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.LatLngBoundsCreator;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.VisibleRegion;
@@ -56,6 +58,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.logging.Handler;
 
 public class ItemsActivity extends ActionBarActivity implements ResourceLoadedListener, InventoryItemPublishedListener, SearchBarListener, SingularTabHost.OnTabChangeListener, InventoryItemsListener, InfinityScrollView.OnScrollViewListener, GoogleMap.OnCameraChangeListener, JobFailedListener {
     private static final int REQUEST_SEARCH = 1;
@@ -87,6 +90,50 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
 
     private InventoryItem expectedPublishedItem;
     private OfflinePageLoader offlinePageLoader;
+
+    android.support.v7.widget.PopupMenu menu;
+
+    Thread updateCategories = new Thread(new Runnable() {
+        @Override
+        public void run() {
+            try {
+                while (true) {
+                    android.os.Handler handler = new android.os.Handler(ItemsActivity.this.getMainLooper());
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateCategoriesMenu();
+                        }
+                    });
+
+                    Thread.sleep(10000);
+                }
+            } catch (InterruptedException ex) { }
+        }
+    });
+
+    void updateCategoriesMenu()
+    {
+        menu.getMenu().clear();
+
+        int i = 0;
+        Iterator<InventoryCategory> categories = Zup.getInstance().getInventoryCategories();
+        while (categories.hasNext()) {
+            InventoryCategory category = categories.next();
+            menu.getMenu().add(Menu.NONE, category.id, i, category.title);
+
+            if (i == 0 && _categoryId == 0) {
+                _categoryId = category.id;
+                _page = 1;
+                this._offlinePage = 1;
+                loadPage();
+                UIHelper.setTitle(this, category.title);
+
+                refreshTabHost();
+            }
+            i++;
+        }
+    }
 
     class ItemInfoWindowAdapter implements GoogleMap.InfoWindowAdapter {
         private View mWindow;
@@ -228,9 +275,9 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
         }
 
         UIHelper.initActivity(this, true);
-        android.support.v7.widget.PopupMenu menu = UIHelper.initMenu(this);
+        this.menu = UIHelper.initMenu(this);
 
-        int i = 0;
+        /*int i = 0;
         Iterator<InventoryCategory> categories = Zup.getInstance().getInventoryCategories();
         while (categories.hasNext()) {
             InventoryCategory category = categories.next();
@@ -244,7 +291,8 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
                 UIHelper.setTitle(this, category.title);
             }
             i++;
-        }
+        }*/
+        updateCategoriesMenu();
 
 
         final ActionBarActivity activity = this;
@@ -253,7 +301,8 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
             public boolean onMenuItemClick(MenuItem menuItem) {
                 _categoryId = menuItem.getItemId();
                 if (_viewingMap) {
-                    setUpMap();
+                    setUpMapIfNeeded();
+                    addLocalItemsToMap(null);
                     onCameraChange(_map.getCameraPosition());
                 }
 
@@ -261,6 +310,7 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
 
                 clear();
                 _sort = "id";
+                _order = "ASC";
                 _page = 1;
                 _offlinePage = 1;
                 _pageJobId = 0;
@@ -275,7 +325,7 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
         SingularTabHost tabHost = (SingularTabHost) findViewById(R.id.tabhost_documents);
         tabHost.setOnTabChangeListener(this);
 
-        refreshTabHost();
+        //refreshTabHost();
         /*tabHost.addTab("all", "Todos estados");
         tabHost.addTab("ok", "Saudável / OK");
         tabHost.addTab("analysis", "Em análise");
@@ -285,6 +335,9 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
         scroll.setOnScrollViewListener(this);
 
         Zup.getInstance().setInventoryItemPublishedListener(this);
+
+        this.updateCategories.start();
+        showLoading();
     }
 
     @Override
@@ -532,6 +585,12 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
         setUpMapIfNeeded();
 
         Zup.getInstance().setResourceLoadedListener(this);
+
+        clear();
+        _page = 1;
+        this._offlinePage = 1;
+        _pageJobId = 0;
+        loadPage();
     }
 
     void showMapLoading() {
@@ -646,53 +705,56 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
         ArrayList<Marker> markersToRemove = new ArrayList<Marker>();
         markersToRemove.addAll(this.itemMarkers.keySet());
 
-        for(InventoryItem item : items)
+        if(items.length <= 50) {
+
+            for (InventoryItem item : items) {
+                if (item.position == null)
+                    continue;
+
+                Marker itemMarker = null;
+                Marker[] markers = itemMarkers.keySet().toArray(new Marker[0]);
+                int index = 0;
+                for (Object itemObj : itemMarkers.values().toArray()) {
+                    InventoryItem _item = (InventoryItem) itemObj;
+                    if (_item.id == item.id) {
+                        itemMarker = markers[index];
+                        break;
+                    }
+
+                    index++;
+                }
+
+                if (itemMarker == null) {
+                    Bitmap markerBitmap = Zup.getInstance().getInventoryCategoryPinBitmap(item.inventory_category_id);
+
+                    BitmapDescriptor markerIcon = BitmapDescriptorFactory.defaultMarker();
+                    if (markerBitmap != null) {
+                        markerIcon = BitmapDescriptorFactory.fromBitmap(markerBitmap);
+                    }
+
+                    LatLng pos = new LatLng(item.position.latitude, item.position.longitude);
+
+                    MarkerOptions markerOptions = new MarkerOptions();
+                    markerOptions.position(pos);
+                    markerOptions.flat(true);
+                    markerOptions.title(Zup.getInstance().getInventoryItemTitle(item));
+                    markerOptions.icon(markerIcon);
+
+                    itemMarkers.put(_map.addMarker(markerOptions), item);
+                } else {
+                    if (itemMarker.getPosition().longitude != item.position.longitude || itemMarker.getPosition().latitude != item.position.latitude) {
+                        itemMarker.setPosition(new LatLng(item.position.latitude, item.position.longitude));
+                    }
+
+                    markersToRemove.remove(itemMarker);
+                }
+            }
+
+            this.findViewById(R.id.items_map_toomany).setVisibility(View.GONE);
+        }
+        else
         {
-            if (item.position == null)
-                continue;
-
-            Marker itemMarker = null;
-            Marker[] markers = itemMarkers.keySet().toArray(new Marker[0]);
-            int index = 0;
-            for(Object itemObj : itemMarkers.values().toArray())
-            {
-                InventoryItem _item = (InventoryItem)itemObj;
-                if(_item.id == item.id)
-                {
-                    itemMarker = markers[index];
-                    break;
-                }
-
-                index++;
-            }
-
-            if(itemMarker == null) {
-                Bitmap markerBitmap = Zup.getInstance().getInventoryCategoryPinBitmap(item.inventory_category_id);
-
-                BitmapDescriptor markerIcon = BitmapDescriptorFactory.defaultMarker();
-                if (markerBitmap != null) {
-                    markerIcon = BitmapDescriptorFactory.fromBitmap(markerBitmap);
-                }
-
-                LatLng pos = new LatLng(item.position.latitude, item.position.longitude);
-
-                MarkerOptions markerOptions = new MarkerOptions();
-                markerOptions.position(pos);
-                markerOptions.flat(true);
-                markerOptions.title(Zup.getInstance().getInventoryItemTitle(item));
-                markerOptions.icon(markerIcon);
-
-                itemMarkers.put(_map.addMarker(markerOptions), item);
-            }
-            else
-            {
-                if(itemMarker.getPosition().longitude != item.position.longitude || itemMarker.getPosition().latitude != item.position.latitude)
-                {
-                    itemMarker.setPosition(new LatLng(item.position.latitude, item.position.longitude));
-                }
-
-                markersToRemove.remove(itemMarker);
-            }
+            this.findViewById(R.id.items_map_toomany).setVisibility(View.VISIBLE);
         }
 
         for(Marker marker : markersToRemove)
@@ -732,33 +794,9 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
                 locationClient.connect();
             }
 
-            int count = 0;
+            //int count = 0;
             LatLngBounds.Builder builder = LatLngBounds.builder();
-            Iterator<InventoryItem> items = Zup.getInstance().getInventoryItemsByCategory(_categoryId);
-            while (items.hasNext()) {
-                InventoryItem item = items.next();
-                if (item.position == null)
-                    continue;
-
-                InventoryCategory category = Zup.getInstance().getInventoryCategory(item.inventory_category_id);
-                BitmapDescriptor markerIcon = BitmapDescriptorFactory.defaultMarker();
-                int resourceId = Zup.getInstance().getInventoryCategoryPinResourceId(category.id);
-                if (resourceId != 0 && Zup.getInstance().isResourceLoaded(resourceId)) {
-                    markerIcon = BitmapDescriptorFactory.fromBitmap(Zup.getInstance().getBitmap(resourceId));
-                }
-
-                LatLng pos = new LatLng(item.position.latitude, item.position.longitude);
-                builder.include(pos);
-
-                MarkerOptions markerOptions = new MarkerOptions();
-                markerOptions.position(pos);
-                markerOptions.flat(true);
-                markerOptions.title(Zup.getInstance().getInventoryItemTitle(item));
-                markerOptions.icon(markerIcon);
-
-                itemMarkers.put(_map.addMarker(markerOptions), item);
-                count++;
-            }
+            this.addLocalItemsToMap(builder);
 
             _map.setMyLocationEnabled(true);
 
@@ -790,6 +828,37 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
         }
     }
 
+    private void addLocalItemsToMap(LatLngBounds.Builder builder)
+    {
+        _map.clear();
+
+        Iterator<InventoryItem> items = Zup.getInstance().getInventoryItemsByCategory(_categoryId);
+        while (items.hasNext()) {
+            InventoryItem item = items.next();
+            if (item.position == null)
+                continue;
+
+            InventoryCategory category = Zup.getInstance().getInventoryCategory(item.inventory_category_id);
+            BitmapDescriptor markerIcon = BitmapDescriptorFactory.defaultMarker();
+            int resourceId = Zup.getInstance().getInventoryCategoryPinResourceId(category.id);
+            if (resourceId != 0 && Zup.getInstance().isResourceLoaded(resourceId)) {
+                markerIcon = BitmapDescriptorFactory.fromBitmap(Zup.getInstance().getBitmap(resourceId));
+            }
+
+            LatLng pos = new LatLng(item.position.latitude, item.position.longitude);
+            if(builder != null)
+                builder.include(pos);
+
+            MarkerOptions markerOptions = new MarkerOptions();
+            markerOptions.position(pos);
+            markerOptions.flat(true);
+            markerOptions.title(Zup.getInstance().getInventoryItemTitle(item));
+            markerOptions.icon(markerIcon);
+
+            itemMarkers.put(_map.addMarker(markerOptions), item);
+        }
+    }
+
     @Override
     public void onResourceLoaded(String url, int resourceId) {
         for(Marker marker : this.itemMarkers.keySet())
@@ -799,7 +868,11 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
 
             if(category.pin._default.mobile.equals(url))
             {
-                marker.setIcon(BitmapDescriptorFactory.fromBitmap(Zup.getInstance().getBitmap(resourceId)));
+                try {
+                    marker.setIcon(BitmapDescriptorFactory.fromBitmap(Zup.getInstance().getBitmap(resourceId)));
+                } catch (IllegalArgumentException ex) {
+                    // http://stackoverflow.com/questions/21523202/released-unknown-bitmap-reference-setting-marker-in-android
+                }
             }
         }
     }
@@ -878,6 +951,7 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
             _menu.findItem(R.id.action_order_creation).setVisible(false);
             _menu.findItem(R.id.action_order_modification).setVisible(false);
             _menu.findItem(R.id.action_order_name).setVisible(false);
+            _menu.findItem(R.id.action_search).setVisible(false);
 
             findViewById(R.id.items_scroll).setVisibility(View.GONE);
             findViewById(R.id.items_mapcontainer_container).setVisibility(View.VISIBLE);
@@ -892,6 +966,7 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
             _menu.findItem(R.id.action_order_creation).setVisible(true);
             _menu.findItem(R.id.action_order_modification).setVisible(true);
             _menu.findItem(R.id.action_order_name).setVisible(true);
+            _menu.findItem(R.id.action_search).setVisible(true);
 
             findViewById(R.id.items_scroll).setVisibility(View.VISIBLE);
             findViewById(R.id.items_mapcontainer_container).setVisibility(View.GONE);
@@ -943,18 +1018,48 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
             intent.putExtra("state_id", _stateId);
             this.startActivityForResult(intent, 0);
         } else if(id == R.id.action_order_name) {
+            if(this._sort.equals("id"))
+            {
+                if(this._order.equals("ASC"))
+                    this._order = "DESC";
+                else
+                    this._order = "ASC";
+            }
+            else
+                this._order = "ASC";
+
             this._sort = "id";
             this._page = 1;
             this._offlinePage = 1;
             this.clear();
             this.loadPage();
         } else if(id == R.id.action_order_creation) {
+            if(this._sort.equals("created_at"))
+            {
+                if(this._order.equals("ASC"))
+                    this._order = "DESC";
+                else
+                    this._order = "ASC";
+            }
+            else
+                this._order = "ASC";
+
             this._sort = "created_at";
             this._page = 1;
             this._offlinePage = 1;
             this.clear();
             this.loadPage();
         } else if(id == R.id.action_order_modification) {
+            if(this._sort.equals("updated_at"))
+            {
+                if(this._order.equals("ASC"))
+                    this._order = "DESC";
+                else
+                    this._order = "ASC";
+            }
+            else
+                this._order = "ASC";
+
             this._sort = "updated_at";
             this._page = 1;
             this._offlinePage = 1;

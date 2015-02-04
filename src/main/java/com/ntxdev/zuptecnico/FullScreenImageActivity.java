@@ -41,16 +41,17 @@ public class FullScreenImageActivity extends ActionBarActivity implements Runnab
 
     ImageFragment[] fragments;
 
-    class ImageFragment extends Fragment
+    public static class ImageFragment extends Fragment
     {
         InventoryItemImage image;
         PhotoViewAttacher attacher;
         boolean loadOnCreate = false;
         boolean isLoading = false;
 
-        public ImageFragment(InventoryItemImage image)
+        public ImageFragment setImage(InventoryItemImage image)
         {
             this.image = image;
+            return this;
         }
 
         @Override
@@ -200,7 +201,7 @@ public class FullScreenImageActivity extends ActionBarActivity implements Runnab
             if(image.equals((InventoryItemImage)images[i]))
                 index = i;
 
-            fragments[i] = new ImageFragment(img);
+            fragments[i] = new ImageFragment().setImage(img);
         }
 
         pager.setAdapter(adapter);

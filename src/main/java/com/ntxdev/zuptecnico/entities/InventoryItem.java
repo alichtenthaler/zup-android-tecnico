@@ -26,6 +26,7 @@ public class InventoryItem {
     public Integer inventory_status_id;
     public ArrayList<Data> data;
     public String created_at;
+    public String updated_at;
     public String address;
 
     @JsonIgnore

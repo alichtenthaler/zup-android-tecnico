@@ -100,6 +100,18 @@ public class Geocoder2 {
                 } else if ("sub_locality".equals(type)) {
                     address.setLocality(partial.getString("long_name"));
                 }
+
+                //
+
+                else if("administrative_area_level_1".equals(type)) {
+                    address.setAdminArea(partial.getString("long_name"));
+                }
+                else if("administrative_area_level_2".equals(type)) {
+                    address.setSubAdminArea(partial.getString("long_name"));
+                }
+                else if("neighborhood".equals(type)) {
+                    address.setSubLocality(partial.getString("long_name"));
+                }
             }
         }
 

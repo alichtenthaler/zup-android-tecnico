@@ -1,5 +1,6 @@
 package com.ntxdev.zuptecnico;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -8,21 +9,27 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 
+import com.crashlytics.android.Crashlytics;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.api.callbacks.LoginListener;
+import io.fabric.sdk.android.Fabric;
 
 public class LoginActivity extends ActionBarActivity implements LoginListener {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (!BuildConfig.DEBUG)
+            Fabric.with(this, new Crashlytics());
         setContentView(R.layout.activity_login);
 
         getSupportActionBar().hide();
         Zup.getInstance().initStorage(this.getApplicationContext());
         if(Zup.getInstance().hasSessionToken())
         {
-            Intent intent = new Intent(this.getApplicationContext(), CasesActivity.class);
+            Zup.getInstance().refreshInventoryItemCategories();
+            //Intent intent = new Intent(this.getApplicationContext(), CasesActivity.class);
+            Intent intent = new Intent(this.getApplicationContext(), ItemsActivity.class);
             this.startActivity(intent);
         }
         //Zup.getInstance().initLocationClient(this);
@@ -84,7 +91,8 @@ public class LoginActivity extends ActionBarActivity implements LoginListener {
         txtLogin.setEnabled(true);
         txtSenha.setEnabled(true);
 
-        Intent intent = new Intent(this.getApplicationContext(), CasesActivity.class);
+        //Intent intent = new Intent(this.getApplicationContext(), CasesActivity.class);
+        Intent intent = new Intent(this.getApplicationContext(), ItemsActivity.class);
         this.startActivity(intent);
     }
 
@@ -96,6 +104,13 @@ public class LoginActivity extends ActionBarActivity implements LoginListener {
         findViewById(R.id.login_progress).setVisibility(View.GONE);
         txtLogin.setEnabled(true);
         txtSenha.setEnabled(true);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Erro");
+        builder.setMessage(errorDescription);
+        builder.setCancelable(true);
+        builder.setPositiveButton("OK", null);
+        builder.show();
     }
 
 }

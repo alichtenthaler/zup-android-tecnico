@@ -35,7 +35,10 @@ public class ApiHttpClient
 
     public ApiHttpClient()
     {
-        this.mBasePath = "http://staging.zup.sapience.io/";
+        //this.mBasePath = "http://staging.zup.sapience.io/";
+        //this.mBasePath = "http://zup-api-boa-vista.cognita.ntxdev.com.br/";
+        //this.mBasePath = "http://zup-api-sbc.cognita.ntxdev.com.br/";
+        this.mBasePath = "http://zup-staging.cognita.ntxdev.com.br/";
         //this.httpClient = new DefaultHttpClient();
     }
 

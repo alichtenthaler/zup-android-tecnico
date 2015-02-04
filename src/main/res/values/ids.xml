@@ -5,4 +5,10 @@
     <item type="id" name="tag_item_id" />
     <item type="id" name="tag_category_id" />
     <item type="id" name="tag_button_value" />
+
+    <item type="id" name="tag_case" />
+    <item type="id" name="tag_flow_id" />
+    <item type="id" name="tag_step_id" />
+
+    <item type="id" name="tag_field_id" />
 </resources>

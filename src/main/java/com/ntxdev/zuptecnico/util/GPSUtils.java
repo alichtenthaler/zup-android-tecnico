@@ -31,13 +31,13 @@ public class GPSUtils {
     }
 
     public static List<Address> getFromLocation(Context context, double latitude, double longitude) {
-        try {
+        /*try {
             Geocoder geocoder = new Geocoder(context);
             List<Address> list = filterResults(geocoder.getFromLocation(latitude, longitude, 10));
             if (!list.isEmpty()) return list;
         } catch (IOException e) {
             Log.w("ZUP", e.getMessage(), e);
-        }
+        }*/
 
         try {
             List<Address> list = filterResults(Geocoder2.getFromLocation(latitude, longitude));

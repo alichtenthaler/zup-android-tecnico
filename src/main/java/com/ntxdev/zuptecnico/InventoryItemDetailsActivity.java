@@ -49,6 +49,8 @@ import com.ntxdev.zuptecnico.ui.UIHelper;
 import org.w3c.dom.Text;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 
 /**
@@ -84,6 +86,7 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
         else if(ZupCache.hasInventoryItem(itemId))
             item = ZupCache.getInventoryItem(itemId);
         else
+        
             requestItemInfo(itemId, categoryId);
 
         mapFragment = new SupportMapFragment();
@@ -301,6 +304,8 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
             {
                 statusView.setBackgroundColor(status.getColor());
                 statusView.setText(status.title);
+
+                statusView.setVisibility(View.VISIBLE);
             }
             else
             {
@@ -314,7 +319,7 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
 
         titleView.setText(Zup.getInstance().getInventoryItemTitle(item));
         createdView.setText("Incluído: " + Zup.getInstance().formatIsoDate(item.created_at));
-        modifiedView.setText("Modificado:");
+        modifiedView.setText("Modificado:" + Zup.getInstance().formatIsoDate(item.updated_at));
 
         buildPage();
         setUpMapIfNeeded();
@@ -344,6 +349,7 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
             }
 
             map.clear();
+            map.getUiSettings().setAllGesturesEnabled(false);
 
             LatLng pos = new LatLng(item.position.latitude, item.position.longitude);
             CameraUpdate update = CameraUpdateFactory.newLatLngZoom(pos, 15);
@@ -370,6 +376,34 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
         container.removeAllViews();
 
         if(category.sections != null) {
+            Arrays.sort(category.sections, new Comparator<InventoryCategory.Section>() {
+                @Override
+                public int compare(InventoryCategory.Section section, InventoryCategory.Section section2) {
+                    int pos1 = 0;
+                    int pos2 = 0;
+
+                    if (section.position != null) {
+                        pos1 = section.position;
+                    }
+                    if (section2.position != null) {
+                        pos2 = section2.position;
+                    }
+
+                    if (section.position == null)
+                        pos1 = pos2;
+
+                    if (section2.position == null)
+                        pos2 = pos1;
+
+                    if (pos1 < pos2)
+                        return -1;
+                    else if (pos1 == pos2)
+                        return 0;
+                    else
+                        return 1;
+                }
+            });
+
             for (int i = 0; i < category.sections.length; i++) {
                 InventoryCategory.Section section = category.sections[i];
                 ViewGroup sectionHeader = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_section_header, container, false);
@@ -378,6 +412,36 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
                 sectionTitle.setText(section.title.toUpperCase());
 
                 container.addView(sectionHeader);
+
+                Arrays.sort(section.fields, new Comparator<InventoryCategory.Section.Field>() {
+                    @Override
+                    public int compare(InventoryCategory.Section.Field section, InventoryCategory.Section.Field section2) {
+                        int pos1 = 0;
+                        int pos2 = 0;
+
+                        if(section.position != null)
+                        {
+                            pos1 = section.position;
+                        }
+                        if(section2.position != null)
+                        {
+                            pos2 = section2.position;
+                        }
+
+                        if(section.position == null)
+                            pos1 = pos2;
+
+                        if(section2.position == null)
+                            pos2 = pos1;
+
+                        if(pos1 < pos2)
+                            return -1;
+                        else if(pos1 == pos2)
+                            return 0;
+                        else
+                            return 1;
+                    }
+                });
 
                 for (int j = 0; j < section.fields.length; j++) {
                     InventoryCategory.Section.Field field = section.fields[j];

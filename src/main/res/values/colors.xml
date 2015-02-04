@@ -12,6 +12,10 @@
     <color name="sidebar_notselected">#f2f2f2</color>
     <color name="sidebar_selecting">#ddd</color>
 
+    <color name="case_item_cell_notselected">#0fff</color>
+    <color name="case_item_cell_notselected_new">#fff</color>
+    <color name="case_item_cell_selecting">#ddd</color>
+
     <color name="document_list_default">#f2f2f2</color>
     <color name="document_list_pending">#ffffff</color>
     <color name="document_list_selecting">#ddd</color>

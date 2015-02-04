@@ -64,4 +64,13 @@
         android:visibility="gone"
         android:layout_alignParentRight="true" />
 
+    <CheckBox
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/fragment_inventory_item_check"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:layout_marginRight="50dp"
+        android:visibility="gone" />
+
 </RelativeLayout>

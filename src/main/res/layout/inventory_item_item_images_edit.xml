@@ -17,7 +17,7 @@
         android:textColor="#666"
         android:layout_marginLeft="5dp"
         android:layout_marginBottom="3dp"
-        android:visibility="gone" />
+        android:visibility="visible" />
 
     <HorizontalScrollView
         android:layout_width="match_parent"

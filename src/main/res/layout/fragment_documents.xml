@@ -53,6 +53,13 @@
         android:layout_below="@+id/fragment_document_type"
         android:textColor="#777" />
 
+    <FrameLayout
+        android:layout_width="fill_parent"
+        android:layout_height="1dp"
+        android:layout_below="@+id/fragment_document_stateicon"
+        android:layout_marginTop="17dp"
+        android:background="#ccc"></FrameLayout>
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -68,12 +75,5 @@
         android:paddingRight="15dp"
         android:paddingTop="2dp"
         android:paddingBottom="2dp" />
-
-    <FrameLayout
-        android:layout_width="fill_parent"
-        android:layout_height="1dp"
-        android:layout_below="@+id/fragment_document_stateicon"
-        android:layout_marginTop="17dp"
-        android:background="#ccc"></FrameLayout>
 
 </RelativeLayout>

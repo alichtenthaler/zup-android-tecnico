@@ -6,12 +6,14 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.JsonWriter;
+import android.util.Log;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.android.gms.internal.cu;
+import com.ntxdev.zuptecnico.api.SyncAction;
 import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
@@ -43,15 +45,91 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
         sqLiteDatabase.execSQL("CREATE TABLE users (id INTEGER PRIMARY KEY, name VARCHAR(120), email VARCHAR(120), phone VARCHAR(120), document VARCHAR(120), address VARCHAR(120));");
         sqLiteDatabase.execSQL("CREATE TABLE session (user_id INTEGER, token VARCHAR(120));");
-        sqLiteDatabase.execSQL("CREATE TABLE inventory_categories (id INTEGER PRIMARY KEY, title VARCHAR(120), description VARCHAR(120), require_item_status INTEGER, created_at VARCHAR(120));");
+        sqLiteDatabase.execSQL("CREATE TABLE inventory_categories (id INTEGER PRIMARY KEY, title VARCHAR(120), description VARCHAR(120), require_item_status INTEGER, created_at VARCHAR(120), plot_format VARCHAR(20));");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_sections (id INTEGER PRIMARY KEY, inventory_category_id INTEGER, title VARCHAR(120), required INTEGER);");
-        sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_sections_fields (id INTEGER PRIMARY KEY, inventory_category_id INTEGER, inventory_section_id INTEGER, title VARCHAR(120), kind VARCHAR(120), position INTEGER, label VARCHAR(120), size VARCHAR(120), required INTEGER, location INTEGER, available_values TEXT);");
+        sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_sections_fields (id INTEGER PRIMARY KEY, inventory_category_id INTEGER, inventory_section_id INTEGER, title VARCHAR(120), kind VARCHAR(120), position INTEGER, label VARCHAR(120), size VARCHAR(120), required INTEGER, location INTEGER, available_values TEXT, minimum INTEGER NULL, maximum INTEGER NULL);");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_statuses (id INTEGER PRIMARY KEY, inventory_category_id INTEGER, title VARCHAR(120), color VARCHAR(120));");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_pins (inventory_category_id INTEGER PRIMARY KEY, url_web TEXT, url_mobile TEXT);");
-        sqLiteDatabase.execSQL("CREATE TABLE inventory_items (id INTEGER PRIMARY KEY, title VARCHAR(120), latitude FLOAT, longitude FLOAT, inventory_category_id INTEGER, inventory_status_id INTEGER, created_at VARCHAR(120), address VARCHAR(120));");
+        sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_markers (inventory_category_id INTEGER PRIMARY KEY, url_web TEXT, url_mobile TEXT);");
+        sqLiteDatabase.execSQL("CREATE TABLE inventory_items (id INTEGER PRIMARY KEY, title VARCHAR(120), latitude FLOAT, longitude FLOAT, inventory_category_id INTEGER, inventory_status_id INTEGER, created_at VARCHAR(120), updated_at VARCHAR(120), address VARCHAR(120));");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_items_data (id INTEGER PRIMARY_KEY, inventory_item_id INTEGER, inventory_field_id INTEGER, content TEXT);");
         sqLiteDatabase.execSQL("CREATE TABLE flows (id INTEGER PRIMARY KEY, title VARCHAR(120), description VARCHAR(120), initial INTEGER, steps_id VARCHAR(200), created_by_id INTEGER, updated_by_id INTEGER, status VARCHAR(120), last_version INTEGER, last_version_id INTEGER, created_at VARCHAR(120), updated_at VARCHAR(120));");
         sqLiteDatabase.execSQL("CREATE TABLE flows_resolution_states (id INTEGER PRIMARY KEY, flow_id INTEGER, title VARCHAR(120), _default INTEGER, active INTEGER, created_at VARCHAR(120), updated_at VARCHAR(120), last_version INTEGER, last_version_id INTEGER);");
+        sqLiteDatabase.execSQL("CREATE TABLE flows_steps (id INTEGER PRIMARY KEY, flow_id INTEGER, title VARCHAR(120), step_type VARCHAR(120), child_flow INTEGER NULL, order_number INTEGER, active INTEGER, last_version INTEGER);");
+        sqLiteDatabase.execSQL("CREATE TABLE flows_steps_fields (id INTEGER PRIMARY KEY, flow_id INTEGER, step_id INTEGER, title VARCHAR(120), field_type VARCHAR(120), category_inventory_id INTEGER, category_report_id INTEGER, origin_field_id INTEGER, active INTEGER, multiple INTEGER, requirements TEXT NULL, order_number INTEGER, ovalues TEXT NULL);");
+        sqLiteDatabase.execSQL("CREATE TABLE sync_actions (id INTEGER PRIMARY KEY, type INTEGER, date BIGINT, info TEXT, pending INTEGER, running INTEGER, successful INTEGER);");
+    }
+
+    public void clear()
+    {
+        getWritableDatabase().execSQL("DELETE FROM users");
+        getWritableDatabase().execSQL("DELETE FROM session");
+        getWritableDatabase().execSQL("DELETE FROM inventory_categories");
+        getWritableDatabase().execSQL("DELETE FROM inventory_categories_sections");
+        getWritableDatabase().execSQL("DELETE FROM inventory_categories_sections_fields");
+        getWritableDatabase().execSQL("DELETE FROM inventory_categories_statuses");
+        getWritableDatabase().execSQL("DELETE FROM inventory_categories_pins");
+        getWritableDatabase().execSQL("DELETE FROM inventory_categories_markers");
+        getWritableDatabase().execSQL("DELETE FROM inventory_items");
+        getWritableDatabase().execSQL("DELETE FROM inventory_items_data");
+        getWritableDatabase().execSQL("DELETE FROM flows");
+        getWritableDatabase().execSQL("DELETE FROM flows_resolution_states");
+        getWritableDatabase().execSQL("DELETE FROM flows_steps");
+        getWritableDatabase().execSQL("DELETE FROM flows_steps_fields");
+        getWritableDatabase().execSQL("DELETE FROM sync_actions");
+    }
+
+    public void resetSyncActions()
+    {
+        getWritableDatabase().execSQL("UPDATE sync_actions SET pending=1, running=0, successful=0");
+    }
+
+    public void updateSyncAction(SyncAction action)
+    {
+        ContentValues contentValues = action.save();
+        getWritableDatabase().update("sync_actions", contentValues, "id=?", new String[] { Integer.toString(action.getId()) });
+    }
+
+    public void addSyncAction(SyncAction action)
+    {
+        ContentValues contentValues = action.save();
+        getWritableDatabase().insert("sync_actions", null, contentValues);
+
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT last_insert_rowid()", null);
+        cursor.moveToNext();
+        action.setId(cursor.getInt(0));
+    }
+
+    public void removeSyncAction(int id)
+    {
+        getWritableDatabase().execSQL("DELETE FROM sync_actions WHERE id=?", new String[]{Integer.toString(id)});
+    }
+
+    public Iterator<SyncAction> getSyncActionIterator()
+    {
+        ArrayList<SyncAction> result = new ArrayList<SyncAction>();
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, date, type, info, pending, running, successful FROM sync_actions ORDER BY date ASC", null);
+        while(cursor.moveToNext())
+        {
+            try {
+                SyncAction action = SyncAction.load(cursor, mapper);
+                result.add(action);
+            } catch (Exception ex) {
+                Log.e("ZUP", "ERROR PARSING SYNC ACTION");
+            }
+        }
+
+        return result.iterator();
+    }
+
+    public int getSyncActionCount()
+    {
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT COUNT(id) FROM sync_actions", null);
+        cursor.moveToNext();
+        return cursor.getInt(0);
     }
 
     ContentValues createFlowResolutionStateContentValues(Flow.ResolutionState resolutionState)
@@ -70,11 +148,156 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         return contentValues;
     }
 
+    ContentValues createFlowStepContentValues(Flow flow, Flow.Step step)
+    {
+        ContentValues contentValues = new ContentValues();
+        contentValues.put("id", step.id);
+        contentValues.put("flow_id", flow.id);
+        contentValues.put("title", step.title);
+        contentValues.put("step_type", step.step_type);
+        // child_flow
+        contentValues.put("order_number", step.order_number);
+        contentValues.put("active", step.active ? 1 : 0);
+        contentValues.put("last_version", step.last_version);
+
+        return contentValues;
+    }
+
     public void addFlowResolutionState(Flow.ResolutionState resolutionState)
     {
         ContentValues contentValues = createFlowResolutionStateContentValues(resolutionState);
 
         getWritableDatabase().insert("flows_resolution_states", null, contentValues);
+    }
+
+    ContentValues createFlowStepFieldContentValues(Flow.Step.Field field)
+    {
+        ContentValues contentValues = new ContentValues();
+
+        ObjectMapper mapper = new ObjectMapper();
+        String requirements = null;
+        String values = null;
+
+        try
+        {
+            if (field.requirements != null)
+            {
+                requirements = mapper.writeValueAsString(field.requirements);
+            }
+
+            if (field.values != null)
+            {
+                values = mapper.writeValueAsString(field.values);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.e("JSON", "Could not save flow step field", ex);
+        }
+
+        // id INTEGER PRIMARY KEY, flow_id INTEGER, step_id INTEGER, title VARCHAR(120), field_type VARCHAR(120), category_inventory_id INTEGER, category_report_id INTEGER, origin_field_id INTEGER, active INTEGER, multiple INTEGER, requirements TEXT, order_number INTEGER, values TEXT
+        contentValues.put("id", field.id);
+        contentValues.put("step_id", field.step_id);
+        contentValues.put("title", field.title);
+        contentValues.put("field_type", field.field_type);
+        contentValues.put("category_inventory_id", field.category_inventory_id);
+        contentValues.put("category_report_id", field.category_report_id);
+        contentValues.put("origin_field_id", field.origin_field_id);
+        contentValues.put("active", field.active ? 1 : 0);
+        contentValues.put("multiple", field.multiple ? 1 : 0);
+        contentValues.put("order_number", field.order_number);
+        contentValues.put("requirements", requirements);
+        contentValues.put("ovalues", values);
+
+        return contentValues;
+    }
+
+    public void addFlowStep(Flow flow, Flow.Step step)
+    {
+        ContentValues contentValues = createFlowStepContentValues(flow, step);
+        getWritableDatabase().insert("flows_steps", null, contentValues);
+
+        if(step.fields != null)
+        {
+            for(int i = 0; i < step.fields.length; i++)
+            {
+                Flow.Step.Field field = step.fields[i];
+                addFlowStepField(field);
+            }
+        }
+    }
+
+    void addFlowStepField(Flow.Step.Field field)
+    {
+        getWritableDatabase().insert("flows_steps_fields", null, createFlowStepFieldContentValues(field));
+    }
+
+    void updateFlowStepField(int id, Flow.Step.Field field)
+    {
+        getWritableDatabase().update("flows_steps_fields", createFlowStepFieldContentValues(field), "id=" + id, null);
+    }
+
+    Flow.Step parseStep(Cursor cursor)
+    {
+        Flow.Step step = new Flow.Step();
+        step.id = cursor.getInt(0);
+        step.title = cursor.getString(1);
+        step.step_type = cursor.getString(2);
+        // child_flow
+        step.order_number = cursor.getInt(4);
+        step.active = cursor.getInt(5) == 1;
+        step.last_version = cursor.getInt(6);
+
+        Cursor countCursor = getReadableDatabase().rawQuery("SELECT COUNT(id) FROM flows_steps_fields WHERE step_id = " + step.id, null);
+        countCursor.moveToNext();
+
+        int count = countCursor.getInt(0);
+        step.fields = new Flow.Step.Field[count];
+
+        Cursor fieldCursor = getReadableDatabase().rawQuery("SELECT id, step_id, title, field_type, category_inventory_id, category_report_id, origin_field_id, active, multiple, requirements, order_number, ovalues FROM flows_steps_fields WHERE step_id=" + step.id, null);
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        int x = 0;
+        while(fieldCursor.moveToNext())
+        {
+            Flow.Step.Field field = new Flow.Step.Field();
+            field.id = fieldCursor.getInt(0);
+            field.step_id = fieldCursor.getInt(1);
+            field.title = fieldCursor.getString(2);
+            field.field_type = fieldCursor.getString(3);
+            field.category_inventory_id = fieldCursor.getInt(4);
+            field.category_report_id = fieldCursor.getInt(5);
+            field.origin_field_id = fieldCursor.getInt(6);
+            field.active = fieldCursor.getInt(7) == 1;
+            field.multiple = fieldCursor.getInt(8) == 1;
+            field.order_number = fieldCursor.getInt(10);
+
+            try
+            {
+                if(!fieldCursor.isNull(9))
+                    field.requirements = mapper.readValue(fieldCursor.getString(9), LinkedHashMap.class);
+            }
+            catch (Exception ex)
+            {
+                Log.e("JSON", "Could not decode flow step field", ex);
+            }
+
+            try
+            {
+                if(!fieldCursor.isNull(11))
+                    field.values = mapper.readValue(fieldCursor.getString(11), LinkedHashMap.class);
+            }
+            catch (Exception ex)
+            {
+                Log.e("JSON", "Could not decode flow step field", ex);
+            }
+
+            step.fields[x] = field;
+            x++;
+        }
+
+        return step;
     }
 
     Flow parseFlow(Cursor cursor)
@@ -129,6 +352,21 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
             x++;
         }
 
+        countCursor = getReadableDatabase().rawQuery("SELECT COUNT(id) FROM flows_steps WHERE flow_id=?", new String[] { Integer.toString(flow.id) });
+        countCursor.moveToNext();
+        count = countCursor.getInt(0);
+
+        Cursor stepsCursor = getReadableDatabase().rawQuery("SELECT id, title, step_type, child_flow, order_number, active, last_version FROM flows_steps WHERE flow_id = ?", new String[] { Integer.toString(flow.id) });
+        flow.steps = new Flow.Step[count];
+        x = 0;
+        while(stepsCursor.moveToNext())
+        {
+            Flow.Step step = parseStep(stepsCursor);
+
+            flow.steps[x] = step;
+            x++;
+        }
+
 
         return flow;
     }
@@ -152,6 +390,12 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         return cursor.moveToNext();
     }
 
+    public boolean hasStep(int id)
+    {
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT id FROM flows_steps WHERE id = ?", new String[] { Integer.toString(id) });
+        return cursor.moveToNext();
+    }
+
     public boolean hasFlowResolutionState(int id)
     {
         Cursor cursor = getReadableDatabase().rawQuery("SELECT id FROM flows_resolution_states WHERE id = ?", new String[] { Integer.toString(id) });
@@ -162,6 +406,37 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
     {
         ContentValues contentValues = createFlowResolutionStateContentValues(resolutionState);
         getWritableDatabase().update("flows_resolution_states", contentValues, "id = ?", new String[] { Integer.toString(id) });
+    }
+
+    boolean hasFlowStepField(int id)
+    {
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT id FROM flows_steps_fields WHERE id = ?" + id, null);
+        return cursor.moveToNext();
+    }
+
+    void updateFlowStep(Flow flow, int id, Flow.Step step)
+    {
+        ContentValues contentValues = createFlowStepContentValues(flow, step);
+        getWritableDatabase().update("flows_steps", contentValues, "id = ?", new String[] { Integer.toString(id) });
+
+        if(step.fields != null)
+        {
+            String notPresentIds = "";
+            for (int i = 0; i < step.fields.length; i++) {
+                if (i > 0)
+                    notPresentIds += " AND ";
+
+                notPresentIds += "id != " + step.fields[i].id;
+
+                if (hasFlowStepField(step.fields[i].id))
+                    updateFlowStepField(step.fields[i].id, step.fields[i]);
+                else
+                    addFlowStepField(step.fields[i]);
+            }
+
+            if (notPresentIds.length() > 0)
+                getWritableDatabase().delete("flows_resolution_states", notPresentIds, null);
+        }
     }
 
     public void updateFlow(int id, Flow data)
@@ -185,6 +460,25 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
 
         if(notPresentIds.length() > 0)
             getWritableDatabase().delete("flows_resolution_states", notPresentIds, null);
+
+        if(data.steps != null)
+        {
+            notPresentIds = "";
+            for (int i = 0; i < data.steps.length; i++) {
+                if (i > 0)
+                    notPresentIds += " AND ";
+
+                notPresentIds += "id != " + data.steps[i].id;
+
+                if (hasStep(data.steps[i].id))
+                    updateFlowStep(data, data.steps[i].id, data.steps[i]);
+                else
+                    addFlowStep(data, data.steps[i]);
+            }
+
+            if (notPresentIds.length() > 0)
+                getWritableDatabase().delete("flows_steps", notPresentIds, null);
+        }
     }
 
     public Flow getFlow(int id)
@@ -197,13 +491,15 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
     ContentValues createFlowContentValues(Flow flow)
     {
         String steps_id = "";
-        for(int i = 0; i < flow.steps_id.length; i++)
+        if(flow.steps_id != null)
         {
-            int step_id = flow.steps_id[i];
-            steps_id = steps_id + step_id;
+            for (int i = 0; i < flow.steps_id.length; i++) {
+                int step_id = flow.steps_id[i];
+                steps_id = steps_id + step_id;
 
-            if(i + 1 < flow.steps_id.length)
-                steps_id = steps_id + ",";
+                if (i + 1 < flow.steps_id.length)
+                    steps_id = steps_id + ",";
+            }
         }
 
         ContentValues contentValues = new ContentValues();
@@ -251,6 +547,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         values.put("inventory_category_id", item.inventory_category_id);
         values.put("inventory_status_id", item.inventory_status_id);
         values.put("created_at", item.created_at);
+        values.put("updated_at", item.updated_at);
         values.put("address", item.address);
 
         getWritableDatabase().insert("inventory_items", null, values);
@@ -288,6 +585,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         values.put("inventory_category_id", item.inventory_category_id);
         values.put("inventory_status_id", item.inventory_status_id);
         values.put("created_at", item.created_at);
+        values.put("updated_at", item.updated_at);
         values.put("address", item.address);
 
         getWritableDatabase().update("inventory_items", values, "id=?", new String[] { Integer.toString(id) });
@@ -334,6 +632,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         item.inventory_status_id = cursor.getInt(5);
         item.created_at = cursor.getString(6);
         item.address = cursor.getString(7);
+        item.updated_at = cursor.getString(8);
 
         cursor = getReadableDatabase().rawQuery("SELECT id, inventory_field_id, content FROM inventory_items_data WHERE inventory_item_id=?", new String[] { Integer.toString(item.id) });
         while(cursor.moveToNext())
@@ -369,7 +668,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
 
     public InventoryItem getInventoryItem(int id)
     {
-        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, latitude, longitude, inventory_category_id, inventory_status_id, created_at, address FROM inventory_items WHERE id=?", new String[] { Integer.toString(id) });
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, latitude, longitude, inventory_category_id, inventory_status_id, created_at, address, updated_at FROM inventory_items WHERE id=?", new String[] { Integer.toString(id) });
         if(!cursor.moveToNext())
             return null;
 
@@ -404,7 +703,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         int itemsPerPage = 30;
         int fromIndex = itemsPerPage * (page - 1);
 
-        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, latitude, longitude, inventory_category_id, inventory_status_id, created_at, address FROM inventory_items " + whereArgsString + " LIMIT " + fromIndex + ", " + itemsPerPage, searchQuery != null ? new String[] { "%" + searchQuery + "%" } : null);
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, latitude, longitude, inventory_category_id, inventory_status_id, created_at, address, updated_at FROM inventory_items " + whereArgsString + " LIMIT " + fromIndex + ", " + itemsPerPage, searchQuery != null ? new String[] { "%" + searchQuery + "%" } : null);
 
         while (cursor.moveToNext()) {
             InventoryItem item = parseInventoryItem(cursor);
@@ -418,7 +717,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
     {
         ArrayList<InventoryItem> result = new ArrayList<InventoryItem>();
 
-        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, latitude, longitude, inventory_category_id, inventory_status_id, created_at, address FROM inventory_items", null);
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, latitude, longitude, inventory_category_id, inventory_status_id, created_at, address, updated_at FROM inventory_items", null);
 
         while (cursor.moveToNext()) {
             InventoryItem item = parseInventoryItem(cursor);
@@ -432,7 +731,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
     {
         ArrayList<InventoryItem> result = new ArrayList<InventoryItem>();
 
-        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, latitude, longitude, inventory_category_id, inventory_status_id, created_at, address FROM inventory_items WHERE inventory_category_id=?", new String[] { Integer.toString(categoryId) });
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, latitude, longitude, inventory_category_id, inventory_status_id, created_at, address, updated_at FROM inventory_items WHERE inventory_category_id=?", new String[] { Integer.toString(categoryId) });
 
         while (cursor.moveToNext()) {
             InventoryItem item = parseInventoryItem(cursor);
@@ -446,6 +745,15 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
     {
         getWritableDatabase().execSQL("DELETE FROM inventory_items WHERE id=" + id);
         getWritableDatabase().execSQL("DELETE FROM inventory_items_data WHERE inventory_item_id=" + id);
+    }
+
+    public void removeInventoryCategory(int id) {
+        getWritableDatabase().execSQL("DELETE FROM inventory_categories WHERE id=" + id);
+        getWritableDatabase().execSQL("DELETE FROM inventory_categories_sections WHERE inventory_category_id=" + id);
+        getWritableDatabase().execSQL("DELETE FROM inventory_categories_sections_fields WHERE inventory_category_id=" + id);
+        getWritableDatabase().execSQL("DELETE FROM inventory_categories_statuses WHERE inventory_category_id=" + id);
+        getWritableDatabase().execSQL("DELETE FROM inventory_categories_pins WHERE inventory_category_id=" + id);
+        getWritableDatabase().execSQL("DELETE FROM inventory_categories_markers WHERE inventory_category_id=" + id);
     }
 
     public void setSession(int userId, String token)
@@ -536,6 +844,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         values.put("description", category.description);
         values.put("require_item_status", category.require_item_status ? 1 : 0);
         values.put("created_at", category.created_at);
+        values.put("plot_format", category.plot_format != null ? category.plot_format.toString() : null);
 
         getWritableDatabase().insert("inventory_categories", null, values);
 
@@ -546,6 +855,13 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         values.put("url_mobile", category.pin._default.mobile);
 
         long l = getWritableDatabase().insert("inventory_categories_pins", null, values);
+
+        values = new ContentValues();
+        values.put("inventory_category_id", category.id);
+        values.put("url_web", category.marker._default.web);
+        values.put("url_mobile", category.marker._default.mobile);
+
+        l = getWritableDatabase().insert("inventory_categories_markers", null, values);
 
         // sections
         for(int i = 0; i < category.sections.length - l + l; i++)
@@ -576,6 +892,8 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
                 values.put("size", field.size);
                 values.put("required", field.required ? 1 : 0);
                 values.put("location", field.location ? 1 : 0);
+                values.put("minimum", field.minimum);
+                values.put("maximum", field.maximum);
                 if(field.available_values != null)
                 {
                     String availableValues = "";
@@ -601,6 +919,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         category.description = cursor.getString(2);
         category.created_at = cursor.getString(3);
         category.require_item_status = cursor.getInt(4) == 1;
+        category.plot_format = cursor.getString(5);
 
         // inventory_category_id INTEGER, web VARCHAR(255), mobile VARCHAR(255)
         cursor = getReadableDatabase().rawQuery("SELECT url_web, url_mobile FROM inventory_categories_pins WHERE inventory_category_id=?", new String[] { Integer.toString(category.id) });
@@ -612,6 +931,17 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
             pins._default.web = cursor.getString(1);
 
             category.pin = pins;
+        }
+
+        cursor = getReadableDatabase().rawQuery("SELECT url_web, url_mobile FROM inventory_categories_markers WHERE inventory_category_id=?", new String[] { Integer.toString(category.id) });
+        if(cursor.moveToNext())
+        {
+            InventoryCategory.Pins markers = new InventoryCategory.Pins();
+            markers._default = new InventoryCategory.Pins.Pin();
+            markers._default.mobile = cursor.getString(0);
+            markers._default.web = cursor.getString(1);
+
+            category.marker = markers;
         }
 
         // sections
@@ -630,7 +960,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
             // fields
             ArrayList<InventoryCategory.Section.Field> fields = new ArrayList<InventoryCategory.Section.Field>();
 
-            Cursor cursor2 = getReadableDatabase().rawQuery("SELECT id, title, kind, position, label, size, required, location, available_values FROM inventory_categories_sections_fields WHERE inventory_category_id=? AND inventory_section_id=?", new String[] { Integer.toString(category.id), Integer.toString(section.id) });
+            Cursor cursor2 = getReadableDatabase().rawQuery("SELECT id, title, kind, position, label, size, required, location, available_values, minimum, maximum FROM inventory_categories_sections_fields WHERE inventory_category_id=? AND inventory_section_id=?", new String[] { Integer.toString(category.id), Integer.toString(section.id) });
             while(cursor2.moveToNext())
             {
                 InventoryCategory.Section.Field field = new InventoryCategory.Section.Field();
@@ -642,6 +972,8 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
                 field.size = cursor2.getString(5);
                 field.required = cursor2.getInt(6) == 1;
                 field.location = cursor2.getInt(7) == 1;
+                field.minimum = !cursor2.isNull(9) ? cursor2.getInt(9) : null;
+                field.maximum = !cursor2.isNull(10) ? cursor2.getInt(10) : null;
 
                 String availablevalues = cursor2.getString(8);
                 if(availablevalues != null)
@@ -665,7 +997,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         //sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_sections_fields (id INTEGER PRIMARY KEY, inventory_category_id INTEGER, inventory_section_id INTEGER, title VARCHAR(120), kind VARCHAR(120), position INTEGER, label VARCHAR(120), size VARCHAR(120), required INTEGER, location INTEGER, available_values TEXT);");
 
 
-        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, description, created_at, require_item_status FROM inventory_categories WHERE id=?", new String[] { Integer.toString(id) });
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, description, created_at, require_item_status, plot_format FROM inventory_categories WHERE id=?", new String[] { Integer.toString(id) });
         if(!cursor.moveToNext())
             return null;
 
@@ -684,7 +1016,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
     {
         ArrayList<InventoryCategory> result = new ArrayList<InventoryCategory>();
 
-        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, description, created_at, require_item_status FROM inventory_categories", null);
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, description, created_at, require_item_status, plot_format FROM inventory_categories", null);
         while (cursor.moveToNext())
         {
             result.add(parseCategory(cursor));
@@ -722,6 +1054,11 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         values.put("inventory_category_id", status.inventory_category_id);
 
         getWritableDatabase().insert("inventory_categories_statuses", null, values);
+    }
+
+    public void removeInventoryCategoryStatus(int id)
+    {
+        getWritableDatabase().execSQL("DELETE FROM inventory_categories_statuses WHERE id=" + id);
     }
 
     public Iterator<InventoryCategoryStatus> getInventoryItemCategoryStatusIterator()

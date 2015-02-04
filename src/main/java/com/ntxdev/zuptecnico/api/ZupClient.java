@@ -4,10 +4,12 @@ import android.graphics.BitmapFactory;
 import android.text.TextUtils;
 
 import com.ntxdev.zuptecnico.entities.Case;
+import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
 import com.ntxdev.zuptecnico.entities.Session;
+import com.ntxdev.zuptecnico.entities.User;
 import com.ntxdev.zuptecnico.entities.collections.CaseCollection;
 import com.ntxdev.zuptecnico.entities.collections.FlowCollection;
 import com.ntxdev.zuptecnico.entities.collections.InventoryCategoryCollection;
@@ -16,11 +18,16 @@ import com.ntxdev.zuptecnico.entities.collections.InventoryItemCollection;
 import com.ntxdev.zuptecnico.entities.collections.SingleCaseCollection;
 import com.ntxdev.zuptecnico.entities.collections.SingleInventoryCategoryCollection;
 import com.ntxdev.zuptecnico.entities.collections.SingleInventoryItemCollection;
+import com.ntxdev.zuptecnico.entities.collections.SingleUserCollection;
 import com.ntxdev.zuptecnico.entities.requests.EditInventoryItemRequest;
 import com.ntxdev.zuptecnico.entities.requests.PublishInventoryItemRequest;
+import com.ntxdev.zuptecnico.entities.requests.TransferCaseStepRequest;
+import com.ntxdev.zuptecnico.entities.requests.UpdateCaseStepRequest;
 import com.ntxdev.zuptecnico.entities.responses.DeleteInventoryItemResponse;
 import com.ntxdev.zuptecnico.entities.responses.EditInventoryItemResponse;
 import com.ntxdev.zuptecnico.entities.responses.PublishInventoryItemResponse;
+import com.ntxdev.zuptecnico.entities.responses.TransferCaseStepResponse;
+import com.ntxdev.zuptecnico.entities.responses.UpdateCaseStepResponse;
 
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -56,6 +63,44 @@ public class ZupClient
 
         ApiHttpResult<Session> result = httpClient.post("authenticate.json", postData, Session.class);
         return result;
+    }
+
+    public ApiHttpResult<SingleUserCollection> retrieveUser(int id)
+    {
+        return httpClient.get("users/" + id + ".json" + (sessionToken != null ? "?token=" + sessionToken : ""), SingleUserCollection.class);
+    }
+
+    public ApiHttpResult<TransferCaseStepResponse> transferCaseStep(int caseId, int stepId, int responsible_user_id)
+    {
+        TransferCaseStepRequest request = new TransferCaseStepRequest();
+        request.responsible_user_id = responsible_user_id;
+        return httpClient.put("cases/" + caseId + "/case_steps/" + stepId + ".json" + (sessionToken != null ? "?token=" + sessionToken : ""), request, TransferCaseStepResponse.class);
+    }
+
+    public ApiHttpResult<UpdateCaseStepResponse> updateCaseStep(int caseId, int stepId, int stepVersion, Hashtable<Integer, Object> fields)
+    {
+        UpdateCaseStepRequest request = new UpdateCaseStepRequest();
+        request.step_id = stepId;
+        request.step_version = stepVersion;
+        if(fields != null)
+        {
+            request.fields = new UpdateCaseStepRequest.FieldValue[fields.size()];
+            int i = 0;
+            for(Integer key : fields.keySet())
+            {
+                Object value = fields.get(key);
+
+                UpdateCaseStepRequest.FieldValue val = new UpdateCaseStepRequest.FieldValue();
+                val.id = key;
+                val.value = value;
+
+                request.fields[i++] = val;
+            }
+        }
+        else
+            request.fields = new UpdateCaseStepRequest.FieldValue[0];
+
+        return httpClient.put("cases/" + caseId + ".json" + (sessionToken != null ? "?token=" + sessionToken : ""), request, UpdateCaseStepResponse.class);
     }
 
     public ApiHttpResult<PublishInventoryItemResponse> publishInventoryItem(InventoryItem item)
@@ -99,13 +144,13 @@ public class ZupClient
 
     public ApiHttpResult<InventoryCategoryCollection> retrieveInventoryCategories()
     {
-        ApiHttpResult<InventoryCategoryCollection> result = httpClient.get("inventory/categories.json?display_type=full", InventoryCategoryCollection.class);
+        ApiHttpResult<InventoryCategoryCollection> result = httpClient.get("inventory/categories.json?display_type=full" + (sessionToken != null ? "&token=" + sessionToken : ""), InventoryCategoryCollection.class);
         return result;
     }
 
     public ApiHttpResult<SingleInventoryCategoryCollection> retrieveInventoryCategoryInfo(int categoryId)
     {
-        ApiHttpResult<SingleInventoryCategoryCollection> result = httpClient.get("inventory/categories/" + categoryId + ".json", SingleInventoryCategoryCollection.class);
+        ApiHttpResult<SingleInventoryCategoryCollection> result = httpClient.get("inventory/categories/" + categoryId + ".json" + (sessionToken != null ? "?token=" + sessionToken : ""), SingleInventoryCategoryCollection.class);
         return result;
     }
 
@@ -191,19 +236,19 @@ public class ZupClient
 
     public ApiHttpResult<InventoryItemCollection> retrieveInventoryItems(int categoryId, int page)
     {
-        ApiHttpResult<InventoryItemCollection> result = httpClient.get("inventory/items.json?inventory_category_id=" + categoryId + "&page=" + page + (sessionToken != null ? "&token=" + sessionToken : ""), InventoryItemCollection.class);
+        ApiHttpResult<InventoryItemCollection> result = httpClient.get("inventory/items.json?display_type=basic&inventory_category_id=" + categoryId + "&page=" + page + (sessionToken != null ? "&token=" + sessionToken : ""), InventoryItemCollection.class);
         return result;
     }
 
     public ApiHttpResult<InventoryItemCollection> retrieveInventoryItems(int categoryId, int page, String sort, String order)
     {
-        ApiHttpResult<InventoryItemCollection> result = httpClient.get("inventory/items.json?inventory_category_id=" + categoryId + "&page=" + page + "&sort=" + sort + "&order=" + order + (sessionToken != null ? "&token=" + sessionToken : ""), InventoryItemCollection.class);
+        ApiHttpResult<InventoryItemCollection> result = httpClient.get("inventory/items.json?display_type=basic&inventory_category_id=" + categoryId + "&page=" + page + "&sort=" + sort + "&order=" + order + (sessionToken != null ? "&token=" + sessionToken : ""), InventoryItemCollection.class);
         return result;
     }
 
     public ApiHttpResult<InventoryItemCollection> retrieveInventoryItems(int categoryId, double latitude, double longitude, double radius, double zoom)
     {
-        ApiHttpResult<InventoryItemCollection> result = httpClient.get("inventory/items.json?inventory_category_id=" + categoryId + "&position[latitude]=" + latitude + "&position[longitude]=" + longitude + "&position[distance]=" + radius + "&zoom=" + zoom + (sessionToken != null ? "&limit=100&token=" + sessionToken : ""), InventoryItemCollection.class);
+        ApiHttpResult<InventoryItemCollection> result = httpClient.get("inventory/items.json?display_type=basic&inventory_category_id=" + categoryId + "&position[latitude]=" + latitude + "&position[longitude]=" + longitude + "&position[distance]=" + radius + "&zoom=" + zoom + (sessionToken != null ? "&limit=100&token=" + sessionToken : ""), InventoryItemCollection.class);
         return result;
     }
 
@@ -233,7 +278,13 @@ public class ZupClient
 
     public ApiHttpResult<FlowCollection> retrieveFlows()
     {
-        ApiHttpResult<FlowCollection> result = httpClient.get("flows.json" + (sessionToken != null ? "?token=" + sessionToken : ""), FlowCollection.class);
+        ApiHttpResult<FlowCollection> result = httpClient.get("flows.json?display_type=full" + (sessionToken != null ? "&token=" + sessionToken : ""), FlowCollection.class);
+        return result;
+    }
+
+    public ApiHttpResult<Flow.StepCollection> retrieveFlowSteps(int flowId)
+    {
+        ApiHttpResult<Flow.StepCollection> result = httpClient.get("flows/" + flowId + "/steps.json?display_type=full" + (sessionToken != null ? "&token=" + sessionToken : ""), Flow.StepCollection.class);
         return result;
     }
 

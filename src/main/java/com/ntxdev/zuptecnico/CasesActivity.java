@@ -5,10 +5,12 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.PopupMenu;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.ntxdev.zuptecnico.api.Zup;
@@ -21,6 +23,7 @@ import com.ntxdev.zuptecnico.ui.SingularTabHost;
 import com.ntxdev.zuptecnico.ui.UIHelper;
 import com.ntxdev.zuptecnico.util.ResizeAnimation;
 
+import java.sql.SQLException;
 import java.util.Iterator;
 
 /**
@@ -30,12 +33,18 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
 {
     private int _flowId;
     private int _page = 1;
+    private String _status = null;
     private int _offlinePage = 1;
     private int _pageJobId;
     private String _sort = "id";
 
     private PageLoader pageLoader;
     private FlowLoader flowLoader;
+
+    private boolean isWaitingForFlows;
+    private Case[] casesWaiting;
+
+    private Case[] casesShown;
 
     android.support.v7.widget.PopupMenu menu;
 
@@ -70,8 +79,42 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
         flowLoader.execute();
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        this.clear();
+
+        if(this.pageLoader != null)
+            this.pageLoader.cancel(true);
+
+        if(this.flowLoader != null)
+            this.pageLoader.cancel(true);
+
+        casesWaiting = null;
+        casesShown = null;
+        this.flowLoader = null;
+        this.pageLoader = null;
+
+        this._page = 1;
+        this._status = null;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        selectFlow(-1, "Todos os casos");
+    }
+
     class FlowLoader extends AsyncTask<Void, Void, Boolean>
     {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            UIHelper.showProgress(CasesActivity.this);
+        }
+
         @Override
         protected Boolean doInBackground(Void... voids)
         {
@@ -81,6 +124,9 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
 
             for(Flow flow : flowCollection.flows)
             {
+                Flow.StepCollection steps = Zup.getInstance().retrieveFlowSteps(flow.id);
+                flow.steps = steps.steps;
+
                 if(Zup.getInstance().hasFlow(flow.id))
                 {
                     Zup.getInstance().updateFlow(flow.id, flow);
@@ -98,12 +144,24 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
         protected void onPostExecute(Boolean updated) {
             super.onPostExecute(updated);
 
+            UIHelper.hideProgress(CasesActivity.this);
+
             if(updated)
             {
                 refreshMenu();
                 refreshTabHost();
 
                 hideNoConnectionBar();
+
+                if(isWaitingForFlows)
+                {
+                    isWaitingForFlows = false;
+
+                    if(casesWaiting != null)
+                        fillCases(casesWaiting);
+
+                    casesWaiting = null;
+                }
             }
             else
             {
@@ -114,7 +172,17 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
 
     void refreshMenu()
     {
-        Iterator<Flow> flows = Zup.getInstance().getFlows();
+        Iterator<Flow> flows;
+        try
+        {
+            flows = Zup.getInstance().getFlows();
+        }
+        catch (Exception ex)
+        {
+            isWaitingForFlows = true;
+            Log.e("CASES", "Waiting for flows", ex);
+            return;
+        }
 
         menu.getMenu().clear();
         menu.getMenu().add(Menu.NONE, -1, 0, "Todos os casos");
@@ -203,7 +271,15 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
 
     private View setUpCaseView(Case item)
     {
-        Flow _flow = Zup.getInstance().getFlow(item.initial_flow_id);
+        Flow _flow;
+        try
+        {
+            _flow = Zup.getInstance().getFlow(item.initial_flow_id);
+        }
+        catch(Exception ex)
+        {
+            return null;
+        }
 
         ViewGroup rootView = (ViewGroup)getLayoutInflater().inflate(R.layout.fragment_documents, null);
         rootView.setTag(R.id.tag_item_id, item.id);
@@ -221,6 +297,11 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
         TextView flow = (TextView)rootView.findViewById(R.id.fragment_document_type);
         TextView description = (TextView)rootView.findViewById(R.id.fragment_document_desc);
         TextView state = (TextView)rootView.findViewById(R.id.fragment_document_statedesc);
+        ImageView stateicon = (ImageView)rootView.findViewById(R.id.fragment_document_stateicon);
+
+        stateicon.setImageDrawable(getResources().getDrawable(Zup.getInstance().getCaseStatusDrawable(item.status)));
+        state.setBackgroundColor(Zup.getInstance().getCaseStatusColor(item.status));
+        state.setText(Zup.getInstance().getCaseStatusString(item.status));
 
         title.setText("Caso " + item.id);
         flow.setText(_flow.title);
@@ -231,11 +312,23 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
 
     private void fillCases(Case[] cases)
     {
+        casesShown = cases;
+
         ViewGroup root = (ViewGroup)findViewById(R.id.inventory_items_container);
+        root.removeAllViews();
         for(Case item : cases)
         {
-            View view = setUpCaseView(item);
-            root.addView(view);
+            if(_status == null || _status.equals(item.status))
+            {
+                View view = setUpCaseView(item);
+                if (view == null) // Couldnt find some flow
+                {
+                    isWaitingForFlows = true;
+                    casesWaiting = cases;
+                    return;
+                }
+                root.addView(view);
+            }
         }
     }
 
@@ -284,9 +377,13 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
         SingularTabHost tabHost = (SingularTabHost) findViewById(R.id.tabhost_documents);
 
         tabHost.removeAllTabs();
-        tabHost.addTab("-1", "Todos estados");
+        tabHost.addTab("all", "Todos estados");
+        tabHost.addTab("pending", "Pendentes");
+        tabHost.addTab("active", "Em andamento");
+        tabHost.addTab("finished", "Concluídos");
+        tabHost.setVisibility(View.VISIBLE);
 
-        if(flow != null)
+        /*if(flow != null)
         {
             for (int i = 0; i < flow.resolution_states.length; i++) {
                 Flow.ResolutionState resolutionState = flow.resolution_states[i];
@@ -302,7 +399,7 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
         else
         {
             tabHost.setVisibility(View.GONE);
-        }
+        }*/
     }
 
     @Override
@@ -312,6 +409,12 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
 
     @Override
     public void onTabChange(SingularTabHost tabHost, String oldIdentifier, String newIdentifier) {
+        if(newIdentifier.equals("all"))
+            _status = null;
+        else
+            _status = newIdentifier;
 
+        if(casesShown != null)
+            fillCases(casesShown);
     }
 }

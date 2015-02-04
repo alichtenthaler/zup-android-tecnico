@@ -13,7 +13,7 @@
         android:title="Sincronizar"
         ntxdev:showAsAction="always"/>
 
-    <item android:id="@+id/action_settings"
+    <!--<item android:id="@+id/action_settings"
         android:title="Ordenar por última modificação"
         android:orderInCategory="100"
         ntxdev:showAsAction="never" />
@@ -26,5 +26,5 @@
     <item android:id="@+id/action_settings"
         android:title="Ordenar por nome"
         android:orderInCategory="100"
-        ntxdev:showAsAction="never" />
+        ntxdev:showAsAction="never" />-->
 </menu>

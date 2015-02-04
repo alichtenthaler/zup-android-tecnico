@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.drawable.ColorDrawable;
 import android.hardware.display.DisplayManager;
 import android.media.Image;
 import android.support.v7.app.ActionBar;
@@ -28,9 +29,12 @@ import com.ntxdev.zuptecnico.ItemsActivity;
 import com.ntxdev.zuptecnico.ProfileActivity;
 import com.ntxdev.zuptecnico.R;
 import com.ntxdev.zuptecnico.SearchBarListener;
+import com.ntxdev.zuptecnico.SyncActivity;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.User;
+
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -74,6 +78,8 @@ public class UIHelper
 
     private static void initActionBar(ActionBarActivity activity)
     {
+        activity.getSupportActionBar().setBackgroundDrawable(new ColorDrawable(activity.getResources().getColor(R.color.zupblue)));
+
         ViewGroup actionBarLayout = (ViewGroup)activity.getLayoutInflater().inflate(R.layout.action_bar, null);
 
         android.support.v7.app.ActionBar actionBar = activity.getSupportActionBar();
@@ -82,6 +88,7 @@ public class UIHelper
         actionBar.setDisplayShowHomeEnabled(false);
         actionBar.setDisplayShowCustomEnabled(true);
         actionBar.setCustomView(actionBarLayout, new ActionBar.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
     }
 
     public static void showSearchBar(final ActionBarActivity activity, final SearchBarListener listener, final Menu menu)
@@ -133,7 +140,9 @@ public class UIHelper
     {
         AlertDialog.Builder builder = new AlertDialog.Builder(activity);
         builder.setTitle("Ajuda");
+        builder.setCancelable(true);
         builder.setMessage("Busque pelo nome, logradouro, bairro, CEP ou pela latitude/longitude\n(exemplo: 10,000000/20,000000)");
+        builder.setPositiveButton("OK", null);
         builder.show();
     }
 
@@ -173,12 +182,25 @@ public class UIHelper
         builder.show();
     }
 
+    public static void showProgress(ActionBarActivity activity)
+    {
+        activity.getSupportActionBar().getCustomView().findViewById(R.id.actionbar_progress).setVisibility(View.VISIBLE);
+    }
+
+    public static void hideProgress(ActionBarActivity activity)
+    {
+        activity.getSupportActionBar().getCustomView().findViewById(R.id.actionbar_progress).setVisibility(View.GONE);
+    }
+
     public static void hideSearchBar(final ActionBarActivity activity, final SearchBarListener listener, final Menu menu)
     {
         activity.findViewById(R.id.actionbar_search).setVisibility(View.GONE);
         activity.findViewById(R.id.actionbar_title).setVisibility(View.VISIBLE);
         for(int i = 0; i < menu.size(); i++){
             menu.getItem(i).setVisible(true);
+
+            if(menu.getItem(i).getItemId() == R.id.action_items_list)
+                menu.getItem(i).setVisible(false);
         }
 
         ViewGroup actionBar = (ViewGroup)activity.getSupportActionBar().getCustomView();
@@ -256,6 +278,7 @@ public class UIHelper
         View cellDocuments = sidebar.findViewById(R.id.sidebar_cell_documents);
         View cellItems = sidebar.findViewById(R.id.sidebar_cell_items);
         View cellNotifications = sidebar.findViewById(R.id.sidebar_cell_notifications);
+        View cellSync = sidebar.findViewById(R.id.sidebar_cell_sync);
 
         if(activity instanceof ProfileActivity)
         {
@@ -283,6 +306,15 @@ public class UIHelper
             cellItems.setBackgroundColor(activity.getResources().getColor(R.color.sidebar_selected));
             labelItems.setTextColor(0xffffffff);
             iconItems.setImageDrawable(activity.getResources().getDrawable(R.drawable.sidebar_icon_inventario_branco));
+        }
+        else if(activity instanceof SyncActivity)
+        {
+            TextView labelSync = (TextView)cellSync.findViewById(R.id.sidebar_label_sync);
+            ImageView iconSync = (ImageView)cellSync.findViewById(R.id.sidebar_icon_sync);
+
+            cellSync.setBackgroundColor(activity.getResources().getColor(R.color.sidebar_selected));
+            labelSync.setTextColor(0xffffffff);
+            iconSync.setImageDrawable(activity.getResources().getDrawable(R.drawable.sidebar_icon_inventario_branco));
         }
 
         cellProfile.setOnClickListener(new View.OnClickListener() {
@@ -329,6 +361,21 @@ public class UIHelper
                 }
             }
         });
+
+        cellSync.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(activity instanceof SyncActivity)
+                {
+                    toggleSidebar(activity);
+                }
+                else
+                {
+                    activity.startActivity(new Intent(activity, SyncActivity.class));
+                    //activity.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+                }
+            }
+        });
     }
 
     private static void toggleSidebar(Activity activity)
@@ -365,6 +412,8 @@ public class UIHelper
         }
         else
         {
+            TextView textSync = (TextView) sidebar.findViewById(R.id.sidebar_sync_count);
+            textSync.setText(Integer.toString(Zup.getInstance().getSyncActionCount()));
             sidebar.setVisibility(View.VISIBLE);
 
             AlphaAnimation alphaAnimation = new AlphaAnimation(0, .5f);

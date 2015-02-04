@@ -8,6 +8,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -20,6 +21,7 @@ import com.ntxdev.zuptecnico.entities.InventoryItem;
 import com.ntxdev.zuptecnico.ui.InfinityScrollView;
 import com.ntxdev.zuptecnico.ui.UIHelper;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Objects;
 
@@ -28,6 +30,7 @@ import java.util.Objects;
  */
 public class InventoryItemsAdvancedSearchResultActivity extends ActionBarActivity implements InventoryItemsListener, InfinityScrollView.OnScrollViewListener, JobFailedListener
 {
+    private boolean selectMode;
     private Intent searchData;
     private int _page;
     private int _pageJobId;
@@ -44,12 +47,56 @@ public class InventoryItemsAdvancedSearchResultActivity extends ActionBarActivit
         UIHelper.setTitle(this, "Busca avançada");
 
         this.searchData = (Intent)getIntent().getExtras().get("search_data");
+        this.selectMode = getIntent().getBooleanExtra("select", false);
+
+        if(selectMode)
+        {
+            getSupportActionBar().hide();
+            findViewById(R.id.items_select_buttons).setVisibility(View.VISIBLE);
+        }
 
         _page = 1;
         loadPage();
 
         InfinityScrollView scroll = (InfinityScrollView) findViewById(R.id.items_scroll);
         scroll.setOnScrollViewListener(this);
+    }
+
+    public void selectCancel(View view)
+    {
+        setResult(RESULT_CANCELED);
+        finish();
+    }
+
+    public void selectDone(View view)
+    {
+        Intent intent = new Intent();
+        ArrayList<Integer> idsList = new ArrayList<Integer>();
+
+        ViewGroup container = (ViewGroup)findViewById(R.id.inventory_items_container);
+        for(int i = 0; i < container.getChildCount(); i++)
+        {
+            View child = container.getChildAt(i);
+            Integer id = (Integer) child.getTag(R.id.tag_item_id);
+
+            if(id == null)
+                continue;
+
+            CheckBox checkBox = (CheckBox) child.findViewById(R.id.fragment_inventory_item_check);
+            if(checkBox.isChecked()) {
+                idsList.add(id);
+            }
+        }
+
+        int[] res = new int[idsList.size()];
+        for(int i = 0; i < res.length; i++)
+        {
+            res[i] = idsList.get(i);
+        }
+
+        intent.putExtra("ids", res);
+        setResult(RESULT_OK, intent);
+        finish();
     }
 
     @Override
@@ -167,6 +214,12 @@ public class InventoryItemsAdvancedSearchResultActivity extends ActionBarActivit
         TextView description = (TextView)rootView.findViewById(R.id.fragment_inventory_item_desc);
         ImageView downloadIcon = (ImageView)rootView.findViewById(R.id.fragment_inventory_item_download_icon);
         TextView state = (TextView)rootView.findViewById(R.id.fragment_inventory_item_statedesc);
+        CheckBox checkBox = (CheckBox)rootView.findViewById(R.id.fragment_inventory_item_check);
+
+        if(selectMode)
+        {
+            checkBox.setVisibility(View.VISIBLE);
+        }
 
         if(item.inventory_status_id != null)
         {

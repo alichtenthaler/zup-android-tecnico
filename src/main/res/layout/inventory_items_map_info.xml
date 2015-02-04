@@ -32,14 +32,20 @@
         android:layout_marginRight="10dp" />
 
     <TextView
-        android:layout_width="wrap_content"
+        android:layout_width="130dp"
         android:layout_height="wrap_content"
-        android:text="Arvore 56"
+        android:text="Bocas de Lobo 56"
         android:id="@+id/inventory_item_map_info_title"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="7dp"
         android:textColor="#222"
         android:textSize="17dp"
         android:layout_marginLeft="10dp"
-        android:layout_marginRight="10dp" />
+        android:layout_marginRight="10dp"
+        android:gravity="center"
+        android:maxLines="100"
+        android:ellipsize="none"
+        android:layout_weight="1"
+        android:scrollHorizontally="false"
+        android:singleLine="false"/>
 </LinearLayout>

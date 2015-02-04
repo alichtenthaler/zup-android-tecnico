@@ -16,7 +16,8 @@
         android:layout_width="300dp"
         android:layout_height="match_parent"
         android:id="@+id/sidebar_scroll"
-        android:background="#f2f2f2">
+        android:background="#f2f2f2"
+        android:fillViewport="false">
 
         <LinearLayout
             android:orientation="vertical"
@@ -63,7 +64,8 @@
                     android:layout_below="@+id/sidebar_label_name"
                     android:layout_alignLeft="@+id/sidebar_label_name"
                     android:layout_alignStart="@+id/sidebar_label_name"
-                    android:textColor="#999" />
+                    android:textColor="#999"
+                    android:visibility="invisible" />
             </RelativeLayout>
 
             <FrameLayout
@@ -76,7 +78,8 @@
                 android:layout_height="65dp"
                 android:id="@+id/sidebar_cell_documents"
                 android:clickable="true"
-                android:background="@drawable/sidebar_cell">
+                android:background="@drawable/sidebar_cell"
+                android:visibility="gone">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -145,7 +148,8 @@
                 android:layout_height="65dp"
                 android:id="@+id/sidebar_cell_notifications"
                 android:clickable="true"
-                android:background="@drawable/sidebar_cell">
+                android:background="@drawable/sidebar_cell"
+                android:visibility="gone">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -163,6 +167,51 @@
                     android:layout_gravity="left|center_vertical"
                     android:src="@drawable/sidebar_icon_notificacoes_cinza"
                     android:layout_marginLeft="20dp" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="fill_parent"
+                android:layout_height="1dp"
+                android:background="#ddd"></FrameLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="65dp"
+                android:id="@+id/sidebar_cell_sync"
+                android:clickable="true"
+                android:background="@drawable/sidebar_cell"
+                android:visibility="visible">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Sincronizar"
+                    android:id="@+id/sidebar_label_sync"
+                    android:layout_gravity="left|center_vertical"
+                    android:layout_marginLeft="65dp"
+                    android:textColor="#000" />
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/sidebar_icon_sync"
+                    android:layout_gravity="left|center_vertical"
+                    android:src="@drawable/sidebar_icon_notificacoes_cinza"
+                    android:layout_marginLeft="20dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:id="@+id/sidebar_sync_count"
+                    android:layout_gravity="center_vertical|right"
+                    android:layout_marginRight="20dp"
+                    android:background="#666"
+                    android:textColor="#fff"
+                    android:paddingLeft="5dp"
+                    android:paddingRight="5dp"
+                    android:paddingBottom="3dp"
+                    android:paddingTop="3dp" />
             </FrameLayout>
 
             <FrameLayout

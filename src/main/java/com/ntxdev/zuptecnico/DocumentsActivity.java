@@ -109,7 +109,7 @@ public class DocumentsActivity extends ActionBarActivity implements SingularTabH
             Document document = results.next();
 
             getSupportFragmentManager().beginTransaction()
-                    .add(R.id.documents_container, new DocumentFragment(document))
+                    .add(R.id.documents_container, new DocumentFragment().setDocument(document))
                     .commit();
         }
     }
@@ -141,8 +141,9 @@ public class DocumentsActivity extends ActionBarActivity implements SingularTabH
 
         }
 
-        public DocumentFragment(Document document) {
+        public DocumentFragment setDocument(Document document) {
             this.document = document;
+            return this;
         }
 
         public void onClick(View view)

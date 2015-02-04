@@ -45,7 +45,8 @@
                 android:paddingLeft="20dp"
                 android:paddingBottom="15dp"
                 android:textColor="#222"
-                android:text="teste@gmail.com" />
+                android:text=""
+                android:inputType="textEmailAddress" />
 
             <EditText
                 android:layout_width="fill_parent"
@@ -60,7 +61,7 @@
                 android:drawablePadding="20dp"
                 android:paddingBottom="15dp"
                 android:textColor="#222"
-                android:text="102030" />
+                android:text="" />
 
             <Button
                 android:layout_width="match_parent"

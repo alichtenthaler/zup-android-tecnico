@@ -5,6 +5,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import com.ntxdev.zuptecnico.api.Storage;
+import com.ntxdev.zuptecnico.api.SyncAction;
 import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
@@ -25,6 +26,11 @@ public class SQLiteStorage implements IStorage {
         db = new ZupOpenHelper(context);
     }
 
+    public void clear()
+    {
+        db.clear();
+    }
+
     public void setSession(int userId, String token)
     {
         db.setSession(userId, token);
@@ -39,6 +45,21 @@ public class SQLiteStorage implements IStorage {
     {
         return db.getSessionToken();
     }
+
+    public void addSyncAction(SyncAction action) { db.addSyncAction(action); }
+
+    public void removeSyncAction(int id) { db.removeSyncAction(id); }
+
+    public Iterator<SyncAction> getSyncActionIterator()
+    {
+        return db.getSyncActionIterator();
+    }
+
+    public int getSyncActionCount() { return db.getSyncActionCount(); };
+
+    public void resetSyncActions() { db.resetSyncActions(); }
+
+    public void updateSyncAction(SyncAction action) { db.updateSyncAction(action); }
 
     @Override
     public void addUser(User user)
@@ -74,7 +95,8 @@ public class SQLiteStorage implements IStorage {
 
     @Override
     public void updateInventoryCategoryInfo(int id, InventoryCategory copyFrom) {
-
+        this.removeInventoryCategory(id);
+        this.addInventoryCategory(copyFrom);
     }
 
     @Override
@@ -100,7 +122,11 @@ public class SQLiteStorage implements IStorage {
 
     @Override
     public void removeInventoryCategoryStatus(int id) {
+        db.removeInventoryCategoryStatus(id);
+    }
 
+    public void removeInventoryCategory(int id) {
+        db.removeInventoryCategory(id);
     }
 
     @Override

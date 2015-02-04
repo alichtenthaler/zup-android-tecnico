@@ -17,6 +17,7 @@ public class InventoryCategory
     public Section[] sections;
     public String created_at;
     public Pins pin;
+    public Pins marker;
     public boolean require_item_status;
 
     //@JsonIgnore(true)
@@ -29,6 +30,7 @@ public class InventoryCategory
         public String title;
         public Boolean required;
         public Field[] fields;
+        public Integer position;
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         public static class Field
@@ -42,6 +44,8 @@ public class InventoryCategory
             public Boolean required;
             public Boolean location;
             public String[] available_values;
+            public Integer minimum;
+            public Integer maximum;
         }
 
         public boolean isLocationSection()
@@ -56,6 +60,7 @@ public class InventoryCategory
         }
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Pins
     {
         public static class Pin

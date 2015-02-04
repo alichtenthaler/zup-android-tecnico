@@ -105,7 +105,7 @@
 
                 <FrameLayout
                     android:layout_width="fill_parent"
-                    android:layout_height="150dp"
+                    android:layout_height="350dp"
                     android:id="@+id/items_mapcontainer"></FrameLayout>
             </LinearLayout>
         </ScrollView>

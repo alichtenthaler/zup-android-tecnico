@@ -1,13 +1,18 @@
 package com.ntxdev.zuptecnico.api;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.v4.content.LocalBroadcastManager;
+import android.widget.TextView;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
+import com.google.android.gms.common.api.Api;
 import com.ntxdev.zuptecnico.R;
+import com.ntxdev.zuptecnico.ZupApplication;
 import com.ntxdev.zuptecnico.api.callbacks.InventoryItemListener;
 import com.ntxdev.zuptecnico.api.callbacks.InventoryItemPublishedListener;
 import com.ntxdev.zuptecnico.api.callbacks.InventoryItemsListener;
@@ -32,11 +37,16 @@ import com.ntxdev.zuptecnico.entities.collections.InventoryItemCollection;
 import com.ntxdev.zuptecnico.entities.collections.SingleCaseCollection;
 import com.ntxdev.zuptecnico.entities.collections.SingleInventoryCategoryCollection;
 import com.ntxdev.zuptecnico.entities.collections.SingleInventoryItemCollection;
+import com.ntxdev.zuptecnico.entities.collections.SingleUserCollection;
 import com.ntxdev.zuptecnico.entities.responses.DeleteInventoryItemResponse;
 import com.ntxdev.zuptecnico.entities.responses.EditInventoryItemResponse;
 import com.ntxdev.zuptecnico.entities.responses.PublishInventoryItemResponse;
+import com.ntxdev.zuptecnico.entities.responses.TransferCaseStepResponse;
+import com.ntxdev.zuptecnico.entities.responses.UpdateCaseStepResponse;
 import com.ntxdev.zuptecnico.storage.IStorage;
 import com.ntxdev.zuptecnico.storage.SQLiteStorage;
+import com.ntxdev.zuptecnico.util.InventoryItemLoaderTask;
+import com.ntxdev.zuptecnico.util.UserLoaderTask;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -60,6 +70,7 @@ public class Zup
         public boolean loaded;
     }
 
+    private boolean isSyncing = false;
     private SimpleDateFormat dateFormat;
     private ZupClient client;
     private static Zup instance;
@@ -72,7 +83,7 @@ public class Zup
     private String sessionToken;
     private int sessionUserId;
 
-    private ArrayList<SyncAction> syncActions;
+    //private ArrayList<SyncAction> syncActions;
     private Hashtable<Integer, Integer> categoriesPinResources;
 
     private InventoryItemPublishedListener inventoryItemPublishedListener;
@@ -85,9 +96,20 @@ public class Zup
         this.bitmaps = new ArrayList<BitmapResource>();
         this.dateFormat = new SimpleDateFormat("dd/MM/yyyy");
         this.notificationCenter = new ZupNotificationCenter();
-        this.syncActions = new ArrayList<SyncAction>();
+        //this.syncActions = new ArrayList<SyncAction>();
         this.categoriesPinResources = new Hashtable<Integer, Integer>();
         this.lastJobId = 0;
+    }
+
+    public void clearStorage()
+    {
+        if(this.storage == null)
+            return;
+
+        this.storage.clear();
+        this.sessionToken = null;
+        this.sessionUserId = 0;
+        //this.syncActions.clear();
     }
 
     public void initStorage(Context context)
@@ -96,6 +118,7 @@ public class Zup
             return;
 
         this.storage = new SQLiteStorage(context);
+        this.storage.resetSyncActions();
 
         sessionToken = storage.getSessionToken();
         sessionUserId = storage.getSessionUserId();
@@ -117,9 +140,19 @@ public class Zup
         this.resourceLoadedListener = listener;
     }
 
+    public int getSyncActionCount()
+    {
+        return this.storage.getSyncActionCount();
+    }
+
+    public Iterator<SyncAction> getSyncActions()
+    {
+        return this.storage.getSyncActionIterator();
+    }
+
     public void addSyncAction(SyncAction action)
     {
-        this.syncActions.add(action);
+        this.storage.addSyncAction(action);
     }
 
     public ZupNotificationCenter getNotificationCenter()
@@ -134,6 +167,9 @@ public class Zup
 
     public String formatIsoDate(String isoDate)
     {
+        if(isoDate == null)
+            return "";
+
         try {
             ISO8601DateFormat fmt = new ISO8601DateFormat();
             Date date = fmt.parse(isoDate);
@@ -143,6 +179,20 @@ public class Zup
         catch (ParseException ex)
         {
             return isoDate;
+        }
+    }
+
+    public Date getIsoDate(String isoDate)
+    {
+        try {
+            ISO8601DateFormat fmt = new ISO8601DateFormat();
+            Date date = fmt.parse(isoDate);
+
+            return date;
+        }
+        catch (ParseException ex)
+        {
+            return null;
         }
     }
 
@@ -260,7 +310,10 @@ public class Zup
                     runOnMainThread(new Runnable() {
                         @Override
                         public void run() {
-                            listener.onLoginError(result.statusCode, result.result.error);
+                            if(result.result != null && result.result.error != null)
+                                listener.onLoginError(result.statusCode, result.result.error);
+                            else
+                                listener.onLoginError(result.statusCode, "Não foi possível conectar ao servidor");
                         }
                     });
                 }
@@ -347,8 +400,15 @@ public class Zup
         if(category == null || categoriesPinResources.containsKey(categoryId) || category.pin == null)
             return;
 
+        final InventoryCategory.Pins pin;
+        if(category.plot_format != null && category.plot_format.equals("marker"))
+            pin = category.marker;
+        else
+            pin = category.pin;
+
+
         final BitmapResource resource = new BitmapResource();
-        resource.url = category.pin._default.mobile;
+        resource.url = pin._default.mobile;
         resource.id = getFreeResourceId();
         bitmaps.add(resource);
 
@@ -356,7 +416,7 @@ public class Zup
         Thread worker = new Thread(new Runnable() {
             @Override
             public void run() {
-                client.loadResource(category.pin._default.mobile, resource); // STAHP
+                client.loadResource(pin._default.mobile, resource); // STAHP
                 if(resource.loaded) {
                     Zup.runOnMainThread(new Runnable() {
                         @Override
@@ -430,6 +490,8 @@ public class Zup
         for(int i = 0; i < result.statuses.length; i++)
         {
             InventoryCategoryStatus status = result.statuses[i];
+
+            this.storage.removeInventoryCategoryStatus(status.id);
             this.storage.addInventoryCategoryStatus(status);
         }
     }
@@ -510,6 +572,7 @@ public class Zup
         if(storage.hasInventoryCategory(category.id))
         {
             storage.updateInventoryCategoryInfo(category.id, category);
+            requestInventoryCategoryStatuses(category.id);
         }
         else
         {
@@ -523,14 +586,34 @@ public class Zup
 
     private void inventoryItemCategoriesReceived(InventoryCategoryCollection collection)
     {
+        if(collection == null)
+        {
+            return;
+        }
+
+        ArrayList<Integer> idsToRemove = new ArrayList<Integer>();
+        Iterator<InventoryCategory> categories = this.storage.getInventoryCategoriesIterator();
+        while(categories.hasNext())
+        {
+            InventoryCategory cat = categories.next();
+            idsToRemove.add(cat.id);
+        }
+
         for(int i = 0; i < collection.categories.length; i++)
         {
             InventoryCategory category = collection.categories[i];
             inventoryItemCategoryInfoReceived(category);
 
+            idsToRemove.remove((Object)new Integer(category.id));
+
             // TODO isso também não deveria estar aqui
             //refreshInventoryItemCategoryInfo(category.id);
             //refreshInventoryItemCategoryForm(category.id);
+        }
+
+        for(Integer id : idsToRemove)
+        {
+            this.storage.removeInventoryCategory(id);
         }
     }
 
@@ -547,8 +630,11 @@ public class Zup
 
     public boolean hasSyncActionRelatedToInventoryItem(int id)
     {
-        for(SyncAction action : syncActions)
+        Iterator<SyncAction> actions = storage.getSyncActionIterator();
+        while(actions.hasNext())
         {
+            SyncAction action = actions.next();
+
             if(action instanceof PublishInventoryItemSyncAction && ((PublishInventoryItemSyncAction)action).item.id == id)
                 return true;
             else if(action instanceof EditInventoryItemSyncAction && ((EditInventoryItemSyncAction)action).item.id == id)
@@ -562,12 +648,22 @@ public class Zup
 
     public void sync()
     {
+        if(this.isSyncing)
+            return;
+
+        broadcastAction(SyncAction.ACTION_SYNC_BEGIN);
+
+        this.isSyncing = true;
         new Thread(new Runnable() {
             @Override
             public void run() {
                 ArrayList<SyncAction> actionsToRemove = new ArrayList<SyncAction>();
-                for(SyncAction action : syncActions)
+
+                Iterator<SyncAction> actions = storage.getSyncActionIterator();
+                while(actions.hasNext())
                 {
+                    SyncAction action = actions.next();
+
                     if(action.perform()) {
                         actionsToRemove.add(action);
                         if(action instanceof PublishInventoryItemSyncAction && Zup.this.inventoryItemPublishedListener != null)
@@ -580,20 +676,34 @@ public class Zup
 
                 for(SyncAction action : actionsToRemove)
                 {
-                    Zup.this.syncActions.remove(action);
+                    Zup.this.storage.removeSyncAction(action.id);
                 }
+
+                isSyncing = false;
+                broadcastAction(SyncAction.ACTION_SYNC_END);
             }
         }).start();
+    }
 
-        /*Iterator<InventoryItem> itemIterator = getInventoryItems();
-        while(itemIterator.hasNext())
-        {
-            InventoryItem item = itemIterator.next();
-            if(item.isLocal)
-            {
-                this.publishInventoryItem(item);
-            }
-        }*/
+    public boolean isSyncing()
+    {
+        return isSyncing;
+    }
+
+    public void updateSyncAction(SyncAction action)
+    {
+        storage.updateSyncAction(action);
+    }
+
+    void broadcastAction(String action)
+    {
+        if(ZupApplication.getContext() == null)
+            return;
+
+        Intent intent = new Intent(action);
+
+        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(ZupApplication.getContext());
+        manager.sendBroadcast(intent);
     }
 
     public boolean publishInventoryItem(final InventoryItem item)
@@ -669,6 +779,15 @@ public class Zup
     {
         ApiHttpResult<SingleInventoryItemCollection> result = client.retrieveInventoryItemInfo(categoryId, itemId);
         return result;
+    }
+
+    public InventoryItem retrieveSingleInventoryItemInfo(int categoryId, int itemId)
+    {
+        ApiHttpResult<SingleInventoryItemCollection> result = client.retrieveInventoryItemInfo(categoryId, itemId);
+        if(result == null || result.result == null)
+            return null;
+
+        return result.result.item;
     }
 
     public int searchInventoryItems(final int page, final int per_page, final int[] inventory_category_ids, final Integer[] inventory_statuses_ids, final String address, final String title, final Calendar creation_from, final Calendar creation_to, final Calendar modification_from, final Calendar modification_to, final Float latitude, final Float longitude, final InventoryItemsListener listener, final JobFailedListener failedListener)
@@ -769,6 +888,12 @@ public class Zup
         return result.result;
     }
 
+    public Flow.StepCollection retrieveFlowSteps(int flowId)
+    {
+        ApiHttpResult<Flow.StepCollection> result = client.retrieveFlowSteps(flowId);
+        return result.result;
+    }
+
     public boolean hasFlow(int id)
     {
         return storage.hasFlow(id);
@@ -809,6 +934,49 @@ public class Zup
     {
         ApiHttpResult<DeleteInventoryItemResponse> result = client.deleteInventoryItem(categoryId, itemId);
         return result.statusCode == 200;
+    }
+
+    public boolean transferCaseStep(int caseId, int stepId, int responsible_user_id)
+    {
+        ApiHttpResult<TransferCaseStepResponse> result = client.transferCaseStep(caseId, stepId, responsible_user_id);
+        return result.statusCode == 200;
+    }
+
+    public Case updateCaseStep(int caseId, int stepId, int stepVersion, Hashtable<Integer, Object> fields)
+    {
+        ApiHttpResult<UpdateCaseStepResponse> result = client.updateCaseStep(caseId, stepId, stepVersion, fields);
+        if(result.statusCode == 200)
+            return result.result._case;
+        else
+            return null;
+    }
+
+    public User retrieveUserInfo(int userId)
+    {
+        ApiHttpResult<SingleUserCollection> result = client.retrieveUser(userId);
+        if(result.statusCode == 200)
+            return result.result.user;
+        else
+            return null;
+    }
+
+    public void showUsernameInto(TextView textView, String prefix, int userid)
+    {
+        UserLoaderTask task = new UserLoaderTask(textView, prefix);
+        task.execute(userid);
+    }
+
+    public void showInventoryItemTitleInto(TextView textView, String prefix, int categoryId, int id)
+    {
+        if(hasInventoryItem(id))
+            textView.setText(prefix + getInventoryItem(id).title);
+        else if(ZupCache.hasInventoryItem(id))
+            textView.setText(prefix + ZupCache.getInventoryItem(id).title);
+        else
+        {
+            InventoryItemLoaderTask task = new InventoryItemLoaderTask(textView, prefix);
+            task.execute(categoryId, id);
+        }
     }
 
     public int generateJobId()
@@ -899,6 +1067,54 @@ public class Zup
     {
         return null;
         //return this.storage.getDocument(id);
+    }
+
+    public int getCaseStatusDrawable(String status)
+    {
+        if(status.equals("pending"))
+            return R.drawable.documentos_lista_status_icon_pendente;
+        else if(status.equals("active"))
+            return R.drawable.documentos_lista_status_icon_andamento;
+        else if(status.equals("finished"))
+            return R.drawable.documentos_lista_status_icon_concluido;
+        else
+            return R.drawable.documentos_lista_status_icon_sync;
+    }
+
+    public int getCaseStatusBigDrawable(String status)
+    {
+        if(status.equals("pending"))
+            return R.drawable.documento_detalhes_status_icon_pendente;
+        else if(status.equals("active"))
+            return R.drawable.documento_detalhes_status_icon_andamento;
+        else if(status.equals("finished"))
+            return R.drawable.documento_detalhes_status_icon_concluido;
+        else
+            return R.drawable.documento_detalhes_status_icon_sync;
+    }
+
+    public int getCaseStatusColor(String status)
+    {
+        if(status.equals("pending"))
+            return 0xffff6049;
+        else if(status.equals("active"))
+            return 0xffffac2d;
+        else if(status.equals("finished"))
+            return 0xff78c953;
+        else
+            return 0xff999999;
+    }
+
+    public String getCaseStatusString(String status)
+    {
+        if(status.equals("pending"))
+            return "Pendente";
+        else if(status.equals("active"))
+            return "Em andamento";
+        else if(status.equals("finished"))
+            return "Concluído";
+        else
+            return "Aguardando sincronização";
     }
 
     public int getDocumentStateDrawable(Document.State state)

@@ -1,5 +1,6 @@
 package com.ntxdev.zuptecnico.storage;
 
+import com.ntxdev.zuptecnico.api.SyncAction;
 import com.ntxdev.zuptecnico.entities.Document;
 import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
@@ -44,6 +45,8 @@ public interface IStorage {
 
     public void removeInventoryCategoryStatus(int id);
 
+    public void removeInventoryCategory(int id);
+
     public Iterator<InventoryCategoryStatus> getInventoryCategoryStatusIterator();
 
     public Iterator<InventoryCategoryStatus> getInventoryCategoryStatusIterator(int category);
@@ -75,4 +78,18 @@ public interface IStorage {
     public void updateFlow(int id, Flow data);
 
     public void addFlow(Flow flow);
+
+    public void clear();
+
+    public void addSyncAction(SyncAction action);
+
+    public void removeSyncAction(int id);
+
+    public Iterator<SyncAction> getSyncActionIterator();
+
+    public int getSyncActionCount();
+
+    public void resetSyncActions();
+
+    public void updateSyncAction(SyncAction action);
 }

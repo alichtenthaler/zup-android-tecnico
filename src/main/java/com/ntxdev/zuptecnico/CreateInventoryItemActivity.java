@@ -2,31 +2,41 @@ package com.ntxdev.zuptecnico;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
+import android.app.Dialog;
+import android.app.TimePickerDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
+import android.database.DataSetObserver;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.Address;
 import android.location.Geocoder;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
 import android.text.InputType;
 import android.util.Base64;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
 import com.kbeanie.imagechooser.api.ChooserType;
@@ -37,6 +47,7 @@ import com.ntxdev.zuptecnico.api.EditInventoryItemSyncAction;
 import com.ntxdev.zuptecnico.api.PublishInventoryItemSyncAction;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.api.ZupCache;
+import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
@@ -45,24 +56,129 @@ import com.ntxdev.zuptecnico.ui.UIHelper;
 import com.ntxdev.zuptecnico.util.GPSUtils;
 import com.ntxdev.zuptecnico.util.IOUtil;
 
+import org.w3c.dom.Text;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+
+import br.com.rezende.mascaras.Mask;
 
 /**
  * Created by igorlira on 3/9/14.
  */
 public class CreateInventoryItemActivity extends ActionBarActivity implements ImageChooserListener {
+
+    class SelectDialogSearchTask extends AsyncTask<String, Void, View[]>
+    {
+        InventoryCategory.Section.Field field;
+        View fieldView;
+        View dialogView;
+        AlertDialog dialog;
+
+        public SelectDialogSearchTask(InventoryCategory.Section.Field field, View fieldView, View dialogView, AlertDialog dialog)
+        {
+            this.field = field;
+            this.fieldView = fieldView;
+            this.dialogView = dialogView;
+            this.dialog = dialog;
+        }
+
+        @Override
+        protected void onPreExecute()
+        {
+            super.onPreExecute();
+
+            ViewGroup container = (ViewGroup) dialogView.findViewById(R.id.dialog_select_items_container);
+            container.removeAllViews();
+
+            TextView itemView = new TextView(CreateInventoryItemActivity.this);
+            itemView.setClickable(true);
+            itemView.setText("Carregando...");
+            itemView.setBackgroundResource(R.drawable.sidebar_cell);
+            itemView.setPadding(20, 20, 20, 20);
+
+            container.addView(itemView);
+        }
+
+        @Override
+        protected View[] doInBackground(String... strings)
+        {
+            String filter = strings[0];
+
+            ArrayList<View> result = new ArrayList<View>();
+
+            if(field.available_values != null) {
+                for (int i = 0; i < field.available_values.length; i++) {
+                    if(filter != null && filter.length() > 0 && !field.available_values[i].toLowerCase().contains(filter.toLowerCase()))
+                        continue;
+
+                    View separator = new View(CreateInventoryItemActivity.this);
+                    separator.setBackgroundColor(0xffcccccc);
+                    separator.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
+
+                    //container.addView(separator);
+
+                    TextView itemView = new TextView(CreateInventoryItemActivity.this);
+                    itemView.setClickable(true);
+                    itemView.setText(field.available_values[i]);
+                    itemView.setBackgroundResource(R.drawable.sidebar_cell);
+                    itemView.setPadding(20, 20, 20, 20);
+
+                    //container.addView(itemView);
+
+                    itemView.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            dialog.dismiss();
+
+                            TextView tv = (TextView)view;
+
+                            TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
+                            fieldValue.setText(tv.getText());
+                            fieldValue.setTag(tv.getText());
+                        }
+                    });
+
+                    result.add(separator);
+                    result.add(itemView);
+                }
+            }
+
+            return result.toArray(new View[0]);
+        }
+
+        @Override
+        protected void onPostExecute(View[] result)
+        {
+            super.onPostExecute(result);
+
+            ViewGroup container = (ViewGroup) dialogView.findViewById(R.id.dialog_select_items_container);
+            container.removeAllViews();
+
+            for (int i = 0; i < result.length; i++) {
+                container.addView(result[i]);
+            }
+        }
+    }
+
     private static final int PICK_LOCATION = 1;
     private static final int PICK_IMAGE = 2;
 
     public static final int REQUEST_CREATE_ITEM = 1;
 
     public static final int RESULT_ITEM_SAVED = 1;
+
+    private static final String URL_PATTERN = "^(https?:\\/\\/)?([\\da-zA-Z0-9\\.-]+)\\.([a-zA-Z0-9\\.]{2,6})([\\/\\w \\.-]*)*\\/?$";
+    private static final String EMAIL_PATTERN = "[a-z0-9A-Z!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9A-Z!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9A-Z](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?";
 
     boolean createMode;
     InventoryCategory category;
@@ -74,6 +190,8 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
     private ImageChooserManager imageChooserManager;
     public String filePath;
+
+    private SelectDialogSearchTask searchTask = null;
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -104,6 +222,81 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
         if (category != null) {
             buildPage();
         }
+    }
+
+    boolean validateField(InventoryCategory.Section.Field field, ViewGroup fieldView)
+    {
+        Object value = getFieldValue(fieldView);
+        if(value == null)
+            return true;
+
+        boolean validationResult;
+
+        if(field.kind.equals("cpf"))
+        {
+            validationResult = value.toString().length() == "000.000.000-00".length();
+        }
+        else if(field.kind.equals("cnpj"))
+        {
+            validationResult = value.toString().length() == "00.000.000/0000-00".length();
+        }
+        else if(field.kind.equals("url"))
+        {
+            validationResult = value.toString().matches(URL_PATTERN);
+        }
+        else if(field.kind.equals("email"))
+        {
+            validationResult = value.toString().matches(EMAIL_PATTERN);
+        }
+        else
+            validationResult = true;
+
+        boolean minimumResult;
+        boolean maximumResult;
+
+        if(field.kind.equals("integer") || field.kind.equals("years") || field.kind.equals("months") || field.kind.equals("days") || field.kind.equals("hours") || field.kind.equals("seconds"))
+        {
+            int val = (Integer) value;
+            if(field.minimum != null)
+                minimumResult = val >= field.minimum;
+            else
+                minimumResult = true;
+
+            if(field.maximum != null)
+                maximumResult = val <= field.maximum;
+            else
+                maximumResult = true;
+        }
+        else if(field.kind.equals("decimal") || field.kind.equals("meters") || field.kind.equals("centimeters") || field.kind.equals("kilometers") || field.kind.equals("angle"))
+        {
+            float val = (Float) value;
+            if(field.minimum != null)
+                minimumResult = val >= field.minimum;
+            else
+                minimumResult = true;
+
+            if(field.maximum != null)
+                maximumResult = val <= field.maximum;
+            else
+                maximumResult = true;
+        }
+        else
+        {
+            String val = value.toString();
+
+            if(field.minimum != null)
+                minimumResult = val.length() >= field.minimum;
+            else
+                minimumResult = true;
+
+            if(field.maximum != null)
+                maximumResult = val.length() <= field.maximum;
+            else
+                maximumResult = true;
+        }
+
+        boolean rangeResult = minimumResult && maximumResult;
+        return validationResult && rangeResult;
     }
 
     public void finishEditing(View view)
@@ -144,7 +337,7 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
             Object value = getFieldValue(childContainer);
 
-            if(((field.required != null && field.required) || (section.required != null && section.required)) && (value == null)) {
+            if((((field.required != null && field.required) || (section.required != null && section.required)) && (value == null)) || (value != null && !validateField(field, childContainer))) {
                 fieldTitle.setTextColor(0xffff0000);
                 validationFailed = true;
 
@@ -292,12 +485,24 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
             if (result.size() > 0)
                 value = result;
         }
-        else if(field.kind.equals("integer") || field.kind.equals("meters") || field.kind.equals("centimeters") || field.kind.equals("kilometers") || field.kind.equals("years") || field.kind.equals("months") || field.kind.equals("days") || field.kind.equals("hours") || field.kind.equals("seconds") || field.kind.equals("angle"))
+        else if(field.kind.equals("integer") || field.kind.equals("years") || field.kind.equals("months") || field.kind.equals("days") || field.kind.equals("hours") || field.kind.equals("seconds"))
         {
             TextView txtValue = (TextView) childContainer.findViewById(R.id.inventory_item_text_value);
             try
             {
                 value = Integer.parseInt(txtValue.getText().toString());
+            }
+            catch (NumberFormatException ex)
+            {
+                value = null;
+            }
+        }
+        else if(field.kind.equals("decimal") || field.kind.equals("meters") || field.kind.equals("centimeters") || field.kind.equals("kilometers") || field.kind.equals("angle"))
+        {
+            TextView txtValue = (TextView) childContainer.findViewById(R.id.inventory_item_text_value);
+            try
+            {
+                value = Float.parseFloat(txtValue.getText().toString());
             }
             catch (NumberFormatException ex)
             {
@@ -328,7 +533,15 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
             value = result;
         }
-        else if(field.kind == null || field.kind.equals("text"))
+        else if(field.kind.equals("select") || field.kind.equals("date") || field.kind.equals("time"))
+        {
+            TextView txtValue = (TextView) childContainer.findViewById(R.id.inventory_item_text_value);
+
+            String tvalue = (String) txtValue.getTag();
+            if(tvalue != null && tvalue.length() > 0)
+                value = tvalue;
+        }
+        else if(field.kind == null || field.kind.equals("text") || field.kind.equals("cpf") || field.kind.equals("cnpj") || field.kind.equals("url") || field.kind.equals("email"))
         {
             TextView txtValue = (TextView) childContainer.findViewById(R.id.inventory_item_text_value);
             if(txtValue.getText().length() > 0)
@@ -376,6 +589,37 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                 statusesContainer.setTag(R.id.inventory_item_create_is_status_field, true);
                 container.addView(statusesContainer);
             }
+
+            Arrays.sort(category.sections, new Comparator<InventoryCategory.Section>() {
+                @Override
+                public int compare(InventoryCategory.Section section, InventoryCategory.Section section2) {
+                    int pos1 = 0;
+                    int pos2 = 0;
+
+                    if(section.position != null)
+                    {
+                        pos1 = section.position;
+                    }
+                    if(section2.position != null)
+                    {
+                        pos2 = section2.position;
+                    }
+
+                    if(section.position == null)
+                        pos1 = pos2;
+
+                    if(section2.position == null)
+                        pos2 = pos1;
+
+                    if(pos1 < pos2)
+                        return -1;
+                    else if(pos1 == pos2)
+                        return 0;
+                    else
+                        return 1;
+                }
+            });
+
             for (int i = 0; i < category.sections.length; i++) {
                 InventoryCategory.Section section = category.sections[i];
                 ViewGroup sectionHeader = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_section_header, container, false);
@@ -428,6 +672,36 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
                     container.addView(fieldView);
                 }
+
+                Arrays.sort(section.fields, new Comparator<InventoryCategory.Section.Field>() {
+                    @Override
+                    public int compare(InventoryCategory.Section.Field section, InventoryCategory.Section.Field section2) {
+                        int pos1 = 0;
+                        int pos2 = 0;
+
+                        if(section.position != null)
+                        {
+                            pos1 = section.position;
+                        }
+                        if(section2.position != null)
+                        {
+                            pos2 = section2.position;
+                        }
+
+                        if(section.position == null)
+                            pos1 = pos2;
+
+                        if(section2.position == null)
+                            pos2 = pos1;
+
+                        if(pos1 < pos2)
+                            return -1;
+                        else if(pos1 == pos2)
+                            return 0;
+                        else
+                            return 1;
+                    }
+                });
 
                 for (int j = 0; j < section.fields.length; j++) {
                     final InventoryCategory.Section.Field field = section.fields[j];
@@ -485,7 +759,14 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                                 button.setText(field.available_values[x]);
                                 button.setTag(R.id.tag_button_value, field.available_values[x]);
 
-                                if(!createMode && item.getFieldValue(field.id) != null && item.getFieldValue(field.id).equals(field.available_values[x]))
+                                boolean contains = false;
+
+                                if(!createMode && item.getFieldValue(field.id) != null && field.available_values[x] != null) {
+                                    ArrayList<String> selected = (ArrayList<String>) item.getFieldValue(field.id);
+                                    contains = selected.contains(field.available_values[x]);
+                                }
+
+                                if(!createMode && item.getFieldValue(field.id) != null && contains)
                                     button.setChecked(true);
 
                                 radiocontainer.addView(button);
@@ -514,7 +795,7 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
                         container.addView(fieldView);
                     }
-                    else if(field.kind.equals("integer") || field.kind.equals("meters") || field.kind.equals("centimeters") || field.kind.equals("kilometers") || field.kind.equals("years") || field.kind.equals("months") || field.kind.equals("days") || field.kind.equals("hours") || field.kind.equals("seconds") || field.kind.equals("angle"))
+                    else if(field.kind.equals("decimal") || field.kind.equals("integer") || field.kind.equals("meters") || field.kind.equals("centimeters") || field.kind.equals("kilometers") || field.kind.equals("years") || field.kind.equals("months") || field.kind.equals("days") || field.kind.equals("hours") || field.kind.equals("seconds") || field.kind.equals("angle"))
                     {
                         ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_text_edit, container, false);
                         fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
@@ -523,9 +804,15 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                         EditText fieldValue = (EditText) fieldView.findViewById(R.id.inventory_item_text_value);
                         TextView fieldExtra = (TextView) fieldView.findViewById(R.id.inventory_item_text_extra);
 
+                        int flags = InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED;
+                        if(field.kind.equals("decimal") || field.kind.equals("meters") || field.kind.equals("centimeters") || field.kind.equals("kilometers") || field.kind.equals("angle"))
+                        {
+                            flags |= InputType.TYPE_NUMBER_FLAG_DECIMAL;
+                        }
+
                         fieldTitle.setText(label);
                         fieldValue.setLayoutParams(new LinearLayout.LayoutParams(100, ViewGroup.LayoutParams.WRAP_CONTENT));
-                        fieldValue.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED);
+                        fieldValue.setInputType(flags);
 
                         String pkgName = this.getClass().getPackage().getName();
                         int resId = getResources().getIdentifier("inventory_item_extra_" + field.kind, "string", pkgName);
@@ -534,6 +821,121 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                             fieldExtra.setVisibility(View.VISIBLE);
                             fieldExtra.setText(getResources().getText(resId));
                         }
+
+                        if(!createMode && item.getFieldValue(field.id) != null)
+                            fieldValue.setText(item.getFieldValue(field.id).toString());
+
+                        container.addView(fieldView);
+                    }
+                    else if(field.kind.equals("select"))
+                    {
+                        final ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_select_edit, container, false);
+                        fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
+
+                        TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
+                        TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
+
+                        fieldTitle.setText(label);
+
+                        if(!createMode && item.getFieldValue(field.id) != null) {
+                            fieldValue.setText(item.getFieldValue(field.id).toString());
+                            fieldValue.setTag(item.getFieldValue(field.id).toString());
+                        }
+                        else
+                            fieldValue.setText("Escolha uma opção...");
+
+                        fieldValue.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                createSelectDialog(field, fieldView);
+                            }
+                        });
+
+                        container.addView(fieldView);
+                    }
+                    else if(field.kind.equals("date"))
+                    {
+                        final ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_select_edit, container, false);
+                        fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
+
+                        TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
+                        TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
+
+                        fieldTitle.setText(label);
+
+                        if(!createMode && item.getFieldValue(field.id) != null) {
+                            fieldValue.setText(item.getFieldValue(field.id).toString());
+                            fieldValue.setTag(item.getFieldValue(field.id).toString());
+                        }
+                        else
+                            fieldValue.setText("Escolha uma data...");
+
+                        fieldValue.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                createDatePickerDialog(field, fieldView);
+                            }
+                        });
+
+                        container.addView(fieldView);
+                    }
+                    else if(field.kind.equals("time"))
+                    {
+                        final ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_select_edit, container, false);
+                        fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
+
+                        TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
+                        TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
+
+                        fieldTitle.setText(label);
+
+                        if(!createMode && item.getFieldValue(field.id) != null) {
+                            fieldValue.setText(item.getFieldValue(field.id).toString());
+                            fieldValue.setTag(item.getFieldValue(field.id).toString());
+                        }
+                        else
+                            fieldValue.setText("Escolha um tempo...");
+
+                        fieldValue.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                createTimePickerDialog(field, fieldView);
+                            }
+                        });
+
+                        container.addView(fieldView);
+                    }
+                    else if(field.kind.equals("cpf") || field.kind.equals("cnpj"))
+                    {
+                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_text_edit, container, false);
+                        fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
+
+                        TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
+                        TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
+
+                        fieldValue.setInputType(InputType.TYPE_CLASS_NUMBER);
+                        if(field.kind.equals("cpf"))
+                            fieldValue.addTextChangedListener(Mask.insert("###.###.###-##", (EditText)fieldValue));
+                        else if(field.kind.equals("cnpj"))
+                            fieldValue.addTextChangedListener(Mask.insert("##.###.###/####-##", (EditText)fieldValue));
+
+                        fieldTitle.setText(label);
+                        if(!createMode && item.getFieldValue(field.id) != null)
+                            fieldValue.setText(item.getFieldValue(field.id).toString());
+
+                        container.addView(fieldView);
+                    }
+                    else if(field.kind.equals("url") || field.kind.equals("email"))
+                    {
+                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_text_edit, container, false);
+                        fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
+
+                        TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
+                        TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
+
+                        fieldTitle.setText(label);
+                        if(!createMode && item.getFieldValue(field.id) != null)
+                            fieldValue.setText(item.getFieldValue(field.id).toString());
 
                         container.addView(fieldView);
                     }
@@ -561,6 +963,205 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                 }
             }
         }
+    }
+
+    private void createDatePickerDialog(final InventoryCategory.Section.Field field, final View fieldView)
+    {
+        String label;
+        if(field.label != null) {
+            label = field.label;
+        } else {
+            label = field.title;
+        }
+
+        Calendar cal = Calendar.getInstance();
+
+        TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
+        final String oldstring = fieldValue.getText().toString();
+        final String oldvalue = (String) fieldValue.getTag();
+        if(oldvalue != null)
+        {
+            try {
+                String[] chunks = oldvalue.split("/");
+
+                cal.set(Integer.parseInt(chunks[2]), Integer.parseInt(chunks[1]) - 1, Integer.parseInt(chunks[0]));
+            } catch (Exception ex) { }
+        }
+
+        final DatePickerDialog dialog;
+        dialog = new DatePickerDialog(CreateInventoryItemActivity.this, new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(DatePicker datePicker, int year, int month, int day) {
+                month++;
+
+                String daystr = Integer.toString(day);
+                if(daystr.length() < 2)
+                    daystr = "0" + daystr;
+
+                String monthstr = Integer.toString(month);
+                if(monthstr.length() < 2)
+                    monthstr = "0" + monthstr;
+
+                String text = daystr + "/" + monthstr + "/" + year;
+
+                TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
+                fieldValue.setText(text);
+                fieldValue.setTag(text);
+
+            }
+        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
+
+        dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialogInterface) {
+                TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
+                fieldValue.setText(oldstring);
+                fieldValue.setTag(oldvalue);
+            }
+        });
+
+        dialog.setTitle(label);
+
+        dialog.setCancelable(true);
+        dialog.show();
+    }
+
+    private void createTimePickerDialog(final InventoryCategory.Section.Field field, final View fieldView)
+    {
+        String label;
+        if(field.label != null) {
+            label = field.label;
+        } else {
+            label = field.title;
+        }
+
+        Calendar cal = Calendar.getInstance();
+        int hour = cal.get(Calendar.HOUR_OF_DAY);
+        int minute = cal.get(Calendar.MINUTE);
+
+        TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
+        final String oldstring = fieldValue.getText().toString();
+        final String oldvalue = (String) fieldValue.getTag();
+        if(oldvalue != null)
+        {
+            try {
+                String[] chunks = oldvalue.split(":");
+
+                hour = Integer.parseInt(chunks[0]);
+                minute = Integer.parseInt(chunks[1]);
+            } catch (Exception ex) { }
+        }
+
+        final TimePickerDialog dialog = new TimePickerDialog(this, new TimePickerDialog.OnTimeSetListener() {
+            @Override
+            public void onTimeSet(TimePicker timePicker, int hour, int minute) {
+                String hourstr = Integer.toString(hour);
+                if(hourstr.length() < 2)
+                    hourstr = "0" + hourstr;
+
+                String minutestr = Integer.toString(minute);
+                if(minutestr.length() < 2)
+                    minutestr = "0" + minutestr;
+
+                String text = hourstr + ":" + minutestr;
+
+                TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
+                fieldValue.setText(text);
+                fieldValue.setTag(text);
+            }
+        }, hour, minute, true);
+
+        dialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialogInterface) {
+                TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
+                fieldValue.setText(oldstring);
+                fieldValue.setTag(oldvalue);
+            }
+        });
+
+        dialog.setTitle(label);
+
+        dialog.setCancelable(true);
+        dialog.show();
+    }
+
+    private void createSelectDialog(final InventoryCategory.Section.Field field, final View fieldView)
+    {
+        String label;
+        if(field.label != null) {
+            label = field.label;
+        } else {
+            label = field.title;
+        }
+
+        final View view = getLayoutInflater().inflate(R.layout.dialog_select_items, null);
+        final EditText input = (EditText) view.findViewById(R.id.dialog_select_items_search);
+
+        final AlertDialog.Builder builder = new AlertDialog.Builder(CreateInventoryItemActivity.this);
+        builder.setTitle(label);
+        builder.setView(view);
+
+        builder.setCancelable(true);
+        builder.setNegativeButton("Cancelar", null);
+
+        final AlertDialog dialog = builder.show();
+
+        this.refreshSelectDialog(null, field, fieldView, view, dialog);
+
+        input.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View aview, int i, KeyEvent keyEvent) {
+                refreshSelectDialog(input.getText().toString(), field, fieldView, view, dialog);
+
+                return false;
+            }
+        });
+    }
+
+    private void refreshSelectDialog(String filter, InventoryCategory.Section.Field field, final View fieldView, View dialogView, final AlertDialog dialog)
+    {
+        if(this.searchTask != null)
+            this.searchTask.cancel(true);
+
+        this.searchTask = new SelectDialogSearchTask(field, fieldView, dialogView, dialog);
+        this.searchTask.execute(filter);
+        /*ViewGroup container = (ViewGroup) dialogView.findViewById(R.id.dialog_select_items_container);
+        container.removeAllViews();
+
+        if(field.available_values != null) {
+            for (int i = 0; i < field.available_values.length; i++) {
+                if(filter != null && filter.length() > 0 && !field.available_values[i].toLowerCase().contains(filter.toLowerCase()))
+                    continue;
+
+                View separator = new View(this);
+                separator.setBackgroundColor(0xffcccccc);
+                separator.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
+
+                container.addView(separator);
+
+                TextView itemView = new TextView(this);
+                itemView.setClickable(true);
+                itemView.setText(field.available_values[i]);
+                itemView.setBackgroundResource(R.drawable.sidebar_cell);
+                itemView.setPadding(20, 20, 20, 20);
+
+                container.addView(itemView);
+
+                itemView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        dialog.dismiss();
+
+                        TextView tv = (TextView)view;
+
+                        TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
+                        fieldValue.setText(tv.getText());
+                        fieldValue.setTag(tv.getText());
+                    }
+                });
+            }
+        }*/
     }
 
     private void pickImage()

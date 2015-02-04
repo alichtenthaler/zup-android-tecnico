@@ -15,6 +15,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -100,6 +101,9 @@ public class PickMapLocationActivity extends ActionBarActivity implements Google
 
         @Override
         public int getCount() {
+            if(resultList == null)
+                return 0;
+
             return resultList.size();
         }
 
@@ -223,7 +227,7 @@ public class PickMapLocationActivity extends ActionBarActivity implements Google
         mapFragment = new SupportMapFragment();
         getSupportFragmentManager().beginTransaction().add(R.id.mapcontainer, mapFragment).commit();
 
-        AutoCompleteTextView tvEndereco = (AutoCompleteTextView) findViewById(R.id.pick_location_address);
+        final AutoCompleteTextView tvEndereco = (AutoCompleteTextView) findViewById(R.id.pick_location_address);
         tvEndereco.setAdapter(new AddressAdapter(this, R.layout.pick_map_location_suggestion));
         tvEndereco.setOnItemClickListener(this);
 
@@ -232,6 +236,19 @@ public class PickMapLocationActivity extends ActionBarActivity implements Google
             @Override
             public boolean onKey(View view, int i, KeyEvent keyEvent) {
                 numeroEditado(tvNumero.getText().toString());
+                return false;
+            }
+        });
+
+        tvEndereco.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View view, int i, KeyEvent keyEvent) {
+                if(keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER)
+                {
+                    InputMethodManager imm = (InputMethodManager)getSystemService(
+                            Context.INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(tvEndereco.getWindowToken(), 0);
+                }
                 return false;
             }
         });
