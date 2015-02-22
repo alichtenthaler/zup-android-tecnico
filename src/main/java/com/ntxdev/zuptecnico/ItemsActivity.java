@@ -17,7 +17,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.PopupMenu;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient;
@@ -36,7 +36,6 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.LatLngBoundsCreator;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.VisibleRegion;
@@ -58,7 +57,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
 import java.util.Iterator;
-import java.util.logging.Handler;
 
 public class ItemsActivity extends ActionBarActivity implements ResourceLoadedListener, InventoryItemPublishedListener, SearchBarListener, SingularTabHost.OnTabChangeListener, InventoryItemsListener, InfinityScrollView.OnScrollViewListener, GoogleMap.OnCameraChangeListener, JobFailedListener {
     private static final int REQUEST_SEARCH = 1;
@@ -91,6 +89,8 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
     private InventoryItem expectedPublishedItem;
     private OfflinePageLoader offlinePageLoader;
 
+    private AlertDialog _loadingCategoriesDialog;
+
     android.support.v7.widget.PopupMenu menu;
 
     Thread updateCategories = new Thread(new Runnable() {
@@ -114,6 +114,11 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
 
     void updateCategoriesMenu()
     {
+        if(_loadingCategoriesDialog != null) {
+            _loadingCategoriesDialog.dismiss();
+            _loadingCategoriesDialog = null;
+        }
+
         menu.getMenu().clear();
 
         int i = 0;
@@ -132,6 +137,20 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
                 refreshTabHost();
             }
             i++;
+        }
+
+        if(i == 0)
+        {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage("Carregando Categorias de Inventário...");
+            builder.setCancelable(false);
+
+            ProgressBar progress = new ProgressBar(this);
+            progress.setIndeterminate(true);
+
+            builder.setView(progress);
+
+            _loadingCategoriesDialog = builder.show();
         }
     }
 
@@ -864,7 +883,12 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
         for(Marker marker : this.itemMarkers.keySet())
         {
             InventoryItem item = this.itemMarkers.get(marker);
+            if(item == null)
+                return;
+
             InventoryCategory category = Zup.getInstance().getInventoryCategory(item.inventory_category_id);
+            if(category == null || category.pin == null || category.pin._default == null || category.pin._default.mobile == null)
+                return;
 
             if(category.pin._default.mobile.equals(url))
             {

@@ -1,10 +1,10 @@
-package com.ntxdev.zuptecnico.api;
+package com.ntxdev.zuptecnico_homologacao.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ntxdev.zuptecnico.entities.InventoryCategory;
-import com.ntxdev.zuptecnico.entities.InventoryItem;
-import com.ntxdev.zuptecnico.entities.responses.PublishInventoryItemResponse;
+import com.ntxdev.zuptecnico_homologacao.entities.InventoryCategory;
+import com.ntxdev.zuptecnico_homologacao.entities.InventoryItem;
+import com.ntxdev.zuptecnico_homologacao.entities.responses.PublishInventoryItemResponse;
 
 import org.json.JSONObject;
 

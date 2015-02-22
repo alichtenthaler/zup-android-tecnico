@@ -3,24 +3,21 @@ package com.ntxdev.zuptecnico;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
-import android.app.Dialog;
 import android.app.TimePickerDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.DataSetObserver;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.Address;
-import android.location.Geocoder;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
 import android.text.InputType;
 import android.util.Base64;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,8 +27,6 @@ import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListAdapter;
-import android.widget.ListView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
@@ -47,7 +42,6 @@ import com.ntxdev.zuptecnico.api.EditInventoryItemSyncAction;
 import com.ntxdev.zuptecnico.api.PublishInventoryItemSyncAction;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.api.ZupCache;
-import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
@@ -56,8 +50,6 @@ import com.ntxdev.zuptecnico.ui.UIHelper;
 import com.ntxdev.zuptecnico.util.GPSUtils;
 import com.ntxdev.zuptecnico.util.IOUtil;
 
-import org.w3c.dom.Text;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -65,7 +57,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -541,7 +532,7 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
             if(tvalue != null && tvalue.length() > 0)
                 value = tvalue;
         }
-        else if(field.kind == null || field.kind.equals("text") || field.kind.equals("cpf") || field.kind.equals("cnpj") || field.kind.equals("url") || field.kind.equals("email"))
+        else if(field.kind == null || field.kind.equals("text") || field.kind.equals("cpf") || field.kind.equals("cnpj") || field.kind.equals("url") || field.kind.equals("email") || field.kind.equals("textarea"))
         {
             TextView txtValue = (TextView) childContainer.findViewById(R.id.inventory_item_text_value);
             if(txtValue.getText().length() > 0)
@@ -946,9 +937,17 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
                         TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
 
-                        if(field.kind != null && !field.kind.equals("text")) {
+                        if(field.kind != null && !field.kind.equals("text") && !field.kind.equals("textarea")) {
                             label += " (Unknown field kind: " + field.kind + ")";
                             fieldValue.setEnabled(false);
+                        }
+
+                        if(field.kind != null && field.kind.equals("textarea")) {
+                            EditText editText = (EditText) fieldValue;
+                            editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+                            editText.setLines(3);
+                            editText.setGravity(Gravity.TOP | Gravity.LEFT);
+                            editText.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 100));
                         }
 
                         fieldTitle.setText(label);
@@ -1286,7 +1285,16 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
     void fillAddress(Address addressData)
     {
-        final String address = addressData.getThoroughfare() + ", " + addressData.getFeatureName();
+        if(addressData == null)
+            addressData = new Address(Locale.ENGLISH);
+
+        String addressTmp = "";
+        if(addressData.getThoroughfare() != null)
+            addressTmp += addressData.getThoroughfare() + ", ";
+        if(addressData.getFeatureName() != null)
+            addressTmp += addressData.getFeatureName();
+
+        final String address = addressTmp;
         final String city = addressData.getSubAdminArea();
         final String state = addressData.getAdminArea();
         final String postalCode = addressData.getPostalCode();
@@ -1346,7 +1354,7 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
             Zup.runOnMainThread(new Runnable() {
                 @Override
                 public void run() {
-                    Toast.makeText(CreateInventoryItemActivity.this, "Não foi possível obter o endereço do local.", 3).show();
+                    Toast.makeText(CreateInventoryItemActivity.this, "Não foi possível obter o endereço do local.", Toast.LENGTH_LONG).show();
                 }
             });
         }
@@ -1482,7 +1490,7 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
     void error_ui(String s)
     {
-        Toast.makeText(this, "Houve um erro ao selecionar a imagem: " + s, 5);
+        Toast.makeText(this, "Houve um erro ao selecionar a imagem: " + s, Toast.LENGTH_LONG).show();
     }
 
     @Override

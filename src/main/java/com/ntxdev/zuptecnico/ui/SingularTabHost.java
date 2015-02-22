@@ -1,7 +1,6 @@
 package com.ntxdev.zuptecnico.ui;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
@@ -12,13 +11,12 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
+
 
 import com.ntxdev.zuptecnico.R;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.jar.Attributes;
 
 
 /**

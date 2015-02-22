@@ -1,7 +1,9 @@
 package com.ntxdev.zuptecnico;
 
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
@@ -18,6 +20,7 @@ import com.ntxdev.zuptecnico.api.EditInventoryItemSyncAction;
 import com.ntxdev.zuptecnico.api.PublishInventoryItemSyncAction;
 import com.ntxdev.zuptecnico.api.SyncAction;
 import com.ntxdev.zuptecnico.api.Zup;
+import com.ntxdev.zuptecnico.api.ZupCache;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.ui.UIHelper;
 
@@ -129,7 +132,7 @@ public class SyncActivity extends ActionBarActivity
         findViewById(R.id.activity_sync_none).setVisibility(!hasAny ? View.VISIBLE : View.GONE);
     }
 
-    View setupItemView(SyncAction action)
+    View setupItemView(final SyncAction action)
     {
         View view = getLayoutInflater().inflate(R.layout.fragment_inventory_item, null);
 
@@ -188,6 +191,75 @@ public class SyncActivity extends ActionBarActivity
         stateDesc.setText(text);
         stateDesc.setBackgroundColor(color);
 
+        if(action.getError() != null) {
+            view.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    showError(action);
+                }
+            });
+            view.setClickable(true);
+        }
+
         return view;
+    }
+
+    void showError(final SyncAction action)
+    {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Erro");
+        builder.setMessage("Data: " + Zup.getInstance().getDateFormat().format(action.getDate()) + "\r\n\r\n" + action.getError());
+        builder.setPositiveButton("Tentar Novamente", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                tryAgain(action);
+            }
+        });
+        builder.setNeutralButton("Fechar", null);
+        builder.setNegativeButton("Cancelar ação", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                cancel(action);
+            }
+        });
+        builder.show();
+    }
+
+    void tryAgain(SyncAction action)
+    {
+        Zup.getInstance().performSyncAction(action);
+    }
+
+    void cancel(final SyncAction action)
+    {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("AVISO");
+        builder.setMessage("Ao cancelar uma sincronização, o item associado a ela será removido do dispositivo e ficará indisponível enquanto não houver conexão com a internet. Deseja cancelar mesmo assim?");
+        builder.setPositiveButton("Sim", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                cancelConfirm(action);
+            }
+        });
+        builder.setNegativeButton("Não", null);
+        builder.show();
+    }
+
+    void cancelConfirm(SyncAction action)
+    {
+        if(action instanceof PublishInventoryItemSyncAction)
+        {
+            PublishInventoryItemSyncAction publishInventoryItemSyncAction = (PublishInventoryItemSyncAction) action;
+            Zup.getInstance().removeInventoryItem(publishInventoryItemSyncAction.item.id);
+            ZupCache.removeInventoryItem(publishInventoryItemSyncAction.item.id);
+        }
+        else if(action instanceof EditInventoryItemSyncAction)
+        {
+            EditInventoryItemSyncAction publishInventoryItemSyncAction = (EditInventoryItemSyncAction) action;
+            Zup.getInstance().removeInventoryItem(publishInventoryItemSyncAction.item.id);
+            ZupCache.removeInventoryItem(publishInventoryItemSyncAction.item.id);
+        }
+        Zup.getInstance().removeSyncAction(action.getId());
+        fillItems();
     }
 }

@@ -10,7 +10,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.ntxdev.zuptecnico.R;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.entities.Case;
 import com.ntxdev.zuptecnico.entities.Flow;
@@ -27,6 +26,8 @@ public class CaseDetailsActivity extends ActionBarActivity
     private StepLoader stepLoader;
     private Case _case;
 
+    private int _flowId = -1;
+
     private int _caseId;
 
     @Override
@@ -41,9 +42,20 @@ public class CaseDetailsActivity extends ActionBarActivity
         if(caseId == -1)
             return;
 
+        _flowId = getIntent().getIntExtra("flow_id", -1);
+        this._case = (Case) getIntent().getSerializableExtra("case");
+
+        if(_flowId != -1)
+        {
+            findViewById(R.id.document_details_header).setVisibility(View.GONE);
+        }
+
         this._caseId = caseId;
 
-        loadCase();
+        if(this._case == null)
+            loadCase();
+        else
+            caseDownloaded();
     }
 
     void loadCase()
@@ -104,11 +116,23 @@ public class CaseDetailsActivity extends ActionBarActivity
         overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
     }
 
-    void openStep(int stepId, int flowId, Case thecase)
+    void openSubflow(int flowId, Case thecase)
+    {
+        Intent intent = new Intent(this, CaseDetailsActivity.class);
+        intent.putExtra("case_id", thecase.id);
+        intent.putExtra("flow_id", flowId);
+        //intent.putExtra("flow_version", flowVersion);
+        intent.putExtra("case", thecase);
+
+        this.startActivity(intent);
+    }
+
+    void openStep(int stepId, int flowId, int flowVersion, Case thecase)
     {
         Intent intent = new Intent(this, ViewCaseStepFormActivity.class);
         intent.putExtra("step_id", stepId);
         intent.putExtra("flow_id", flowId);
+        intent.putExtra("flow_version", flowVersion);
         intent.putExtra("case", thecase);
 
         this.startActivityForResult(intent, REQUEST_STEP_FILL);
@@ -124,7 +148,7 @@ public class CaseDetailsActivity extends ActionBarActivity
         }
     }
 
-    void fillContainer(Case item, Flow initialFlow)
+    void fillContainer(final Case item, Flow initialFlow)
     {
         ViewGroup container = (ViewGroup)findViewById(R.id.document_details_container);
         View view = getLayoutInflater().inflate(R.layout.inventory_item_section_header, null);
@@ -138,18 +162,28 @@ public class CaseDetailsActivity extends ActionBarActivity
         boolean done = true;
         for(int i = 0; i < initialFlow.steps.length; i++)
         {
-            Flow.Step step = initialFlow.steps[i];
-            if(item.next_step_id != null && item.next_step_id == step.id)
+            final Flow.Step step = initialFlow.steps[i];
+            if(done && item.next_step_id != null && item.next_step_id == step.id)
                 done = false;
+            else if(done && step.step_type.equals("flow"))
+            {
+                Flow childFlow = Zup.getInstance().getFlowLastKnownVersion(step.child_flow_id);
+                if(childFlow != null && childFlow.getStep(item.next_step_id) != null)
+                    done = false;
+            }
 
             View stepView = createStepView(item, initialFlow, step, done);
             stepView.setTag(R.id.tag_case, item);
             stepView.setTag(R.id.tag_step_id, step.id);
             stepView.setTag(R.id.tag_flow_id, initialFlow.id);
+            stepView.setTag(R.id.tag_flow_version, item.flow_version);
             stepView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    openStep((Integer)view.getTag(R.id.tag_step_id), (Integer)view.getTag(R.id.tag_flow_id), (Case)view.getTag(R.id.tag_case));
+                    if(step.step_type.equals("flow"))
+                        openSubflow(step.getChildFlowId(), item);
+                    else
+                        openStep((Integer)view.getTag(R.id.tag_step_id), (Integer)view.getTag(R.id.tag_flow_id), (Integer)view.getTag(R.id.tag_flow_version), (Case)view.getTag(R.id.tag_case));
                 }
             });
 
@@ -212,10 +246,39 @@ public class CaseDetailsActivity extends ActionBarActivity
                 return;
             }
 
-            this.flow.steps = stepCollection.steps;
-            Zup.getInstance().updateFlow(this.flow.id, this.flow);
+            for(Flow.Step step : stepCollection.steps)
+            {
+                Zup.getInstance().addFlowStep(step);
+            }
 
-            fillCaseData(_case, this.flow);
+            //this.flow.steps = stepCollection.steps;
+            Zup.getInstance().updateFlow(this.flow.id, this.flow.last_version, this.flow);
+
+            stepsDownloaded(this.flow);
+        }
+    }
+
+    void stepsDownloaded(Flow flow)
+    {
+        fillCaseData(_case, flow);
+    }
+
+    void caseDownloaded()
+    {
+        Case aCase = _case;
+
+        Flow initialFlow;
+        if(_flowId == -1)
+            initialFlow = Zup.getInstance().getFlow(aCase.initial_flow_id, aCase.flow_version);
+        else
+            initialFlow = Zup.getInstance().getFlowLastKnownVersion(_flowId);
+
+        if(initialFlow.areStepsDownloaded())
+            stepsDownloaded(initialFlow);
+            //fillCaseData(aCase, initialFlow);
+        else
+        {
+            downloadSteps(initialFlow);
         }
     }
 
@@ -235,17 +298,11 @@ public class CaseDetailsActivity extends ActionBarActivity
 
             if(aCase == null)
             {
-                Toast.makeText(CaseDetailsActivity.this, "Sem conexão", 3);
+                Toast.makeText(CaseDetailsActivity.this, "Sem conexão", 3).show();
                 return;
             }
 
-            Flow initialFlow = Zup.getInstance().getFlow(aCase.initial_flow_id);
-            if(initialFlow.areStepsDownloaded())
-                fillCaseData(aCase, initialFlow);
-            else
-            {
-                downloadSteps(initialFlow);
-            }
+            caseDownloaded();
         }
     }
 }

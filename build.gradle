@@ -16,12 +16,13 @@ repositories {
 
 
 android {
-    compileSdkVersion 21
+    compileSdkVersion 19
     buildToolsVersion '21.1.2'
 
     defaultConfig {
+        //packageName 'com.ntxdev.zuptecnico'
         minSdkVersion 9
-        targetSdkVersion 21
+        targetSdkVersion 19
         versionCode 1
         versionName "1.0"
     }
@@ -42,11 +43,14 @@ dependencies {
     compile files('lib/jackson-databind-2.2.3.jar')
     compile files('lib/jackson-annotations-2.2.3.jar')
     compile files('lib/image-chooser-library-1.3.0.jar')
-    compile 'com.crashlytics.sdk.android:crashlytics:2.1.0'
-    /*compile('com.crashlytics.sdk.android:crashlytics:2.1.0@aar') {
+    //compile 'com.crashlytics.sdk.android:crashlytics:2.2.1'
+    compile('com.crashlytics.sdk.android:crashlytics:2.1.0@aar') {
                                 transitive = true;
-                            }*/
+                            }
     compile 'com.google.android.gms:play-services:4.2.42'
-    compile 'com.android.support:support-v4:21.0.3'
-    compile 'com.android.support:appcompat-v7:21.0.3'
+    //compile 'com.android.support:support-v4:21.0.3'
+    //compile 'com.android.support:appcompat-v7:21.0.3'
+
+    compile 'com.android.support:support-v4:19+'
+    compile 'com.android.support:appcompat-v7:19+'
 }

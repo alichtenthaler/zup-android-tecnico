@@ -1,17 +1,13 @@
 package com.ntxdev.zuptecnico.api;
 
-import android.app.Application;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.os.Parcel;
 import android.support.v4.content.LocalBroadcastManager;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ntxdev.zuptecnico.ZupApplication;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.Serializable;
@@ -102,7 +98,6 @@ public abstract class SyncAction implements Serializable
             long dt = calendar.getTimeInMillis();
 
             ContentValues values = new ContentValues();
-            values.put("id", this.id);
             values.put("date", dt);
             values.put("type", getType());
             values.put("info", serialize().toString());
@@ -167,6 +162,8 @@ public abstract class SyncAction implements Serializable
 
     protected abstract boolean onPerform();
     protected abstract JSONObject serialize() throws Exception;
+
+    public abstract String getError();
 
     public Date getDate()
     {

@@ -39,4 +39,13 @@ public class ZupCache {
 
         inventoryItems.add(item);
     }
+
+    public static void removeInventoryItem(int id)
+    {
+        if(!hasInventoryItem(id))
+            return;
+
+        InventoryItem item = getInventoryItem(id);
+        inventoryItems.remove(item);
+    }
 }

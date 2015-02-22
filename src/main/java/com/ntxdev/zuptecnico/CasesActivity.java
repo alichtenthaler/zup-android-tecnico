@@ -23,7 +23,6 @@ import com.ntxdev.zuptecnico.ui.SingularTabHost;
 import com.ntxdev.zuptecnico.ui.UIHelper;
 import com.ntxdev.zuptecnico.util.ResizeAnimation;
 
-import java.sql.SQLException;
 import java.util.Iterator;
 
 /**
@@ -125,11 +124,15 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
             for(Flow flow : flowCollection.flows)
             {
                 Flow.StepCollection steps = Zup.getInstance().retrieveFlowSteps(flow.id);
-                flow.steps = steps.steps;
-
-                if(Zup.getInstance().hasFlow(flow.id))
+                for(Flow.Step step : steps.steps)
                 {
-                    Zup.getInstance().updateFlow(flow.id, flow);
+                    Zup.getInstance().addFlowStep(step);
+                }
+                //flow.steps = steps.steps;
+
+                if(Zup.getInstance().hasFlow(flow.id, flow.last_version))
+                {
+                    Zup.getInstance().updateFlow(flow.id, flow.last_version, flow);
                 }
                 else
                 {
@@ -274,7 +277,7 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
         Flow _flow;
         try
         {
-            _flow = Zup.getInstance().getFlow(item.initial_flow_id);
+            _flow = Zup.getInstance().getFlow(item.initial_flow_id, item.flow_version);
         }
         catch(Exception ex)
         {
@@ -304,7 +307,7 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
         state.setText(Zup.getInstance().getCaseStatusString(item.status));
 
         title.setText("Caso " + item.id);
-        flow.setText(_flow.title);
+        flow.setText(_flow.title + " v" + item.flow_version);
         description.setText("Data de criação: " + Zup.getInstance().formatIsoDate(item.created_at) + (item.updated_at != null ? " / Última modificação: " + Zup.getInstance().formatIsoDate(item.updated_at): ""));
 
         return rootView;
@@ -370,9 +373,9 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
 
     void refreshTabHost()
     {
-        Flow flow = null;
+        /*Flow flow = null;
         if(_flowId != -1)
-            flow = Zup.getInstance().getFlow(_flowId);
+            flow = Zup.getInstance().getFlow(_flowId);*/
 
         SingularTabHost tabHost = (SingularTabHost) findViewById(R.id.tabhost_documents);
 

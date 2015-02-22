@@ -79,7 +79,7 @@
                 android:id="@+id/sidebar_cell_documents"
                 android:clickable="true"
                 android:background="@drawable/sidebar_cell"
-                android:visibility="gone">
+                android:visibility="visible">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -197,7 +197,8 @@
                     android:id="@+id/sidebar_icon_sync"
                     android:layout_gravity="left|center_vertical"
                     android:src="@drawable/sidebar_icon_notificacoes_cinza"
-                    android:layout_marginLeft="20dp" />
+                    android:layout_marginLeft="20dp"
+                    android:visibility="invisible" />
 
                 <TextView
                     android:layout_width="wrap_content"

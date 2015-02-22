@@ -1,15 +1,11 @@
 package com.ntxdev.zuptecnico.api;
 
 import android.graphics.BitmapFactory;
-import android.text.TextUtils;
 
-import com.ntxdev.zuptecnico.entities.Case;
 import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
-import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
 import com.ntxdev.zuptecnico.entities.Session;
-import com.ntxdev.zuptecnico.entities.User;
 import com.ntxdev.zuptecnico.entities.collections.CaseCollection;
 import com.ntxdev.zuptecnico.entities.collections.FlowCollection;
 import com.ntxdev.zuptecnico.entities.collections.InventoryCategoryCollection;
@@ -32,8 +28,6 @@ import com.ntxdev.zuptecnico.entities.responses.UpdateCaseStepResponse;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.nio.charset.UnsupportedCharsetException;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
 

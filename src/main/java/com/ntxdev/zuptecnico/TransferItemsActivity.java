@@ -81,6 +81,10 @@ public class TransferItemsActivity extends ActionBarActivity implements View.OnC
                 state.setText(status.title);
                 state.setBackgroundColor(status.getColor());
             }
+            else
+            {
+                state.setVisibility(View.GONE);
+            }
         }
         else
         {

@@ -3,7 +3,6 @@ package com.ntxdev.zuptecnico.util;
 import android.location.Address;
 import android.util.Log;
 
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;

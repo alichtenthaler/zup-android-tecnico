@@ -2,7 +2,6 @@ package com.ntxdev.zuptecnico;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -23,7 +22,6 @@ import com.ntxdev.zuptecnico.ui.UIHelper;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Objects;
 
 /**
  * Created by igorlira on 4/27/14.

@@ -14,8 +14,6 @@ import android.widget.TextView;
 
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
-import com.ntxdev.zuptecnico.ui.InfinityScrollView;
-import com.ntxdev.zuptecnico.ui.UIHelper;
 
 import java.util.ArrayList;
 import java.util.Calendar;

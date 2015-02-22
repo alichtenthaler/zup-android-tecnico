@@ -1,6 +1,5 @@
 package com.ntxdev.zuptecnico.entities;
 
-import java.util.Calendar;
 import java.util.Date;
 
 /**

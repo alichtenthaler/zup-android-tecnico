@@ -1,13 +1,11 @@
 package com.ntxdev.zuptecnico;
 
-import android.app.Activity;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.view.ViewGroup;
 
 import com.ntxdev.zuptecnico.api.Zup;
-import com.ntxdev.zuptecnico.ui.SingularTabHost;
 import com.ntxdev.zuptecnico.ui.UIHelper;
 
 /**

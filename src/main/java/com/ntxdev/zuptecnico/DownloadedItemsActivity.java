@@ -1,16 +1,8 @@
 package com.ntxdev.zuptecnico;
 
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.location.Location;
-import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.ActionBarActivity;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -18,27 +10,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesClient;
-import com.google.android.gms.common.GooglePlayServicesUtil;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationClient;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapsInitializer;
-import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptor;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.CameraPosition;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.VisibleRegion;
 import com.ntxdev.zuptecnico.api.Zup;
-import com.ntxdev.zuptecnico.api.callbacks.InventoryItemsListener;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
@@ -46,8 +18,6 @@ import com.ntxdev.zuptecnico.ui.InfinityScrollView;
 import com.ntxdev.zuptecnico.ui.SingularTabHost;
 import com.ntxdev.zuptecnico.ui.UIHelper;
 
-import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.Iterator;
 
 public class DownloadedItemsActivity extends ActionBarActivity implements View.OnClickListener {

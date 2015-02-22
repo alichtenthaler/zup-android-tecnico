@@ -1,12 +1,12 @@
 package com.ntxdev.zuptecnico;
 
+import android.app.AlertDialog;
 import android.content.Context;
-import android.database.DataSetObserver;
+import android.content.DialogInterface;
 import android.location.Address;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Build;
-import android.provider.Telephony;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -14,7 +14,6 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -22,7 +21,6 @@ import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.Filter;
 import android.widget.Filterable;
-import android.widget.ListAdapter;
 import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -37,14 +35,9 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptor;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.ntxdev.zuptecnico.api.Zup;
-import com.ntxdev.zuptecnico.ui.UIHelper;
 import com.ntxdev.zuptecnico.util.GPSUtils;
 import com.ntxdev.zuptecnico.util.GeoUtils;
 import com.ntxdev.zuptecnico.util.ViewUtils;
@@ -305,6 +298,29 @@ public class PickMapLocationActivity extends ActionBarActivity implements Google
 
     public void sendLocation(View view)
     {
+        if(enderecoAtual == null)
+        {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Aviso!");
+            builder.setMessage("O endereço com base na localização ainda não foi carregado. Deste modo, dados como Endereço, número, cidade etc. deverão ser digitados manualmente.\r\n\r\nDeseja enviar mesmo assim ou esperar o endereço ser carregado?");
+            builder.setPositiveButton("Enviar mesmo assim", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    sendLocation2(null);
+                }
+            });
+
+            builder.setNegativeButton("Esperar", null);
+            builder.show();
+        }
+        else
+        {
+            sendLocation2(view);
+        }
+    }
+
+    public void sendLocation2(View view)
+    {
         if(manualNumber)
         {
             EditText tvNumero = (EditText) findViewById(R.id.pick_location_number);
@@ -508,6 +524,19 @@ public class PickMapLocationActivity extends ActionBarActivity implements Google
 
     class AddressTask extends AsyncTask<Double, Void, Address>
     {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            enderecoAtual = null;
+
+            AutoCompleteTextView tvEndereco = (AutoCompleteTextView) findViewById(R.id.pick_location_address);
+            TextView tvNumero = (TextView) findViewById(R.id.pick_location_number);
+
+            tvEndereco.setText("Carregando...");
+            if(!manualNumber)
+                tvNumero.setText("");
+        }
 
         @Override
         protected Address doInBackground(Double... params) {
@@ -520,11 +549,18 @@ public class PickMapLocationActivity extends ActionBarActivity implements Google
 
         @Override
         protected void onPostExecute(Address address) {
-            if(address == null)
-                return;
 
             AutoCompleteTextView tvEndereco = (AutoCompleteTextView) findViewById(R.id.pick_location_address);
             TextView tvNumero = (TextView) findViewById(R.id.pick_location_number);
+
+            if(address == null)
+            {
+                tvEndereco.setText("Indisponível");
+                if(!manualNumber)
+                    tvNumero.setText("0");
+
+                return;
+            }
 
             String rua, numero;
             rua = address.getThoroughfare();

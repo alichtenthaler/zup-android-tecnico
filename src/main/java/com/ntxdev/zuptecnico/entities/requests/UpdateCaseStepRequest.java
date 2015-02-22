@@ -1,7 +1,5 @@
 package com.ntxdev.zuptecnico.entities.requests;
 
-import java.util.Hashtable;
-
 /**
  * Created by igorlira on 8/8/14.
  */

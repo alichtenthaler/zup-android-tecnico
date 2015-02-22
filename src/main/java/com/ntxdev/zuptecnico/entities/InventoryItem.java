@@ -3,9 +3,7 @@ package com.ntxdev.zuptecnico.entities;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Objects;
 
 /**
  * Created by igorlira on 3/3/14.

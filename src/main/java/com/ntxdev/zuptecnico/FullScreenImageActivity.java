@@ -1,6 +1,5 @@
 package com.ntxdev.zuptecnico;
 
-import android.app.FragmentManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
@@ -9,9 +8,7 @@ import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentStatePagerAdapter;
-import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Base64;
 import android.view.LayoutInflater;
@@ -20,12 +17,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.ImageView;
 
 import com.ntxdev.zuptecnico.api.Zup;
-import com.ntxdev.zuptecnico.entities.InventoryItem;
 import com.ntxdev.zuptecnico.entities.InventoryItemImage;
 
 import uk.co.senab.photoview.PhotoViewAttacher;

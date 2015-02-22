@@ -1,8 +1,5 @@
 package com.ntxdev.zuptecnico.entities.requests;
 
-import com.ntxdev.zuptecnico.entities.InventoryItem;
-
-import java.util.ArrayList;
 import java.util.Hashtable;
 
 /**

@@ -98,17 +98,17 @@
         </activity>
 
         <activity
-            android:name=".CaseDetailsActivity"
+            android:name="com.ntxdev.zuptecnico.CaseDetailsActivity"
             android:label="@string/title_activity_pick_map_location" >
         </activity>
 
         <activity
-            android:name=".ViewCaseStepFormActivity"
+            android:name="com.ntxdev.zuptecnico.ViewCaseStepFormActivity"
             android:label="@string/title_activity_pick_map_location">
         </activity>
 
         <activity
-            android:name=".SyncActivity"
+            android:name="com.ntxdev.zuptecnico.SyncActivity"
             android:label="@string/title_activity_pick_map_location">
         </activity>
         <meta-data android:name="com.crashlytics.ApiKey" android:value="b4e65954c5311e9478b811354a85bab993be65d6"/>

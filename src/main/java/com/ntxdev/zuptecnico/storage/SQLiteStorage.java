@@ -1,10 +1,7 @@
 package com.ntxdev.zuptecnico.storage;
 
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
 
-import com.ntxdev.zuptecnico.api.Storage;
 import com.ntxdev.zuptecnico.api.SyncAction;
 import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
@@ -12,7 +9,6 @@ import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
 import com.ntxdev.zuptecnico.entities.User;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 
 /**
@@ -60,6 +56,10 @@ public class SQLiteStorage implements IStorage {
     public void resetSyncActions() { db.resetSyncActions(); }
 
     public void updateSyncAction(SyncAction action) { db.updateSyncAction(action); }
+
+    public void addFlowStep(Flow.Step step) { db.addFlowStep(step); }
+
+    public Flow getFlowLastKnownVersion(int id) { return db.getFlowLastKnownVersion(id); }
 
     @Override
     public void addUser(User user)
@@ -189,19 +189,19 @@ public class SQLiteStorage implements IStorage {
         return db.getFlowIterator();
     }
 
-    public Flow getFlow(int id)
+    public Flow getFlow(int id, int version)
     {
-        return db.getFlow(id);
+        return db.getFlow(id, version);
     }
 
-    public boolean hasFlow(int id)
+    public boolean hasFlow(int id, int version)
     {
-        return db.hasFlow(id);
+        return db.hasFlow(id, version);
     }
 
-    public void updateFlow(int id, Flow data)
+    public void updateFlow(int id, int version, Flow data)
     {
-        db.updateFlow(id, data);
+        db.updateFlow(id, version, data);
     }
 
     public void addFlow(Flow flow)

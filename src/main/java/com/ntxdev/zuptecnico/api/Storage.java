@@ -5,7 +5,6 @@ import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
 import com.ntxdev.zuptecnico.entities.User;
-import com.ntxdev.zuptecnico.entities.collections.InventoryCategoryStatusCollection;
 
 import java.util.ArrayList;
 import java.util.Calendar;

@@ -5,12 +5,8 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.drawable.ColorDrawable;
-import android.hardware.display.DisplayManager;
-import android.media.Image;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
-import android.util.DisplayMetrics;
-import android.view.Display;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.View;
@@ -33,8 +29,6 @@ import com.ntxdev.zuptecnico.SyncActivity;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.User;
-
-import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.Iterator;

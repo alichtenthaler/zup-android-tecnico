@@ -38,6 +38,7 @@
             android:id="@+id/inventory_item_text_extra"
             android:layout_marginLeft="5dp"
             android:visibility="gone" />
+
     </LinearLayout>
 
     <FrameLayout

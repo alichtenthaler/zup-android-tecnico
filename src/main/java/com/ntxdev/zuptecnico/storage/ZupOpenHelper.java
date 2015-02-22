@@ -5,14 +5,10 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.util.JsonWriter;
 import android.util.Log;
 
 import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.android.gms.internal.cu;
 import com.ntxdev.zuptecnico.api.SyncAction;
 import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
@@ -20,13 +16,9 @@ import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
 import com.ntxdev.zuptecnico.entities.User;
 
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.json.JSONStringer;
 
 import java.util.ArrayList;
-import java.util.Dictionary;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 
@@ -53,10 +45,16 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_markers (inventory_category_id INTEGER PRIMARY KEY, url_web TEXT, url_mobile TEXT);");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_items (id INTEGER PRIMARY KEY, title VARCHAR(120), latitude FLOAT, longitude FLOAT, inventory_category_id INTEGER, inventory_status_id INTEGER, created_at VARCHAR(120), updated_at VARCHAR(120), address VARCHAR(120));");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_items_data (id INTEGER PRIMARY_KEY, inventory_item_id INTEGER, inventory_field_id INTEGER, content TEXT);");
-        sqLiteDatabase.execSQL("CREATE TABLE flows (id INTEGER PRIMARY KEY, title VARCHAR(120), description VARCHAR(120), initial INTEGER, steps_id VARCHAR(200), created_by_id INTEGER, updated_by_id INTEGER, status VARCHAR(120), last_version INTEGER, last_version_id INTEGER, created_at VARCHAR(120), updated_at VARCHAR(120));");
-        sqLiteDatabase.execSQL("CREATE TABLE flows_resolution_states (id INTEGER PRIMARY KEY, flow_id INTEGER, title VARCHAR(120), _default INTEGER, active INTEGER, created_at VARCHAR(120), updated_at VARCHAR(120), last_version INTEGER, last_version_id INTEGER);");
-        sqLiteDatabase.execSQL("CREATE TABLE flows_steps (id INTEGER PRIMARY KEY, flow_id INTEGER, title VARCHAR(120), step_type VARCHAR(120), child_flow INTEGER NULL, order_number INTEGER, active INTEGER, last_version INTEGER);");
-        sqLiteDatabase.execSQL("CREATE TABLE flows_steps_fields (id INTEGER PRIMARY KEY, flow_id INTEGER, step_id INTEGER, title VARCHAR(120), field_type VARCHAR(120), category_inventory_id INTEGER, category_report_id INTEGER, origin_field_id INTEGER, active INTEGER, multiple INTEGER, requirements TEXT NULL, order_number INTEGER, ovalues TEXT NULL);");
+
+        sqLiteDatabase.execSQL("CREATE TABLE flows (id INTEGER PRIMARY KEY, server_id INTEGER, title VARCHAR(120), description VARCHAR(120), initial INTEGER, steps_id VARCHAR(200), created_by_id INTEGER, updated_by_id INTEGER, status VARCHAR(120), last_version INTEGER, last_version_id INTEGER, created_at VARCHAR(120), updated_at VARCHAR(120));");
+        sqLiteDatabase.execSQL("CREATE TABLE flows_resolution_states (id INTEGER PRIMARY KEY, server_id INTEGER, flow_id INTEGER, title VARCHAR(120), _default INTEGER, active INTEGER, created_at VARCHAR(120), updated_at VARCHAR(120), last_version INTEGER, last_version_id INTEGER);");
+        sqLiteDatabase.execSQL("CREATE TABLE flows_steps (id INTEGER PRIMARY KEY, server_id INTEGER, flow_id INTEGER, title VARCHAR(120), step_type VARCHAR(120), child_flow INTEGER NULL, order_number INTEGER, active INTEGER, last_version INTEGER);");
+        sqLiteDatabase.execSQL("CREATE TABLE flows_steps_fields (id INTEGER PRIMARY KEY, server_id INTEGER, flow_id INTEGER, step_id INTEGER, title VARCHAR(120), field_type VARCHAR(120), category_inventory_id INTEGER, category_report_id INTEGER, origin_field_id INTEGER, active INTEGER, multiple INTEGER, requirements TEXT NULL, order_number INTEGER, ovalues TEXT NULL, last_version INTEGER);");
+
+        sqLiteDatabase.execSQL("CREATE TABLE flows_resolution_states_relation (flow_id INTEGER, flow_version INTEGER, state_id INTEGER, state_version INTEGER);");
+        sqLiteDatabase.execSQL("CREATE TABLE flows_steps_relation (flow_id INTEGER, flow_version INTEGER, step_id INTEGER, step_version INTEGER);");
+        sqLiteDatabase.execSQL("CREATE TABLE flows_steps_fields_relation (step_id INTEGER, step_version INTEGER, field_id INTEGER, field_version INTEGER);");
+
         sqLiteDatabase.execSQL("CREATE TABLE sync_actions (id INTEGER PRIMARY KEY, type INTEGER, date BIGINT, info TEXT, pending INTEGER, running INTEGER, successful INTEGER);");
     }
 
@@ -77,6 +75,9 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         getWritableDatabase().execSQL("DELETE FROM flows_steps");
         getWritableDatabase().execSQL("DELETE FROM flows_steps_fields");
         getWritableDatabase().execSQL("DELETE FROM sync_actions");
+        getWritableDatabase().execSQL("DELETE FROM flows_resolution_states_relation");
+        getWritableDatabase().execSQL("DELETE FROM flows_steps_relation");
+        getWritableDatabase().execSQL("DELETE FROM flows_steps_fields_relation");
     }
 
     public void resetSyncActions()
@@ -135,7 +136,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
     ContentValues createFlowResolutionStateContentValues(Flow.ResolutionState resolutionState)
     {
         ContentValues contentValues = new ContentValues();
-        contentValues.put("id", resolutionState.id);
+        contentValues.put("server_id", resolutionState.id);
         contentValues.put("flow_id", resolutionState.flow_id);
         contentValues.put("title", resolutionState.title);
         contentValues.put("_default", resolutionState._default ? 1 : 0);
@@ -148,14 +149,14 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         return contentValues;
     }
 
-    ContentValues createFlowStepContentValues(Flow flow, Flow.Step step)
+    ContentValues createFlowStepContentValues(Flow.Step step)
     {
         ContentValues contentValues = new ContentValues();
-        contentValues.put("id", step.id);
-        contentValues.put("flow_id", flow.id);
+        contentValues.put("server_id", step.id);
+        //contentValues.put("flow_id", flow.id);
         contentValues.put("title", step.title);
         contentValues.put("step_type", step.step_type);
-        // child_flow
+        contentValues.put("child_flow", step.getChildFlowId());
         contentValues.put("order_number", step.order_number);
         contentValues.put("active", step.active ? 1 : 0);
         contentValues.put("last_version", step.last_version);
@@ -163,8 +164,71 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         return contentValues;
     }
 
+    void addFlowResolutionStateRelation(Flow flow, Flow.ResolutionState resolutionState)
+    {
+        if(hasFlowResolutionStateRelation(flow, resolutionState))
+            return;
+
+        ContentValues contentValues = new ContentValues();
+        contentValues.put("flow_id", flow.id);
+        contentValues.put("flow_version", flow.last_version);
+        contentValues.put("state_id", resolutionState.id);
+        contentValues.put("state_version", resolutionState.last_version);
+
+        getWritableDatabase().insert("flows_resolution_states_relation", null, contentValues);
+    }
+
+    void addFlowStepRelation(Flow flow, Flow.Step step)
+    {
+        if(hasFlowStepRelation(flow, step))
+            return;
+
+        ContentValues contentValues = new ContentValues();
+        contentValues.put("flow_id", flow.id);
+        contentValues.put("flow_version", flow.last_version);
+        contentValues.put("step_id", step.id);
+        contentValues.put("step_version", step.last_version);
+
+        getWritableDatabase().insert("flows_steps_relation", null, contentValues);
+    }
+
+    void addFlowStepFieldRelation(Flow.Step step, Flow.Step.Field field)
+    {
+        if(hasFlowStepFieldRelation(step, field))
+            return;
+
+        ContentValues contentValues = new ContentValues();
+        contentValues.put("step_id", step.id);
+        contentValues.put("step_version", step.last_version);
+        contentValues.put("field_id", field.id);
+        contentValues.put("field_version", field.last_version);
+
+        getWritableDatabase().insert("flows_steps_fields_relation", null, contentValues);
+    }
+
+    boolean hasFlowResolutionStateRelation(Flow flow, Flow.ResolutionState resolutionState)
+    {
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT state_id FROM flows_resolution_states_relation WHERE flow_id=" + flow.id + " AND flow_version=" + flow.last_version + " AND state_id=" + resolutionState.id + " AND state_version=" + resolutionState.last_version + " LIMIT 1", null);
+        return cursor.moveToNext();
+    }
+
+    boolean hasFlowStepRelation(Flow flow, Flow.Step step)
+    {
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT step_id FROM flows_steps_relation WHERE flow_id=" + flow.id + " AND flow_version=" + flow.last_version + " AND step_id=" + step.id + " AND step_version=" + step.last_version + " LIMIT 1", null);
+        return cursor.moveToNext();
+    }
+
+    boolean hasFlowStepFieldRelation(Flow.Step step, Flow.Step.Field field)
+    {
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT field_id FROM flows_steps_fields_relation WHERE step_id=" + step.id + " AND step_version=" + step.last_version + " AND field_id=" + field.id + " AND field_version=" + field.last_version + " LIMIT 1", null);
+        return cursor.moveToNext();
+    }
+
     public void addFlowResolutionState(Flow.ResolutionState resolutionState)
     {
+        if(hasFlowResolutionState(resolutionState.id, resolutionState.last_version))
+            return;
+
         ContentValues contentValues = createFlowResolutionStateContentValues(resolutionState);
 
         getWritableDatabase().insert("flows_resolution_states", null, contentValues);
@@ -196,7 +260,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         }
 
         // id INTEGER PRIMARY KEY, flow_id INTEGER, step_id INTEGER, title VARCHAR(120), field_type VARCHAR(120), category_inventory_id INTEGER, category_report_id INTEGER, origin_field_id INTEGER, active INTEGER, multiple INTEGER, requirements TEXT, order_number INTEGER, values TEXT
-        contentValues.put("id", field.id);
+        contentValues.put("server_id", field.id);
         contentValues.put("step_id", field.step_id);
         contentValues.put("title", field.title);
         contentValues.put("field_type", field.field_type);
@@ -208,13 +272,19 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         contentValues.put("order_number", field.order_number);
         contentValues.put("requirements", requirements);
         contentValues.put("ovalues", values);
+        contentValues.put("last_version", field.last_version);
+        //contentValues.put("flow_version", flow.last_version);
+        //contentValues.put("step_version", step.last_version);
 
         return contentValues;
     }
 
-    public void addFlowStep(Flow flow, Flow.Step step)
+    public void addFlowStep(Flow.Step step)
     {
-        ContentValues contentValues = createFlowStepContentValues(flow, step);
+        if(hasStep(step.id, step.last_version))
+            return;
+
+        ContentValues contentValues = createFlowStepContentValues(step);
         getWritableDatabase().insert("flows_steps", null, contentValues);
 
         if(step.fields != null)
@@ -222,45 +292,72 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
             for(int i = 0; i < step.fields.length; i++)
             {
                 Flow.Step.Field field = step.fields[i];
-                addFlowStepField(field);
+
+                if(hasFlowStepField(field.id, field.last_version))
+                    updateFlowStepField(field.id, field.last_version, field);
+                else
+                    addFlowStepField(field);
+
+                addFlowStepFieldRelation(step, step.fields[i]);
+            }
+        }
+
+        if(step.list_versions != null)
+        {
+            for(Flow.Step version : step.list_versions)
+            {
+                if(!hasStep(version.id, version.last_version))
+                    addFlowStep(version);
+                else
+                    updateFlowStep(version.id, version.last_version, version);
             }
         }
     }
 
     void addFlowStepField(Flow.Step.Field field)
     {
+        if(hasFlowStepField(field.id, field.last_version))
+            return;
+
         getWritableDatabase().insert("flows_steps_fields", null, createFlowStepFieldContentValues(field));
     }
 
-    void updateFlowStepField(int id, Flow.Step.Field field)
+    void updateFlowStepField(int id, int version, Flow.Step.Field field)
     {
-        getWritableDatabase().update("flows_steps_fields", createFlowStepFieldContentValues(field), "id=" + id, null);
+        getWritableDatabase().update("flows_steps_fields", createFlowStepFieldContentValues(field), "server_id=" + id + " AND last_version=" + version, null);
     }
 
-    Flow.Step parseStep(Cursor cursor)
+    Flow.Step parseStep(Flow flow, Cursor cursor)
     {
         Flow.Step step = new Flow.Step();
         step.id = cursor.getInt(0);
         step.title = cursor.getString(1);
         step.step_type = cursor.getString(2);
-        // child_flow
+        step.child_flow_id = cursor.getInt(3);
         step.order_number = cursor.getInt(4);
         step.active = cursor.getInt(5) == 1;
         step.last_version = cursor.getInt(6);
 
-        Cursor countCursor = getReadableDatabase().rawQuery("SELECT COUNT(id) FROM flows_steps_fields WHERE step_id = " + step.id, null);
+        Cursor countCursor = getReadableDatabase().rawQuery("SELECT COUNT(step_id) FROM flows_steps_fields_relation WHERE step_id = " + step.id + " AND step_version = " + step.last_version, null);
+        //Cursor countCursor = getReadableDatabase().rawQuery("SELECT COUNT(server_id) FROM flows_steps_fields WHERE step_id = " + step.id + " AND flow_version=" + flow.last_version + " AND step_version=" + step.last_version, null);
         countCursor.moveToNext();
 
         int count = countCursor.getInt(0);
         step.fields = new Flow.Step.Field[count];
 
-        Cursor fieldCursor = getReadableDatabase().rawQuery("SELECT id, step_id, title, field_type, category_inventory_id, category_report_id, origin_field_id, active, multiple, requirements, order_number, ovalues FROM flows_steps_fields WHERE step_id=" + step.id, null);
+        //Cursor fieldCursor = getReadableDatabase().rawQuery("SELECT server_id, step_id, title, field_type, category_inventory_id, category_report_id, origin_field_id, active, multiple, requirements, order_number, ovalues FROM flows_steps_fields WHERE step_id=" + step.id + " AND flow_version=" + flow.last_version + " AND step_version=" + step.last_version, null);
+        Cursor fieldRelationCursor = getReadableDatabase().rawQuery("SELECT field_id, field_version FROM flows_steps_fields_relation WHERE step_id = " + step.id + " AND step_version = " + step.last_version, null);
 
         ObjectMapper mapper = new ObjectMapper();
 
         int x = 0;
-        while(fieldCursor.moveToNext())
+        while(fieldRelationCursor.moveToNext())
         {
+            int fieldId = fieldRelationCursor.getInt(0);
+            int fieldVersion = fieldRelationCursor.getInt(1);
+            Cursor fieldCursor = getReadableDatabase().rawQuery("SELECT server_id, step_id, title, field_type, category_inventory_id, category_report_id, origin_field_id, active, multiple, requirements, order_number, ovalues, last_version FROM flows_steps_fields WHERE server_id = " + fieldId + " AND last_version = " + fieldVersion + " LIMIT 1", null);
+            fieldCursor.moveToFirst();
+
             Flow.Step.Field field = new Flow.Step.Field();
             field.id = fieldCursor.getInt(0);
             field.step_id = fieldCursor.getInt(1);
@@ -272,6 +369,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
             field.active = fieldCursor.getInt(7) == 1;
             field.multiple = fieldCursor.getInt(8) == 1;
             field.order_number = fieldCursor.getInt(10);
+            field.last_version = fieldCursor.getInt(12);
 
             try
             {
@@ -328,15 +426,22 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         flow.created_at = cursor.getString(10);
         flow.updated_at = cursor.getString(11);
 
-        Cursor countCursor = getReadableDatabase().rawQuery("SELECT COUNT(id) FROM flows_resolution_states WHERE flow_id=?", new String[] { Integer.toString(flow.id) });
+        //Cursor countCursor = getReadableDatabase().rawQuery("SELECT COUNT(server_id) FROM flows_resolution_states WHERE flow_id=? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.last_version) });
+        Cursor countCursor = getReadableDatabase().rawQuery("SELECT COUNT(state_id) FROM flows_resolution_states_relation WHERE flow_id=? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.last_version) });
         countCursor.moveToNext();
         int count = countCursor.getInt(0);
 
-        Cursor statesCursor = getReadableDatabase().rawQuery("SELECT id, flow_id, title, _default, active, created_at, updated_at, last_version, last_version_id FROM flows_resolution_states WHERE flow_id = ?", new String[] { Integer.toString(flow.id) });
+        //Cursor statesCursor = getReadableDatabase().rawQuery("SELECT server_id, flow_id, title, _default, active, created_at, updated_at, last_version, last_version_id FROM flows_resolution_states WHERE flow_id = ? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.last_version) });
+        Cursor relationCursor = getReadableDatabase().rawQuery("SELECT state_id, state_version FROM flows_resolution_states_relation WHERE flow_id = ? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.last_version) });
         flow.resolution_states = new Flow.ResolutionState[count];
         int x = 0;
-        while(statesCursor.moveToNext())
+        while(relationCursor.moveToNext())
         {
+            int stateId = relationCursor.getInt(0);
+            int stateVersion = relationCursor.getInt(1);
+            Cursor statesCursor = getReadableDatabase().rawQuery("SELECT server_id, flow_id, title, _default, active, created_at, updated_at, last_version, last_version_id FROM flows_resolution_states WHERE server_id = ? AND last_version=? LIMIT 1", new String[] { Integer.toString(stateId), Integer.toString(stateVersion) });
+            statesCursor.moveToFirst();
+
             Flow.ResolutionState state = new Flow.ResolutionState();
             state.id = statesCursor.getInt(0);
             state.flow_id = statesCursor.getInt(1);
@@ -352,16 +457,23 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
             x++;
         }
 
-        countCursor = getReadableDatabase().rawQuery("SELECT COUNT(id) FROM flows_steps WHERE flow_id=?", new String[] { Integer.toString(flow.id) });
+        //countCursor = getReadableDatabase().rawQuery("SELECT COUNT(server_id) FROM flows_steps WHERE flow_id=? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.last_version) });
+        countCursor = getReadableDatabase().rawQuery("SELECT COUNT(step_id) FROM flows_steps_relation WHERE flow_id=? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.last_version) });
         countCursor.moveToNext();
         count = countCursor.getInt(0);
 
-        Cursor stepsCursor = getReadableDatabase().rawQuery("SELECT id, title, step_type, child_flow, order_number, active, last_version FROM flows_steps WHERE flow_id = ?", new String[] { Integer.toString(flow.id) });
+        //Cursor stepsCursor = getReadableDatabase().rawQuery("SELECT server_id, title, step_type, child_flow, order_number, active, last_version FROM flows_steps WHERE flow_id = ? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.last_version) });
+        relationCursor = getReadableDatabase().rawQuery("SELECT step_id, step_version FROM flows_steps_relation WHERE flow_id = ? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.last_version) });
         flow.steps = new Flow.Step[count];
         x = 0;
-        while(stepsCursor.moveToNext())
+        while(relationCursor.moveToNext())
         {
-            Flow.Step step = parseStep(stepsCursor);
+            int stepId = relationCursor.getInt(0);
+            int stepVersion = relationCursor.getInt(1);
+            Cursor stepsCursor = getReadableDatabase().rawQuery("SELECT server_id, title, step_type, child_flow, order_number, active, last_version FROM flows_steps WHERE server_id = ? AND last_version=? LIMIT 1", new String[] { Integer.toString(stepId), Integer.toString(stepVersion) });
+            stepsCursor.moveToFirst();
+
+            Flow.Step step = parseStep(flow, stepsCursor);
 
             flow.steps[x] = step;
             x++;
@@ -375,7 +487,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
     {
         ArrayList<Flow> result = new ArrayList<Flow>();
 
-        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, description, initial, steps_id, created_by_id, updated_by_id, status, last_version, last_version_id, created_at, updated_at FROM flows ORDER BY id ASC", null);
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT server_id, title, description, initial, steps_id, created_by_id, updated_by_id, status, last_version, last_version_id, created_at, updated_at FROM flows GROUP BY server_id ORDER BY server_id ASC", null);
         while(cursor.moveToNext())
         {
             result.add(parseFlow(cursor));
@@ -384,106 +496,141 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         return result.iterator();
     }
 
-    public boolean hasFlow(int id)
+    public boolean hasFlow(int id, int version)
     {
-        Cursor cursor = getReadableDatabase().rawQuery("SELECT id FROM flows WHERE id = ?", new String[] { Integer.toString(id) });
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT server_id FROM flows WHERE server_id = ? AND last_version=?", new String[] { Integer.toString(id), Integer.toString(version) });
         return cursor.moveToNext();
     }
 
-    public boolean hasStep(int id)
+    public boolean hasStep(int id, int stepVersion)
     {
-        Cursor cursor = getReadableDatabase().rawQuery("SELECT id FROM flows_steps WHERE id = ?", new String[] { Integer.toString(id) });
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT server_id FROM flows_steps WHERE server_id = ? AND last_version = ?", new String[] { Integer.toString(id), Integer.toString(stepVersion) });
         return cursor.moveToNext();
     }
 
-    public boolean hasFlowResolutionState(int id)
+    public boolean hasFlowResolutionState(int id, int version)
     {
-        Cursor cursor = getReadableDatabase().rawQuery("SELECT id FROM flows_resolution_states WHERE id = ?", new String[] { Integer.toString(id) });
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT server_id FROM flows_resolution_states WHERE server_id = ? AND last_version=?", new String[] { Integer.toString(id), Integer.toString(version) });
         return cursor.moveToNext();
     }
 
-    void updateFlowResolutionState(int id, Flow.ResolutionState resolutionState)
+    void updateFlowResolutionState(int id, int version, Flow.ResolutionState resolutionState)
     {
         ContentValues contentValues = createFlowResolutionStateContentValues(resolutionState);
-        getWritableDatabase().update("flows_resolution_states", contentValues, "id = ?", new String[] { Integer.toString(id) });
+        getWritableDatabase().update("flows_resolution_states", contentValues, "server_id = ? AND last_version = ?", new String[] { Integer.toString(id), Integer.toString(version) });
     }
 
-    boolean hasFlowStepField(int id)
+    boolean hasFlowStepField(int id, int version)
     {
-        Cursor cursor = getReadableDatabase().rawQuery("SELECT id FROM flows_steps_fields WHERE id = ?" + id, null);
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT server_id FROM flows_steps_fields WHERE server_id = " + id + " AND last_version=" + version, null);
         return cursor.moveToNext();
     }
 
-    void updateFlowStep(Flow flow, int id, Flow.Step step)
+    void updateFlowStep(int id, int version, Flow.Step step)
     {
-        ContentValues contentValues = createFlowStepContentValues(flow, step);
-        getWritableDatabase().update("flows_steps", contentValues, "id = ?", new String[] { Integer.toString(id) });
+        ContentValues contentValues = createFlowStepContentValues(step);
+        getWritableDatabase().update("flows_steps", contentValues, "server_id = ? AND last_version = ?", new String[] { Integer.toString(id), Integer.toString(version) });
 
         if(step.fields != null)
         {
-            String notPresentIds = "";
+            String notPresentIds = "step_id=" + id + " AND step_version=" + version;
             for (int i = 0; i < step.fields.length; i++) {
-                if (i > 0)
+                //if (i > 0)
                     notPresentIds += " AND ";
 
-                notPresentIds += "id != " + step.fields[i].id;
+                notPresentIds += "(field_id != " + step.fields[i].id + " OR field_version != " + step.fields[i].last_version + ")";
 
-                if (hasFlowStepField(step.fields[i].id))
-                    updateFlowStepField(step.fields[i].id, step.fields[i]);
+                if (hasFlowStepField(step.fields[i].id, step.fields[i].last_version))
+                    updateFlowStepField(step.fields[i].id, step.fields[i].last_version, step.fields[i]);
                 else
                     addFlowStepField(step.fields[i]);
+
+                addFlowStepFieldRelation(step, step.fields[i]);
             }
 
             if (notPresentIds.length() > 0)
-                getWritableDatabase().delete("flows_resolution_states", notPresentIds, null);
+                getWritableDatabase().delete("flows_steps_fields_relation", notPresentIds, null);
+        }
+
+        if(step.list_versions != null)
+        {
+            for(Flow.Step vers : step.list_versions)
+            {
+                if(!hasStep(vers.id, vers.last_version))
+                    addFlowStep(vers);
+                else
+                    updateFlowStep(vers.id, vers.last_version, vers);
+            }
         }
     }
 
-    public void updateFlow(int id, Flow data)
+    public void updateFlow(int id, int version, Flow data)
     {
         ContentValues contentValues = createFlowContentValues(data);
-        getWritableDatabase().update("flows", contentValues, "id = ?", new String[] { Integer.toString(id) });
+        getWritableDatabase().update("flows", contentValues, "server_id = ? AND last_version=?", new String[] { Integer.toString(id), Integer.toString(version) });
 
-        String notPresentIds = "";
+        String notPresentIds = "flow_id=" + id + " AND flow_version=" + data.last_version;
         for(int i = 0; i < data.resolution_states.length; i++)
         {
-            if(i > 0)
+            //if(i > 0)
                 notPresentIds += " AND ";
 
-            notPresentIds += "id != " + data.resolution_states[i].id;
+            notPresentIds += "(state_id != " + data.resolution_states[i].id + " OR state_version != " + data.resolution_states[i].last_version + ")";
 
-            if(hasFlowResolutionState(data.resolution_states[i].id))
-                updateFlowResolutionState(data.resolution_states[i].id, data.resolution_states[i]);
+            if(hasFlowResolutionState(data.resolution_states[i].id, data.resolution_states[i].last_version))
+                updateFlowResolutionState(data.resolution_states[i].id, data.resolution_states[i].last_version, data.resolution_states[i]);
             else
                 addFlowResolutionState(data.resolution_states[i]);
+
+            addFlowResolutionStateRelation(data, data.resolution_states[i]);
         }
 
         if(notPresentIds.length() > 0)
-            getWritableDatabase().delete("flows_resolution_states", notPresentIds, null);
+            getWritableDatabase().delete("flows_resolution_states_relation", notPresentIds, null);
 
         if(data.steps != null)
         {
-            notPresentIds = "";
+            notPresentIds = "flow_id=" + id + " AND flow_version=" + version;
             for (int i = 0; i < data.steps.length; i++) {
-                if (i > 0)
+                //if (i > 0)
                     notPresentIds += " AND ";
 
-                notPresentIds += "id != " + data.steps[i].id;
+                notPresentIds += "(step_id != " + data.steps[i].id + " OR step_version != " + data.steps[i].last_version + ")";
 
-                if (hasStep(data.steps[i].id))
-                    updateFlowStep(data, data.steps[i].id, data.steps[i]);
+                if (hasStep(data.steps[i].id, data.steps[i].last_version))
+                    updateFlowStep(data.steps[i].id, data.steps[i].last_version, data.steps[i]);
                 else
-                    addFlowStep(data, data.steps[i]);
+                    addFlowStep(data.steps[i]);
+
+                addFlowStepRelation(data, data.steps[i]);
             }
 
             if (notPresentIds.length() > 0)
-                getWritableDatabase().delete("flows_steps", notPresentIds, null);
+                getWritableDatabase().delete("flows_steps_relation", notPresentIds, null);
+        }
+
+        if(data.list_versions != null)
+        {
+            for(Flow vers : data.list_versions)
+            {
+                if(hasFlow(vers.id, vers.last_version))
+                    updateFlow(vers.id, vers.last_version, vers);
+                else
+                    addFlow(vers);
+            }
         }
     }
 
-    public Flow getFlow(int id)
+    public Flow getFlow(int id, int version)
     {
-        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, description, initial, steps_id, created_by_id, updated_by_id, status, last_version, last_version_id, created_at, updated_at FROM flows WHERE id = ?", new String[] { Integer.toString(id) });
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT server_id, title, description, initial, steps_id, created_by_id, updated_by_id, status, last_version, last_version_id, created_at, updated_at FROM flows WHERE server_id = ? AND last_version = ? LIMIT 1", new String[] { Integer.toString(id), Integer.toString(version) });
+        cursor.moveToNext();
+        return parseFlow(cursor);
+    }
+
+    public Flow getFlowLastKnownVersion(int id)
+    {
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT server_id, title, description, initial, steps_id, created_by_id, updated_by_id, status, last_version, last_version_id, created_at, updated_at FROM flows WHERE server_id = ? ORDER BY last_version DESC LIMIT 1", new String[] { Integer.toString(id) });
         cursor.moveToNext();
         return parseFlow(cursor);
     }
@@ -503,7 +650,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         }
 
         ContentValues contentValues = new ContentValues();
-        contentValues.put("id", flow.id);
+        contentValues.put("server_id", flow.id);
         contentValues.put("title", flow.title);
         contentValues.put("description", flow.description);
         contentValues.put("initial", flow.initial ? 1 : 0);
@@ -522,11 +669,32 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
     public void addFlow(Flow flow)
     {
         ContentValues contentValues = createFlowContentValues(flow);
-        getWritableDatabase().insert("flows", null, contentValues);
+        long l = getWritableDatabase().insertOrThrow("flows", null, contentValues);
 
-        for(int i = 0; i < flow.resolution_states.length; i++)
+        for(int i = 0; i < flow.resolution_states.length + l - l; i++)
         {
             addFlowResolutionState(flow.resolution_states[i]);
+            addFlowResolutionStateRelation(flow, flow.resolution_states[i]);
+        }
+
+        if(flow.steps != null)
+        {
+            for (Flow.Step step : flow.steps)
+            {
+                addFlowStep(step);
+                addFlowStepRelation(flow, step);
+            }
+        }
+
+        if(flow.list_versions != null)
+        {
+            for (Flow version : flow.list_versions)
+            {
+                if(hasFlow(version.id, version.last_version))
+                    updateFlow(version.id, version.last_version, version);
+                else
+                    addFlow(version);
+            }
         }
     }
 

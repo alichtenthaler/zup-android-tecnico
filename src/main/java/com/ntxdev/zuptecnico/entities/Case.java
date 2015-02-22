@@ -1,8 +1,5 @@
 package com.ntxdev.zuptecnico.entities;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

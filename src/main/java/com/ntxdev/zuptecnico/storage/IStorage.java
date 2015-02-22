@@ -1,14 +1,12 @@
 package com.ntxdev.zuptecnico.storage;
 
 import com.ntxdev.zuptecnico.api.SyncAction;
-import com.ntxdev.zuptecnico.entities.Document;
 import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
 import com.ntxdev.zuptecnico.entities.User;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 
 /**
@@ -71,13 +69,17 @@ public interface IStorage {
 
     public Iterator<Flow> getFlowIterator();
 
-    public Flow getFlow(int id);
+    public Flow getFlow(int id, int version);
 
-    public boolean hasFlow(int id);
+    public boolean hasFlow(int id, int version);
 
-    public void updateFlow(int id, Flow data);
+    public void updateFlow(int id, int version, Flow data);
 
     public void addFlow(Flow flow);
+
+    public void addFlowStep(Flow.Step step);
+
+    public Flow getFlowLastKnownVersion(int id);
 
     public void clear();
 

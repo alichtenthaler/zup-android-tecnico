@@ -5,7 +5,6 @@ import android.widget.TextView;
 
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
-import com.ntxdev.zuptecnico.entities.User;
 
 /**
  * Created by igorlira on 8/8/14.

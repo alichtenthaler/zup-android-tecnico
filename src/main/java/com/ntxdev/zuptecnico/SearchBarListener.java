@@ -1,7 +1,5 @@
 package com.ntxdev.zuptecnico;
 
-import android.support.v7.app.ActionBarActivity;
-
 /**
  * Created by igorlira on 4/27/14.
  */

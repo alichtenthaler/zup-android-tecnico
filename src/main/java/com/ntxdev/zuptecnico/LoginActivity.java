@@ -12,6 +12,8 @@ import android.widget.TextView;
 import com.crashlytics.android.Crashlytics;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.api.callbacks.LoginListener;
+import com.ntxdev.zuptecnico.util.ViewUtils;
+
 import io.fabric.sdk.android.Fabric;
 
 public class LoginActivity extends ActionBarActivity implements LoginListener {
@@ -90,6 +92,8 @@ public class LoginActivity extends ActionBarActivity implements LoginListener {
         findViewById(R.id.login_progress).setVisibility(View.GONE);
         txtLogin.setEnabled(true);
         txtSenha.setEnabled(true);
+
+        ViewUtils.hideKeyboard(this, txtLogin.getWindowToken());
 
         //Intent intent = new Intent(this.getApplicationContext(), CasesActivity.class);
         Intent intent = new Intent(this.getApplicationContext(), ItemsActivity.class);

@@ -7,22 +7,17 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Dictionary;
 import java.util.Hashtable;
 
 /**
@@ -39,6 +34,7 @@ public class ApiHttpClient
         //this.mBasePath = "http://zup-api-boa-vista.cognita.ntxdev.com.br/";
         //this.mBasePath = "http://zup-api-sbc.cognita.ntxdev.com.br/";
         this.mBasePath = "http://zup-staging.cognita.ntxdev.com.br/";
+        //this.mBasePath = "http://dti-zuphmg-01:9292/";
         //this.httpClient = new DefaultHttpClient();
     }
 

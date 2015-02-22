@@ -1,6 +1,5 @@
 package com.ntxdev.zuptecnico.entities.requests;
 
-import java.util.ArrayList;
 import java.util.Hashtable;
 
 /**

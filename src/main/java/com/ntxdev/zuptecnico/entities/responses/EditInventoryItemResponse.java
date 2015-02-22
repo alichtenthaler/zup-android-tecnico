@@ -10,4 +10,5 @@ import com.ntxdev.zuptecnico.entities.InventoryItem;
 public class EditInventoryItemResponse {
     public String message;
     public InventoryItem item;
+    public String error;
 }

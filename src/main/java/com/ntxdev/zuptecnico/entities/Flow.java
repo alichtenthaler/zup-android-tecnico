@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
-import java.util.Dictionary;
 import java.util.LinkedHashMap;
 
 /**
@@ -32,18 +31,34 @@ public class Flow implements Serializable
             public LinkedHashMap requirements;
             public int order_number;
             public LinkedHashMap values;
+
+            public int last_version;
         }
         public int id;
         public String title;
         public String step_type;
 
         // child_flow
+        @JsonProperty("my_fields")
         public Field[] fields;
 
         public int order_number;
         public boolean active;
 
         public int last_version;
+
+        public Step[] list_versions;
+
+        public int child_flow_id;
+        public Flow child_flow;
+
+        public int getChildFlowId()
+        {
+            if(child_flow != null)
+                return child_flow.id;
+            else
+                return child_flow_id;
+        }
 
         public Field getField(int id)
         {
@@ -88,6 +103,8 @@ public class Flow implements Serializable
     public Integer[] steps_id;
     public Integer created_by_id;
     public Integer updated_by_id;
+
+    @JsonProperty("my_resolution_states")
     public ResolutionState[] resolution_states;
     public String status;
     public Integer last_version;
@@ -95,7 +112,10 @@ public class Flow implements Serializable
     public String created_at;
     public String updated_at;
 
+    @JsonProperty("my_steps_flows")
     public Step[] steps;
+
+    public Flow[] list_versions;
 
     public boolean areStepsDownloaded()
     {

@@ -3,13 +3,10 @@ package com.ntxdev.zuptecnico;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
-import android.app.Presentation;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v4.widget.ViewDragHelper;
 import android.support.v7.app.ActionBarActivity;
 import android.text.InputType;
 import android.view.Menu;
@@ -27,7 +24,6 @@ import android.widget.TextView;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.entities.Case;
 import com.ntxdev.zuptecnico.entities.Flow;
-import com.ntxdev.zuptecnico.entities.requests.PublishInventoryItemRequest;
 import com.ntxdev.zuptecnico.ui.UIHelper;
 
 import java.util.Calendar;
@@ -125,15 +121,16 @@ public class ViewCaseStepFormActivity extends ActionBarActivity
 
         theCase = (Case) getIntent().getSerializableExtra("case");
         int flowId = getIntent().getIntExtra("flow_id", -1);
+        int flowVersion = getIntent().getIntExtra("flow_version", -1);
         int stepId = getIntent().getIntExtra("step_id", -1);
 
-        if(theCase == null || flowId == -1 || stepId == -1)
+        if(theCase == null || flowId == -1 || stepId == -1 || flowVersion == -1)
         {
             finish();
             return;
         }
 
-        flow = Zup.getInstance().getFlow(flowId);
+        flow = Zup.getInstance().getFlow(flowId, flowVersion);
         if(theCase.getStep(stepId) != null)
         {
             step = theCase.getStep(stepId).my_step;

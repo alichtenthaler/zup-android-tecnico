@@ -10,7 +10,6 @@ import android.widget.TextView;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
-import com.google.android.gms.common.api.Api;
 import com.ntxdev.zuptecnico.R;
 import com.ntxdev.zuptecnico.ZupApplication;
 import com.ntxdev.zuptecnico.api.callbacks.InventoryItemListener;
@@ -125,6 +124,11 @@ public class Zup
         client.setSessionToken(sessionToken);
     }
 
+    public void addFlowStep(Flow.Step step)
+    {
+        storage.addFlowStep(step);
+    }
+
     public boolean hasSessionToken()
     {
         return this.sessionToken != null;
@@ -149,6 +153,8 @@ public class Zup
     {
         return this.storage.getSyncActionIterator();
     }
+
+    public void removeSyncAction(int id) { this.storage.removeSyncAction(id); }
 
     public void addSyncAction(SyncAction action)
     {
@@ -646,6 +652,33 @@ public class Zup
         return false;
     }
 
+    public void performSyncAction(final SyncAction action)
+    {
+        if(this.isSyncing)
+            return;
+
+        broadcastAction(SyncAction.ACTION_SYNC_BEGIN);
+
+        this.isSyncing = true;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if(action.perform()) {
+                    storage.removeSyncAction(action.getId());
+
+                    if(action instanceof PublishInventoryItemSyncAction && Zup.this.inventoryItemPublishedListener != null)
+                    {
+                        PublishInventoryItemSyncAction publishAction = (PublishInventoryItemSyncAction)action;
+                        Zup.this.inventoryItemPublishedListener.onInventoryItemPublished(publishAction.item.id, publishAction.item);
+                    }
+                }
+
+                isSyncing = false;
+                broadcastAction(SyncAction.ACTION_SYNC_END);
+            }
+        }).start();
+    }
+
     public void sync()
     {
         if(this.isSyncing)
@@ -706,7 +739,7 @@ public class Zup
         manager.sendBroadcast(intent);
     }
 
-    public boolean publishInventoryItem(final InventoryItem item)
+    public ApiHttpResult<PublishInventoryItemResponse> publishInventoryItem(final InventoryItem item)
     {
         //Thread worker = new Thread(new Runnable() {
             //@Override
@@ -720,16 +753,17 @@ public class Zup
                     item.updateInfo(result.result.item);
                     updateInventoryItemInfo(oldId, item);
                     item.isLocal = false;
-                    return true;
+                    //return result.result;
                 }
-                else
-                    return false;
+                //else
+                //    return null;
+                return result;
             //}
         //});
         //worker.start();
     }
 
-    public boolean editInventoryItem(final InventoryItem item)
+    public ApiHttpResult<EditInventoryItemResponse> editInventoryItem(final InventoryItem item)
     {
         /*Thread worker = new Thread(new Runnable() {
             @Override
@@ -741,12 +775,13 @@ public class Zup
                 {
                     //item.updateInfo(result.result.item);
                     item.isLocal = false;
-                    return true;
+                    //return true;
                 }
                 else
                 {
-                    return false;
+                    //return false;
                 }
+                return result;
         /*    }
         });
         worker.start();*/
@@ -894,14 +929,14 @@ public class Zup
         return result.result;
     }
 
-    public boolean hasFlow(int id)
+    public boolean hasFlow(int id, int version)
     {
-        return storage.hasFlow(id);
+        return storage.hasFlow(id, version);
     }
 
-    public void updateFlow(int id, Flow data)
+    public void updateFlow(int id, int version, Flow data)
     {
-        storage.updateFlow(id, data);
+        storage.updateFlow(id, version, data);
     }
 
     public void addFlow(Flow flow)
@@ -930,10 +965,14 @@ public class Zup
         return result.result._case;
     }
 
-    public boolean deleteInventoryItem(int categoryId, int itemId)
+    public ApiHttpResult<DeleteInventoryItemResponse> deleteInventoryItem(int categoryId, int itemId)
     {
         ApiHttpResult<DeleteInventoryItemResponse> result = client.deleteInventoryItem(categoryId, itemId);
-        return result.statusCode == 200;
+        /*if(result.statusCode == 200)
+            return result.result;
+        else
+            return null;*/
+        return result;
     }
 
     public boolean transferCaseStep(int caseId, int stepId, int responsible_user_id)
@@ -1046,9 +1085,14 @@ public class Zup
         return storage.getFlowIterator();
     }
 
-    public Flow getFlow(int id)
+    public Flow getFlow(int id, int version)
     {
-        return storage.getFlow(id);
+        return storage.getFlow(id, version);
+    }
+
+    public Flow getFlowLastKnownVersion(int id)
+    {
+        return storage.getFlowLastKnownVersion(id);
     }
 
     public Iterator<Document> getDocuments(Document.State state)

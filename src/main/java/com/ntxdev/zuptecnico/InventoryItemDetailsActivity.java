@@ -15,7 +15,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -37,7 +36,6 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.ntxdev.zuptecnico.api.DeleteInventoryItemSyncAction;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.api.ZupCache;
-import com.ntxdev.zuptecnico.api.ZupClient;
 import com.ntxdev.zuptecnico.api.callbacks.InventoryItemListener;
 import com.ntxdev.zuptecnico.api.callbacks.JobFailedListener;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
@@ -45,8 +43,6 @@ import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
 import com.ntxdev.zuptecnico.entities.InventoryItemImage;
 import com.ntxdev.zuptecnico.ui.UIHelper;
-
-import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.Arrays;

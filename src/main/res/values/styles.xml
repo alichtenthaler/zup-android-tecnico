@@ -3,19 +3,8 @@
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat">
         <item name="actionBarStyle">@style/ZupActionBar</item>
-        <item name="colorPrimary">@color/zupblue</item>
-        <item name="colorPrimaryDark">@color/zupblue</item>
-        <item name="colorAccent">@color/zupblue</item>
         <item name="actionModeBackground">@color/zupblue</item>
         <item name="actionBarItemBackground">@drawable/actionbar_item_background</item>
-
-        <item name="toolbarStyle">@style/AppThemeToolbar</item>
-        <item name="android:toolbarStyle">@style/AppThemeToolbar</item>
-    </style>
-
-    <style name="AppThemeToolbar" parent="Widget.AppCompat.Toolbar" >
-        <item name="contentInsetStart">0dp</item>
-        <item name="android:contentInsetStart">0dp</item>
     </style>
 
     <style name="ZupActionBar" parent="android:Widget.ActionBar">
