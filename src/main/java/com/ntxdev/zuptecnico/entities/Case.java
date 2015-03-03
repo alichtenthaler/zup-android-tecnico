@@ -34,10 +34,10 @@ public class Case implements Serializable
         }
 
         public int id;
-        public int case_id;
+        //public int case_id;
         public int step_id;
         public int step_version;
-        public Flow.Step my_step;
+        ///////////////////////////public Flow.Step my_step;
         public DataField[] case_step_data_fields;
         // trigger_ids
         public Integer responsible_user_id;
@@ -78,20 +78,20 @@ public class Case implements Serializable
     }
 
     public int id;
-    public Integer created_by_id;
-    public Integer updated_by_id;
+    //public Integer created_by_id;
+    //public Integer updated_by_id;
     public String created_at;
     public String updated_at;
     public int initial_flow_id;
     public int flow_version;
-    public int total_steps;
-    public Integer[] disabled_steps;
-    public Integer original_case_id;
-    public Integer[] children_case_ids;
-    public Integer[] case_step_ids;
+    //public int total_steps;
+    //public Integer[] disabled_steps;
+    //public Integer original_case_id;
+    //public Integer[] children_case_ids;
+    //public Integer[] case_step_ids;
     public Integer next_step_id;
-    public Integer responsible_user_id;
-    public Integer responsible_group_id;
+    //public Integer responsible_user_id;
+    //public Integer responsible_group_id;
     public String status; // active, pending, transfer, inactive e finished
 
     public Step current_step;

@@ -133,7 +133,8 @@ public class ViewCaseStepFormActivity extends ActionBarActivity
         flow = Zup.getInstance().getFlow(flowId, flowVersion);
         if(theCase.getStep(stepId) != null)
         {
-            step = theCase.getStep(stepId).my_step;
+            //step = theCase.getStep(stepId).my_step;
+            step = flow.getStep(theCase.getStep(stepId).step_id);
             stepVersion = theCase.getStep(stepId).step_version;
         }
         else
@@ -205,6 +206,14 @@ public class ViewCaseStepFormActivity extends ActionBarActivity
 
             if(aBoolean)
             {
+                Case.Step stepData = theCase.getStep(step.id);
+                stepData.responsible_user_id = Zup.getInstance().getSessionUserId();
+
+                if(!Zup.getInstance().hasCase(theCase.id))
+                    Zup.getInstance().addCase(theCase);
+                else
+                    Zup.getInstance().updateCase(theCase);
+
                 edited = true;
                 enterEditMode();
             }
@@ -627,7 +636,11 @@ public class ViewCaseStepFormActivity extends ActionBarActivity
             dialog.dismiss();
             if(aCase != null)
             {
-                // TODO update case
+                if(!Zup.getInstance().hasCase(aCase.id))
+                    Zup.getInstance().addCase(aCase);
+                else
+                    Zup.getInstance().updateCase(aCase);
+
                 edited = true;
                 theCase = aCase;
                 leaveEditMode();

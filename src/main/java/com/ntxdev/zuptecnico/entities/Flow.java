@@ -50,6 +50,7 @@ public class Flow implements Serializable
         public Step[] list_versions;
 
         public int child_flow_id;
+        public int child_flow_version;
         public Flow child_flow;
 
         public int getChildFlowId()
@@ -58,6 +59,14 @@ public class Flow implements Serializable
                 return child_flow.id;
             else
                 return child_flow_id;
+        }
+
+        public int getChildFlowVersion()
+        {
+            if(child_flow != null)
+                return child_flow.last_version;
+            else
+                return child_flow_version;
         }
 
         public Field getField(int id)
@@ -119,12 +128,22 @@ public class Flow implements Serializable
 
     public boolean areStepsDownloaded()
     {
-        return steps != null && steps.length > 0;
+        if(steps == null || steps.length == 0)
+            return false;
+
+        for(Step step : steps)
+        {
+            if(step.step_type.equals("form") && (step.fields == null || step.fields.length == 0))
+                return false;
+        }
+
+        return true;
     }
 
     public Step getStep(int id)
     {
-        if(!areStepsDownloaded())
+        //if(!areStepsDownloaded())
+        if(steps == null)
             return null;
 
         for(int i = 0; i < steps.length; i++)

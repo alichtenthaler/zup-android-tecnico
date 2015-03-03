@@ -6,6 +6,8 @@ import android.util.Log;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.deser.BuilderBasedDeserializer;
+import com.ntxdev.zuptecnico.BuildConfig;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -31,9 +33,17 @@ public class ApiHttpClient
     public ApiHttpClient()
     {
         //this.mBasePath = "http://staging.zup.sapience.io/";
-        //this.mBasePath = "http://zup-api-boa-vista.cognita.ntxdev.com.br/";
         //this.mBasePath = "http://zup-api-sbc.cognita.ntxdev.com.br/";
-        this.mBasePath = "http://zup-staging.cognita.ntxdev.com.br/";
+        if(BuildConfig.APPLICATION_ID != null && BuildConfig.APPLICATION_ID.equals("com.ntxdev.zuptecnico_boavista"))
+        {
+            this.mBasePath = "http://zup-api-boa-vista.cognita.ntxdev.com.br/";
+        }
+        else if(BuildConfig.APPLICATION_ID.equals("com.ntxdev.zuptecnico_sbc_ntx"))
+        {
+            this.mBasePath = "http://sbc.zeladoriaurbana.com.br/";
+        }
+        else
+            this.mBasePath = "http://zup-staging.cognita.ntxdev.com.br/";
         //this.mBasePath = "http://dti-zuphmg-01:9292/";
         //this.httpClient = new DefaultHttpClient();
     }

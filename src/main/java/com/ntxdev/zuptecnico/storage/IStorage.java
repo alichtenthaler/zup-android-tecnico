@@ -1,6 +1,7 @@
 package com.ntxdev.zuptecnico.storage;
 
 import com.ntxdev.zuptecnico.api.SyncAction;
+import com.ntxdev.zuptecnico.entities.Case;
 import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
@@ -94,4 +95,12 @@ public interface IStorage {
     public void resetSyncActions();
 
     public void updateSyncAction(SyncAction action);
+
+    public void addCase(Case kase);
+
+    public void updateCase(Case kase);
+
+    public Case getCase(int id);
+
+    public boolean hasCase(int id);
 }

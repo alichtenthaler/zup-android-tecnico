@@ -18,7 +18,6 @@ repositories {
 android {
     compileSdkVersion 19
     buildToolsVersion '21.1.2'
-
     defaultConfig {
         //packageName 'com.ntxdev.zuptecnico'
         minSdkVersion 9
@@ -36,6 +35,22 @@ android {
         exclude 'META-INF/LICENSE'
         exclude 'META-INF/NOTICE'
     }
+    productFlavors {
+        boavista {
+            minSdkVersion 9
+            applicationId 'com.ntxdev.zuptecnico_boavista'
+            targetSdkVersion 19
+            versionCode 1
+            versionName '1.0'
+        }
+        sbc_ntx {
+            applicationId 'com.ntxdev.zuptecnico_sbc_ntx'
+        }
+        staging {
+            applicationId 'com.ntxdev.zuptecnico'
+            targetSdkVersion 19
+        }
+    }
 }
 
 dependencies {
@@ -45,12 +60,11 @@ dependencies {
     compile files('lib/image-chooser-library-1.3.0.jar')
     //compile 'com.crashlytics.sdk.android:crashlytics:2.2.1'
     compile('com.crashlytics.sdk.android:crashlytics:2.1.0@aar') {
-                                transitive = true;
-                            }
+        transitive = true;
+    }
     compile 'com.google.android.gms:play-services:4.2.42'
     //compile 'com.android.support:support-v4:21.0.3'
     //compile 'com.android.support:appcompat-v7:21.0.3'
-
     compile 'com.android.support:support-v4:19+'
     compile 'com.android.support:appcompat-v7:19+'
 }

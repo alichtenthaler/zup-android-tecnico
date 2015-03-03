@@ -235,6 +235,26 @@ public class Zup
         return storage.getUser(sessionUserId);
     }
 
+    public boolean hasCase(int id)
+    {
+        return storage.hasCase(id);
+    }
+
+    public Case getCase(int id)
+    {
+        return storage.getCase(id);
+    }
+
+    public void addCase(Case kase)
+    {
+        storage.addCase(kase);
+    }
+
+    public void updateCase(Case kase)
+    {
+        storage.updateCase(kase);
+    }
+
     private BitmapResource getResource(int id)
     {
         for(int i = 0; i < bitmaps.size(); i++)
@@ -1090,10 +1110,10 @@ public class Zup
         return storage.getFlow(id, version);
     }
 
-    public Flow getFlowLastKnownVersion(int id)
+    /*public Flow getFlowLastKnownVersion(int id)
     {
         return storage.getFlowLastKnownVersion(id);
-    }
+    }*/
 
     public Iterator<Document> getDocuments(Document.State state)
     {

@@ -3,6 +3,7 @@ package com.ntxdev.zuptecnico.storage;
 import android.content.Context;
 
 import com.ntxdev.zuptecnico.api.SyncAction;
+import com.ntxdev.zuptecnico.entities.Case;
 import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
@@ -207,5 +208,25 @@ public class SQLiteStorage implements IStorage {
     public void addFlow(Flow flow)
     {
         db.addFlow(flow);
+    }
+
+    public void addCase(Case kase)
+    {
+        db.addCase(kase);
+    }
+
+    public void updateCase(Case kase)
+    {
+        db.updateCase(kase);
+    }
+
+    public Case getCase(int id)
+    {
+        return db.getCase(id);
+    }
+
+    public boolean hasCase(int id)
+    {
+        return db.hasCase(id);
     }
 }

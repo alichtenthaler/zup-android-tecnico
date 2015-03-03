@@ -123,12 +123,15 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
 
             for(Flow flow : flowCollection.flows)
             {
-                Flow.StepCollection steps = Zup.getInstance().retrieveFlowSteps(flow.id);
-                for(Flow.Step step : steps.steps)
+                //if(!flow.areStepsDownloaded())
+                if(false)
                 {
-                    Zup.getInstance().addFlowStep(step);
+                    Flow.StepCollection steps = Zup.getInstance().retrieveFlowSteps(flow.id);
+                    for (Flow.Step step : steps.steps) {
+                        Zup.getInstance().addFlowStep(step);
+                    }
+                    flow.steps = steps.steps;
                 }
-                //flow.steps = steps.steps;
 
                 if(Zup.getInstance().hasFlow(flow.id, flow.last_version))
                 {
@@ -301,13 +304,19 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
         TextView description = (TextView)rootView.findViewById(R.id.fragment_document_desc);
         TextView state = (TextView)rootView.findViewById(R.id.fragment_document_statedesc);
         ImageView stateicon = (ImageView)rootView.findViewById(R.id.fragment_document_stateicon);
+        View downloadicon = rootView.findViewById(R.id.fragment_document_downloadicon);
+
+        if(Zup.getInstance().hasCase(item.id))
+        {
+            downloadicon.setVisibility(View.VISIBLE);
+        }
 
         stateicon.setImageDrawable(getResources().getDrawable(Zup.getInstance().getCaseStatusDrawable(item.status)));
         state.setBackgroundColor(Zup.getInstance().getCaseStatusColor(item.status));
         state.setText(Zup.getInstance().getCaseStatusString(item.status));
 
         title.setText("Caso " + item.id);
-        flow.setText(_flow.title + " v" + item.flow_version);
+        flow.setText(_flow.title);// + " v" + item.flow_version);
         description.setText("Data de criação: " + Zup.getInstance().formatIsoDate(item.created_at) + (item.updated_at != null ? " / Última modificação: " + Zup.getInstance().formatIsoDate(item.updated_at): ""));
 
         return rootView;
@@ -321,6 +330,9 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
         root.removeAllViews();
         for(Case item : cases)
         {
+            if(Zup.getInstance().hasCase(item.id))
+                Zup.getInstance().updateCase(item);
+
             if(_status == null || _status.equals(item.status))
             {
                 View view = setUpCaseView(item);

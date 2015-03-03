@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -25,10 +27,14 @@ public class CaseDetailsActivity extends ActionBarActivity
     private CaseLoader caseLoader;
     private StepLoader stepLoader;
     private Case _case;
+    private Flow _flow;
 
     private int _flowId = -1;
+    private int _flowVersion = -1;
 
     private int _caseId;
+
+    private Menu _menu;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +49,13 @@ public class CaseDetailsActivity extends ActionBarActivity
             return;
 
         _flowId = getIntent().getIntExtra("flow_id", -1);
+        _flowVersion = getIntent().getIntExtra("flow_version", -1);
         this._case = (Case) getIntent().getSerializableExtra("case");
+
+        if(this._case == null)
+        {
+            this._case = Zup.getInstance().getCase(caseId);
+        }
 
         if(_flowId != -1)
         {
@@ -56,6 +68,51 @@ public class CaseDetailsActivity extends ActionBarActivity
             loadCase();
         else
             caseDownloaded();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu)
+    {
+        getMenuInflater().inflate(R.menu.document_details, menu);
+
+        _menu = menu;
+        refreshMenu();
+
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    void refreshMenu()
+    {
+        if(_menu == null)
+            return;
+
+        MenuItem download = _menu.findItem(R.id.action_items_download);
+        MenuItem downloadDelete = _menu.findItem(R.id.action_items_delete_download);
+
+        if(Zup.getInstance().hasCase(_caseId))
+        {
+            download.setVisible(false);
+            downloadDelete.setVisible(true);
+        }
+        else
+        {
+            download.setVisible(true);
+            downloadDelete.setVisible(false);
+        }
+    }
+
+    @Override
+    protected void onResume()
+    {
+        super.onResume();
+        refreshMenu();
+
+        Case updatedCase = Zup.getInstance().getCase(_caseId);
+        if(updatedCase != null)
+            _case = updatedCase;
+
+        if(_case != null && _flow != null)
+            fillCaseData(_case, _flow);
     }
 
     void loadCase()
@@ -78,13 +135,18 @@ public class CaseDetailsActivity extends ActionBarActivity
 
     View createStepView(Case item, Flow flow, Flow.Step step, boolean done)
     {
+        Flow childFlow = null;
+        if(step.step_type.equals("flow"))
+            childFlow = Zup.getInstance().getFlow(step.getChildFlowId(), step.getChildFlowVersion());
+
         Case.Step stepData = item.getStep(step.id);
         String statusT = "Status desconhecido";
         if(done || (stepData != null && stepData.executed))
         {
             statusT = "Finalizado";
         }
-        else if (item.current_step != null && item.current_step.step_id == step.id && !item.current_step.executed)
+        else if ((item.current_step != null && item.current_step.step_id == step.id && !item.current_step.executed) ||
+                (item.current_step != null && childFlow != null && childFlow.getStep(item.current_step.step_id) != null))
         {
             statusT = "Em andamento";
         }
@@ -100,6 +162,17 @@ public class CaseDetailsActivity extends ActionBarActivity
         TextView status = (TextView) root.findViewById(R.id.case_step_item_status);
 
         name.setText(step.title);
+        if(step.step_type.equals("flow")) {
+            //Flow flow1 = Zup.getInstance().getFlow(step.getChildFlowId(), step.getChildFlowVersion());
+            name.setText(step.title);
+
+            /*if(flow1 != null)
+                name.setText(step.title + " (" + flow1 + " v" + flow1.last_version + ")");
+            else
+                name.setText(step.title + " (#" + step.getChildFlowId() + " v" + step.getChildFlowVersion() + " NOT PRESENT)");
+                */
+        }
+
         if(stepData != null && stepData.hasResponsibleUser())
             Zup.getInstance().showUsernameInto(owner, "Condutor: ", stepData.responsible_user_id);
         else
@@ -116,12 +189,12 @@ public class CaseDetailsActivity extends ActionBarActivity
         overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
     }
 
-    void openSubflow(int flowId, Case thecase)
+    void openSubflow(int flowId, int flowVersion, Case thecase)
     {
         Intent intent = new Intent(this, CaseDetailsActivity.class);
         intent.putExtra("case_id", thecase.id);
         intent.putExtra("flow_id", flowId);
-        //intent.putExtra("flow_version", flowVersion);
+        intent.putExtra("flow_version", flowVersion);
         intent.putExtra("case", thecase);
 
         this.startActivity(intent);
@@ -167,7 +240,7 @@ public class CaseDetailsActivity extends ActionBarActivity
                 done = false;
             else if(done && step.step_type.equals("flow"))
             {
-                Flow childFlow = Zup.getInstance().getFlowLastKnownVersion(step.child_flow_id);
+                Flow childFlow = Zup.getInstance().getFlow(step.getChildFlowId(), step.getChildFlowVersion());
                 if(childFlow != null && childFlow.getStep(item.next_step_id) != null)
                     done = false;
             }
@@ -176,12 +249,13 @@ public class CaseDetailsActivity extends ActionBarActivity
             stepView.setTag(R.id.tag_case, item);
             stepView.setTag(R.id.tag_step_id, step.id);
             stepView.setTag(R.id.tag_flow_id, initialFlow.id);
-            stepView.setTag(R.id.tag_flow_version, item.flow_version);
+            //stepView.setTag(R.id.tag_flow_version, item.flow_version);
+            stepView.setTag(R.id.tag_flow_version, initialFlow.last_version);
             stepView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     if(step.step_type.equals("flow"))
-                        openSubflow(step.getChildFlowId(), item);
+                        openSubflow(step.getChildFlowId(), step.getChildFlowVersion(), item);
                     else
                         openStep((Integer)view.getTag(R.id.tag_step_id), (Integer)view.getTag(R.id.tag_flow_id), (Integer)view.getTag(R.id.tag_flow_version), (Case)view.getTag(R.id.tag_case));
                 }
@@ -260,6 +334,7 @@ public class CaseDetailsActivity extends ActionBarActivity
 
     void stepsDownloaded(Flow flow)
     {
+        _flow = flow;
         fillCaseData(_case, flow);
     }
 
@@ -271,7 +346,7 @@ public class CaseDetailsActivity extends ActionBarActivity
         if(_flowId == -1)
             initialFlow = Zup.getInstance().getFlow(aCase.initial_flow_id, aCase.flow_version);
         else
-            initialFlow = Zup.getInstance().getFlowLastKnownVersion(_flowId);
+            initialFlow = Zup.getInstance().getFlow(_flowId, _flowVersion);
 
         if(initialFlow.areStepsDownloaded())
             stepsDownloaded(initialFlow);
@@ -298,7 +373,7 @@ public class CaseDetailsActivity extends ActionBarActivity
 
             if(aCase == null)
             {
-                Toast.makeText(CaseDetailsActivity.this, "Sem conexão", 3).show();
+                Toast.makeText(CaseDetailsActivity.this, "Sem conexão", Toast.LENGTH_LONG).show();
                 return;
             }
 

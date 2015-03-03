@@ -76,4 +76,14 @@
         android:paddingTop="2dp"
         android:paddingBottom="2dp" />
 
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/fragment_document_downloadicon"
+        android:layout_centerVertical="true"
+        android:layout_marginRight="20dp"
+        android:src="@drawable/list_offline_icon"
+        android:visibility="gone"
+        android:layout_alignParentRight="true" />
+
 </RelativeLayout>

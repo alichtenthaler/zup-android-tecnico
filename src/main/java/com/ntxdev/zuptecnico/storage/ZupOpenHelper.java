@@ -10,12 +10,14 @@ import android.util.Log;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ntxdev.zuptecnico.api.SyncAction;
+import com.ntxdev.zuptecnico.entities.Case;
 import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
 import com.ntxdev.zuptecnico.entities.User;
 
+import org.json.JSONException;
 import org.json.JSONStringer;
 
 import java.util.ArrayList;
@@ -48,12 +50,16 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
 
         sqLiteDatabase.execSQL("CREATE TABLE flows (id INTEGER PRIMARY KEY, server_id INTEGER, title VARCHAR(120), description VARCHAR(120), initial INTEGER, steps_id VARCHAR(200), created_by_id INTEGER, updated_by_id INTEGER, status VARCHAR(120), last_version INTEGER, last_version_id INTEGER, created_at VARCHAR(120), updated_at VARCHAR(120));");
         sqLiteDatabase.execSQL("CREATE TABLE flows_resolution_states (id INTEGER PRIMARY KEY, server_id INTEGER, flow_id INTEGER, title VARCHAR(120), _default INTEGER, active INTEGER, created_at VARCHAR(120), updated_at VARCHAR(120), last_version INTEGER, last_version_id INTEGER);");
-        sqLiteDatabase.execSQL("CREATE TABLE flows_steps (id INTEGER PRIMARY KEY, server_id INTEGER, flow_id INTEGER, title VARCHAR(120), step_type VARCHAR(120), child_flow INTEGER NULL, order_number INTEGER, active INTEGER, last_version INTEGER);");
+        sqLiteDatabase.execSQL("CREATE TABLE flows_steps (id INTEGER PRIMARY KEY, server_id INTEGER, flow_id INTEGER, title VARCHAR(120), step_type VARCHAR(120), child_flow INTEGER NULL, child_flow_version INTEGER NULL, order_number INTEGER, active INTEGER, last_version INTEGER);");
         sqLiteDatabase.execSQL("CREATE TABLE flows_steps_fields (id INTEGER PRIMARY KEY, server_id INTEGER, flow_id INTEGER, step_id INTEGER, title VARCHAR(120), field_type VARCHAR(120), category_inventory_id INTEGER, category_report_id INTEGER, origin_field_id INTEGER, active INTEGER, multiple INTEGER, requirements TEXT NULL, order_number INTEGER, ovalues TEXT NULL, last_version INTEGER);");
 
         sqLiteDatabase.execSQL("CREATE TABLE flows_resolution_states_relation (flow_id INTEGER, flow_version INTEGER, state_id INTEGER, state_version INTEGER);");
         sqLiteDatabase.execSQL("CREATE TABLE flows_steps_relation (flow_id INTEGER, flow_version INTEGER, step_id INTEGER, step_version INTEGER);");
         sqLiteDatabase.execSQL("CREATE TABLE flows_steps_fields_relation (step_id INTEGER, step_version INTEGER, field_id INTEGER, field_version INTEGER);");
+
+        sqLiteDatabase.execSQL("CREATE TABLE cases (id INTEGER PRIMARY KEY, created_at VARCHAR(120), updated_at VARCHAR(120), initial_flow_id INTEGER, flow_version INTEGER, next_step_id INTEGER, status VARCHAR(120), current_case_step_id INTEGER NULL);");
+        sqLiteDatabase.execSQL("CREATE TABLE cases_steps (id INTEGER PRIMARY KEY, case_id INTEGER, step_id INTEGER, step_version INTEGER, responsible_user_id INTEGER, executed INTEGER);");
+        sqLiteDatabase.execSQL("CREATE TABLE cases_steps_data (id INTEGER PRIMARY KEY, case_step_id INTEGER, field_id INTEGER, value TEXT NULL);");
 
         sqLiteDatabase.execSQL("CREATE TABLE sync_actions (id INTEGER PRIMARY KEY, type INTEGER, date BIGINT, info TEXT, pending INTEGER, running INTEGER, successful INTEGER);");
     }
@@ -78,6 +84,211 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         getWritableDatabase().execSQL("DELETE FROM flows_resolution_states_relation");
         getWritableDatabase().execSQL("DELETE FROM flows_steps_relation");
         getWritableDatabase().execSQL("DELETE FROM flows_steps_fields_relation");
+        getWritableDatabase().execSQL("DELETE FROM cases");
+        getWritableDatabase().execSQL("DELETE FROM cases_steps");
+        getWritableDatabase().execSQL("DELETE FROM cases_steps_data");
+    }
+
+    ContentValues createCaseContentValues(Case kase)
+    {
+        // id INTEGER PRIMARY KEY, created_at VARCHAR(120), updated_at VARCHAR(120), initial_flow_id INTEGER,
+        // flow_version INTEGER, next_step_id INTEGER, status VARCHAR(120), current_case_step_id INTEGER
+        ContentValues contentValues = new ContentValues();
+        contentValues.put("id", kase.id);
+        contentValues.put("created_at", kase.created_at);
+        contentValues.put("updated_at", kase.updated_at);
+        contentValues.put("initial_flow_id", kase.initial_flow_id);
+        contentValues.put("flow_version", kase.flow_version);
+        contentValues.put("next_step_id", kase.next_step_id);
+        contentValues.put("status", kase.status);
+        if(kase.current_step != null)
+            contentValues.put("current_case_step_id", kase.current_step.id);
+        else
+            contentValues.put("current_case_step_id", (String)null);
+
+        return contentValues;
+    }
+
+    ContentValues createCaseStepContentValues(Case kase, Case.Step step)
+    {
+        // id INTEGER PRIMARY KEY, case_id INTEGER, step_id INTEGER, step_version INTEGER,
+        // responsible_user_id INTEGER, executed INTEGER
+        ContentValues contentValues = new ContentValues();
+        contentValues.put("id", step.id);
+        contentValues.put("case_id", kase.id);
+        contentValues.put("step_id", step.step_id);
+        contentValues.put("step_version", step.step_version);
+        contentValues.put("responsible_user_id", step.responsible_user_id);
+        contentValues.put("executed", step.executed ? 1 : 0);
+
+        return contentValues;
+    }
+
+    ContentValues createCaseStepDataContentValues(Case.Step step, Case.Step.DataField data)
+    {
+        // id INTEGER PRIMARY KEY, case_step_id INTEGER, field_id INTEGER, value TEXT
+        ContentValues contentValues = new ContentValues();
+        contentValues.put("id", data.id);
+        contentValues.put("case_step_id", step.id);
+        contentValues.put("field_id", data.getFieldId());
+
+        ObjectMapper mapper = new ObjectMapper();
+        String json = null;
+
+        try
+        {
+            json = mapper.writeValueAsString(data.value);
+        }
+        catch (Exception ex)
+        {
+            ex.printStackTrace();
+        }
+
+        contentValues.put("value", json);
+
+        return contentValues;
+    }
+
+    public boolean hasCase(int id)
+    {
+        Cursor query = getReadableDatabase().rawQuery("SELECT id FROM cases WHERE id=" + id + " LIMIT 1", null);
+        return query.moveToNext();
+    }
+
+    boolean hasCaseStep(int id)
+    {
+        Cursor query = getReadableDatabase().rawQuery("SELECT id FROM cases_steps WHERE id=" + id + " LIMIT 1", null);
+        return query.moveToNext();
+    }
+
+    boolean hasCaseStepData(int id)
+    {
+        Cursor query = getReadableDatabase().rawQuery("SELECT id FROM cases_steps_data WHERE id=" + id + " LIMIT 1", null);
+        return query.moveToNext();
+    }
+
+    public Case getCase(int id)
+    {
+        Cursor cursor = getReadableDatabase().query("cases", new String[] { "id", "created_at", "updated_at", "initial_flow_id",
+                "flow_version", "next_step_id", "status", "current_case_step_id" }, "id=" +  id, null, null, null, null); //.rawQuery("SELECT id FROM cases WHERE id=" + id + " LIMIT 1", null);
+
+        if(!cursor.moveToNext())
+            return null;
+
+        Case kase = new Case();
+        kase.id = cursor.getInt(0);
+        kase.created_at = cursor.getString(1);
+        kase.updated_at = cursor.getString(2);
+        kase.initial_flow_id = cursor.getInt(3);
+        kase.flow_version = cursor.getInt(4);
+        kase.next_step_id = cursor.getInt(5);
+        kase.status = cursor.getString(6);
+
+        int currentCaseStepId = cursor.getInt(7);
+        kase.case_steps = getCaseSteps(kase.id);
+
+        for(Case.Step step : kase.case_steps)
+        {
+            if(step.id == currentCaseStepId)
+                kase.current_step = step;
+        }
+
+        return kase;
+    }
+
+    Case.Step[] getCaseSteps(int caseId)
+    {
+        ArrayList<Case.Step> result = new ArrayList<Case.Step>();
+
+        Cursor cursor = getReadableDatabase().query("cases_steps", new String[] { "id", "step_id", "step_version",
+                "responsible_user_id", "executed" }, "case_id=" +  caseId, null, null, null, null);
+
+        while(cursor.moveToNext())
+        {
+            Case.Step step = new Case.Step();
+            step.id = cursor.getInt(0);
+            step.step_id = cursor.getInt(1);
+            step.step_version = cursor.getInt(2);
+            step.responsible_user_id = cursor.getInt(3);
+            step.executed = cursor.getInt(4) == 1;
+
+            step.case_step_data_fields = getCaseStepData(step.id);
+
+            result.add(step);
+        }
+
+        return result.toArray(new Case.Step[0]);
+    }
+
+    Case.Step.DataField[] getCaseStepData(int stepId)
+    {
+        ArrayList<Case.Step.DataField> result = new ArrayList<Case.Step.DataField>();
+
+        Cursor cursor = getReadableDatabase().query("cases_steps_data", new String[] { "id", "field_id",
+                "value" }, "case_step_id=" + stepId, null, null, null, null);
+
+        ObjectMapper mapper = new ObjectMapper();
+        while(cursor.moveToNext())
+        {
+            Case.Step.DataField data = new Case.Step.DataField();
+            data.id = cursor.getInt(0);
+            data.fieldId = cursor.getInt(1);
+
+            try
+            {
+                data.value = mapper.readValue(cursor.getString(2), Object.class);
+            }
+            catch (Exception ex)
+            {
+                ex.printStackTrace();
+            }
+
+            result.add(data);
+        }
+
+        return result.toArray(new Case.Step.DataField[0]);
+    }
+
+    public void addCase(Case kase)
+    {
+        if(hasCase(kase.id))
+        {
+            updateCase(kase);
+            return;
+        }
+
+        getWritableDatabase().insertOrThrow("cases", null, createCaseContentValues(kase));
+
+        for(Case.Step step : kase.case_steps)
+        {
+            getWritableDatabase().insertOrThrow("cases_steps", null, createCaseStepContentValues(kase, step));
+
+            for(Case.Step.DataField data : step.case_step_data_fields)
+            {
+                getWritableDatabase().insertOrThrow("cases_steps_data", null, createCaseStepDataContentValues(step, data));
+            }
+        }
+    }
+
+    public void updateCase(Case kase)
+    {
+        getWritableDatabase().update("cases", createCaseContentValues(kase), "id=" + kase.id, null);
+
+        for(Case.Step step : kase.case_steps)
+        {
+            if(hasCaseStep(step.id))
+                getWritableDatabase().update("cases_steps", createCaseStepContentValues(kase, step), "id=" + step.id, null);
+            else
+                getWritableDatabase().insertOrThrow("cases_steps", null, createCaseStepContentValues(kase, step));
+
+            for(Case.Step.DataField data : step.case_step_data_fields)
+            {
+                if(hasCaseStepData(data.id))
+                    getWritableDatabase().update("cases_steps_data", createCaseStepDataContentValues(step, data), "id=" + data.id, null);
+                else
+                    getWritableDatabase().insertOrThrow("cases_steps_data", null, createCaseStepDataContentValues(step, data));
+            }
+        }
     }
 
     public void resetSyncActions()
@@ -157,6 +368,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         contentValues.put("title", step.title);
         contentValues.put("step_type", step.step_type);
         contentValues.put("child_flow", step.getChildFlowId());
+        contentValues.put("child_flow_version", step.getChildFlowVersion());
         contentValues.put("order_number", step.order_number);
         contentValues.put("active", step.active ? 1 : 0);
         contentValues.put("last_version", step.last_version);
@@ -337,6 +549,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         step.order_number = cursor.getInt(4);
         step.active = cursor.getInt(5) == 1;
         step.last_version = cursor.getInt(6);
+        step.child_flow_version = cursor.getInt(7);
 
         Cursor countCursor = getReadableDatabase().rawQuery("SELECT COUNT(step_id) FROM flows_steps_fields_relation WHERE step_id = " + step.id + " AND step_version = " + step.last_version, null);
         //Cursor countCursor = getReadableDatabase().rawQuery("SELECT COUNT(server_id) FROM flows_steps_fields WHERE step_id = " + step.id + " AND flow_version=" + flow.last_version + " AND step_version=" + step.last_version, null);
@@ -470,7 +683,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         {
             int stepId = relationCursor.getInt(0);
             int stepVersion = relationCursor.getInt(1);
-            Cursor stepsCursor = getReadableDatabase().rawQuery("SELECT server_id, title, step_type, child_flow, order_number, active, last_version FROM flows_steps WHERE server_id = ? AND last_version=? LIMIT 1", new String[] { Integer.toString(stepId), Integer.toString(stepVersion) });
+            Cursor stepsCursor = getReadableDatabase().rawQuery("SELECT server_id, title, step_type, child_flow, order_number, active, last_version, child_flow_version FROM flows_steps WHERE server_id = ? AND last_version=? LIMIT 1", new String[] { Integer.toString(stepId), Integer.toString(stepVersion) });
             stepsCursor.moveToFirst();
 
             Flow.Step step = parseStep(flow, stepsCursor);
@@ -624,7 +837,11 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
     public Flow getFlow(int id, int version)
     {
         Cursor cursor = getReadableDatabase().rawQuery("SELECT server_id, title, description, initial, steps_id, created_by_id, updated_by_id, status, last_version, last_version_id, created_at, updated_at FROM flows WHERE server_id = ? AND last_version = ? LIMIT 1", new String[] { Integer.toString(id), Integer.toString(version) });
-        cursor.moveToNext();
+        if(!cursor.moveToNext())
+        {
+            Log.e("[FLOW]", "FLOW NOT FOUND: #" + id + " v" + version);
+            return null;
+        }
         return parseFlow(cursor);
     }
 
