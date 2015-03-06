@@ -274,21 +274,22 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
     {
         getWritableDatabase().update("cases", createCaseContentValues(kase), "id=" + kase.id, null);
 
-        for(Case.Step step : kase.case_steps)
-        {
-            if(hasCaseStep(step.id))
-                getWritableDatabase().update("cases_steps", createCaseStepContentValues(kase, step), "id=" + step.id, null);
-            else
-                getWritableDatabase().insertOrThrow("cases_steps", null, createCaseStepContentValues(kase, step));
-
-            for(Case.Step.DataField data : step.case_step_data_fields)
-            {
-                if(hasCaseStepData(data.id))
-                    getWritableDatabase().update("cases_steps_data", createCaseStepDataContentValues(step, data), "id=" + data.id, null);
+        if(kase.case_steps != null) {
+            for (Case.Step step : kase.case_steps) {
+                if (hasCaseStep(step.id))
+                    getWritableDatabase().update("cases_steps", createCaseStepContentValues(kase, step), "id=" + step.id, null);
                 else
-                    getWritableDatabase().insertOrThrow("cases_steps_data", null, createCaseStepDataContentValues(step, data));
+                    getWritableDatabase().insertOrThrow("cases_steps", null, createCaseStepContentValues(kase, step));
+
+                for (Case.Step.DataField data : step.case_step_data_fields) {
+                    if (hasCaseStepData(data.id))
+                        getWritableDatabase().update("cases_steps_data", createCaseStepDataContentValues(step, data), "id=" + data.id, null);
+                    else
+                        getWritableDatabase().insertOrThrow("cases_steps_data", null, createCaseStepDataContentValues(step, data));
+                }
             }
         }
+
     }
 
     public void resetSyncActions()
