@@ -12,6 +12,7 @@ import com.ntxdev.zuptecnico.entities.collections.InventoryCategoryCollection;
 import com.ntxdev.zuptecnico.entities.collections.InventoryCategoryStatusCollection;
 import com.ntxdev.zuptecnico.entities.collections.InventoryItemCollection;
 import com.ntxdev.zuptecnico.entities.collections.SingleCaseCollection;
+import com.ntxdev.zuptecnico.entities.collections.SingleFlowCollection;
 import com.ntxdev.zuptecnico.entities.collections.SingleInventoryCategoryCollection;
 import com.ntxdev.zuptecnico.entities.collections.SingleInventoryItemCollection;
 import com.ntxdev.zuptecnico.entities.collections.SingleUserCollection;
@@ -272,13 +273,19 @@ public class ZupClient
 
     public ApiHttpResult<FlowCollection> retrieveFlows()
     {
-        ApiHttpResult<FlowCollection> result = httpClient.get("flows.json?display_type=full" + (sessionToken != null ? "&token=" + sessionToken : ""), FlowCollection.class);
+        ApiHttpResult<FlowCollection> result = httpClient.get("flows.json?" + (sessionToken != null ? "&token=" + sessionToken : ""), FlowCollection.class);
         return result;
     }
 
     public ApiHttpResult<Flow.StepCollection> retrieveFlowSteps(int flowId)
     {
         ApiHttpResult<Flow.StepCollection> result = httpClient.get("flows/" + flowId + "/steps.json?display_type=full" + (sessionToken != null ? "&token=" + sessionToken : ""), Flow.StepCollection.class);
+        return result;
+    }
+
+    public ApiHttpResult<SingleFlowCollection> retrieveFlowVersion(int flowId, int version)
+    {
+        ApiHttpResult<SingleFlowCollection> result = httpClient.get("flows/" + flowId + "?version=" + version + "&display_type=full" + (sessionToken != null ? "&token=" + sessionToken : ""), SingleFlowCollection.class);
         return result;
     }
 

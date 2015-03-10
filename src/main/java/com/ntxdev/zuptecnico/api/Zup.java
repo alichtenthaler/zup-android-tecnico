@@ -34,6 +34,7 @@ import com.ntxdev.zuptecnico.entities.collections.InventoryCategoryCollection;
 import com.ntxdev.zuptecnico.entities.collections.InventoryCategoryStatusCollection;
 import com.ntxdev.zuptecnico.entities.collections.InventoryItemCollection;
 import com.ntxdev.zuptecnico.entities.collections.SingleCaseCollection;
+import com.ntxdev.zuptecnico.entities.collections.SingleFlowCollection;
 import com.ntxdev.zuptecnico.entities.collections.SingleInventoryCategoryCollection;
 import com.ntxdev.zuptecnico.entities.collections.SingleInventoryItemCollection;
 import com.ntxdev.zuptecnico.entities.collections.SingleUserCollection;
@@ -946,6 +947,12 @@ public class Zup
     public Flow.StepCollection retrieveFlowSteps(int flowId)
     {
         ApiHttpResult<Flow.StepCollection> result = client.retrieveFlowSteps(flowId);
+        return result.result;
+    }
+
+    public SingleFlowCollection retrieveFlowVersion(int flowId, int version)
+    {
+        ApiHttpResult<SingleFlowCollection> result = client.retrieveFlowVersion(flowId, version);
         return result.result;
     }
 

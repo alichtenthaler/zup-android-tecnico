@@ -15,6 +15,7 @@ import android.widget.Toast;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.entities.Case;
 import com.ntxdev.zuptecnico.entities.Flow;
+import com.ntxdev.zuptecnico.entities.collections.SingleFlowCollection;
 import com.ntxdev.zuptecnico.ui.UIHelper;
 
 /**
@@ -26,6 +27,7 @@ public class CaseDetailsActivity extends ActionBarActivity
 
     private CaseLoader caseLoader;
     private StepLoader stepLoader;
+    private FieldLoader fieldLoader;
     private Case _case;
     private Flow _flow;
 
@@ -250,7 +252,7 @@ public class CaseDetailsActivity extends ActionBarActivity
             stepView.setTag(R.id.tag_step_id, step.id);
             stepView.setTag(R.id.tag_flow_id, initialFlow.id);
             //stepView.setTag(R.id.tag_flow_version, item.flow_version);
-            stepView.setTag(R.id.tag_flow_version, initialFlow.last_version);
+            stepView.setTag(R.id.tag_flow_version, initialFlow.version_id);
             stepView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -299,40 +301,67 @@ public class CaseDetailsActivity extends ActionBarActivity
         stepLoader.execute(flow);
     }
 
-    class StepLoader extends AsyncTask<Flow, Void, Flow.StepCollection>
+    class StepLoader extends AsyncTask<Flow, Void, SingleFlowCollection>
     {
         Flow flow;
         @Override
-        protected Flow.StepCollection doInBackground(Flow... flows)
+        protected SingleFlowCollection doInBackground(Flow... flows)
         {
             this.flow = flows[0];
-            return Zup.getInstance().retrieveFlowSteps(flows[0].id);
+            return Zup.getInstance().retrieveFlowVersion(flows[0].id, flows[0].version_id);
         }
 
         @Override
-        protected void onPostExecute(Flow.StepCollection stepCollection)
+        protected void onPostExecute(SingleFlowCollection stepCollection)
         {
             super.onPostExecute(stepCollection);
 
-            if(stepCollection == null || stepCollection.steps == null)
+            if(stepCollection == null || stepCollection.flow == null)
             {
                 // TODO sem conexao?
                 return;
             }
 
-            for(Flow.Step step : stepCollection.steps)
+            this.flow = stepCollection.flow;
+            Zup.getInstance().updateFlow(this.flow.id, this.flow.version_id, this.flow);
+
+            /*for(Flow.Step step : stepCollection.steps)
             {
                 Zup.getInstance().addFlowStep(step);
             }
 
             //this.flow.steps = stepCollection.steps;
-            Zup.getInstance().updateFlow(this.flow.id, this.flow.last_version, this.flow);
+            Zup.getInstance().updateFlow(this.flow.id, this.flow.version_id, this.flow);*/
 
             stepsDownloaded(this.flow);
         }
     }
 
     void stepsDownloaded(Flow flow)
+    {
+        boolean fieldsDownloaded = true;
+
+        for(Flow.Step step : flow.steps)
+        {
+            if(!step.areFieldsDownloaded())
+            {
+                fieldsDownloaded = false;
+                break;
+            }
+        }
+
+        if(fieldsDownloaded)
+            fieldsDownloaded(flow);
+        else
+            downloadFields(flow);
+    }
+
+    void downloadFields(Flow flow)
+    {
+
+    }
+
+    void fieldsDownloaded(Flow flow)
     {
         _flow = flow;
         fillCaseData(_case, flow);
@@ -370,6 +399,30 @@ public class CaseDetailsActivity extends ActionBarActivity
             super.onPostExecute(aCase);
 
             _case = aCase;
+
+            if(aCase == null)
+            {
+                Toast.makeText(CaseDetailsActivity.this, "Sem conexão", Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            caseDownloaded();
+        }
+    }
+
+    class FieldLoader extends AsyncTask<Integer, Void, Flow>
+    {
+        @Override
+        protected Flow doInBackground(Integer... integers)
+        {
+            return null; //Zup.getInstance().retrieveCase(integers[0]);
+        }
+
+        @Override
+        protected void onPostExecute(Flow aCase) {
+            super.onPostExecute(aCase);
+
+            //_case = aCase;
 
             if(aCase == null)
             {

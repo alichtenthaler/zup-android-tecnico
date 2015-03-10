@@ -1,10 +1,12 @@
 buildscript {
     repositories {
+		mavenCentral()
         maven { url 'https://maven.fabric.io/public' }
     }
 
     dependencies {
         classpath 'io.fabric.tools:gradle:1.+'
+		classpath 'com.android.tools.build:gradle:1.0.0'
     }
 }
 apply plugin: 'android'
@@ -49,6 +51,9 @@ android {
         staging {
             applicationId 'com.ntxdev.zuptecnico'
             targetSdkVersion 19
+        }
+        sbc_hmg {
+            applicationId 'com.ntxdev.zuptecnico_sbc_hmg'
         }
     }
 }

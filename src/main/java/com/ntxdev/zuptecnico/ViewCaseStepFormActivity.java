@@ -140,7 +140,7 @@ public class ViewCaseStepFormActivity extends ActionBarActivity
         else
         {
             step = flow.getStep(stepId);
-            stepVersion = step.last_version;
+            stepVersion = step.version_id;
         }
 
         fillData();

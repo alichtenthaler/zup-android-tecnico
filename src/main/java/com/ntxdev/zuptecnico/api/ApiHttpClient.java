@@ -38,6 +38,10 @@ public class ApiHttpClient
         {
             this.mBasePath = "http://zup-api-boa-vista.cognita.ntxdev.com.br/";
         }
+        else if(BuildConfig.APPLICATION_ID.equals("com.ntxdev.zuptecnico_sbc_hmg"))
+        {
+            this.mBasePath = "http://zuphmg.saobernardo.sp.gov.br:8282/";
+        }
         else if(BuildConfig.APPLICATION_ID.equals("com.ntxdev.zuptecnico_sbc_ntx"))
         {
             this.mBasePath = "http://sbc.zeladoriaurbana.com.br/";

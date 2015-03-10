@@ -124,23 +124,51 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
             for(Flow flow : flowCollection.flows)
             {
                 //if(!flow.areStepsDownloaded())
-                if(false)
+                /*if(false)
                 {
                     Flow.StepCollection steps = Zup.getInstance().retrieveFlowSteps(flow.id);
                     for (Flow.Step step : steps.steps) {
                         Zup.getInstance().addFlowStep(step);
                     }
                     flow.steps = steps.steps;
-                }
+                }*/
 
-                if(Zup.getInstance().hasFlow(flow.id, flow.last_version))
+                if(flow.version_id == null && flow.list_versions != null) // Unpublished, let's take other versions
                 {
-                    Zup.getInstance().updateFlow(flow.id, flow.last_version, flow);
+                    for(Flow version : flow.list_versions)
+                    {
+                        if(version.version_id == null)
+                            continue;
+
+                        if(Zup.getInstance().hasFlow(version.id, version.version_id))
+                        {
+                            Zup.getInstance().updateFlow(version.id, version.version_id, version);
+                        }
+                        else
+                        {
+                            Zup.getInstance().addFlow(version);
+                        }
+                    }
+                }
+                else if(flow.version_id != null)
+                {
+                    if(Zup.getInstance().hasFlow(flow.id, flow.version_id))
+                    {
+                        Zup.getInstance().updateFlow(flow.id, flow.version_id, flow);
+                    }
+                    else
+                    {
+                        Zup.getInstance().addFlow(flow);
+                    }
+                }
+                /*if(Zup.getInstance().hasFlow(flow.id, flow.version_id))
+                {
+                    Zup.getInstance().updateFlow(flow.id, flow.version_id, flow);
                 }
                 else
                 {
                     Zup.getInstance().addFlow(flow);
-                }
+                }*/
             }
 
             return true;
