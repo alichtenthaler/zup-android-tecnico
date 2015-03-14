@@ -70,6 +70,7 @@ public class PickMapLocationActivity extends ActionBarActivity implements Google
     private double givenLatitude;
     private double givenLongitude;
 
+    private AddressWaitTask addressWaitTask;
     private AddressTask addressTask;
     private GeocoderTask geocoderTask;
     private NumberEditTask numberEditTask;
@@ -440,8 +441,12 @@ public class PickMapLocationActivity extends ActionBarActivity implements Google
             addressTask.cancel(true);
         if(numberEditTask != null)
             numberEditTask.cancel(true);
+        if(addressWaitTask != null)
+            addressWaitTask.cancel(true);
 
-        addressTask = new AddressTask();
+        addressWaitTask = new AddressWaitTask();
+
+        //addressTask = new AddressTask();
         double lat = cameraPosition.target.latitude;
         double lng = cameraPosition.target.longitude;
 
@@ -453,9 +458,11 @@ public class PickMapLocationActivity extends ActionBarActivity implements Google
             manualNumber = false;
 
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.GINGERBREAD_MR1) {
-                addressTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, lat, lng);
+                addressWaitTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, lat, lng);
+                //addressTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, lat, lng);
             } else {
-                addressTask.execute(lat, lng);
+                addressWaitTask.execute(lat, lng);
+                //addressTask.execute(lat, lng);
             }
         }
     }
@@ -522,10 +529,48 @@ public class PickMapLocationActivity extends ActionBarActivity implements Google
         }
     }
 
+    class AddressWaitTask extends AsyncTask<Double, Void, Boolean>
+    {
+        double lat;
+        double lng;
+
+        @Override
+        protected Boolean doInBackground(Double... doubles) {
+            this.lat = doubles[0];
+            this.lng = doubles[1];
+
+            try
+            {
+                Thread.sleep(1000);
+            }
+            catch (InterruptedException ex)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean load) {
+            super.onPostExecute(load);
+
+            if(load)
+            {
+                if(addressTask != null)
+                    addressTask.cancel(true);
+
+                addressTask = new AddressTask();
+                addressTask.execute(lat, lng);
+            }
+        }
+    }
+
     class AddressTask extends AsyncTask<Double, Void, Address>
     {
         @Override
-        protected void onPreExecute() {
+        protected void onPreExecute()
+        {
             super.onPreExecute();
 
             enderecoAtual = null;
