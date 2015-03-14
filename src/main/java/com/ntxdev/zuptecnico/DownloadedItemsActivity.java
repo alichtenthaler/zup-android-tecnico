@@ -76,13 +76,19 @@ public class DownloadedItemsActivity extends ActionBarActivity implements View.O
         Iterator<InventoryItem> itemIterator = Zup.getInstance().getInventoryItemsByCategory(_categoryId);
         ViewGroup container = (ViewGroup)findViewById(R.id.inventory_items_container);
         container.removeAllViews();
+
+        boolean hasAny = false;
         while(itemIterator.hasNext())
         {
+            hasAny = true;
+
             InventoryItem item = itemIterator.next();
             View itemView = setUpItemView(item);
 
             container.addView(itemView);
         }
+
+        findViewById(R.id.activity_items_noitems).setVisibility(hasAny ? View.GONE : View.VISIBLE);
     }
 
     private View setUpItemView(InventoryItem item)

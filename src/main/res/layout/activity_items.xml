@@ -66,6 +66,15 @@
                     android:layout_gravity="center_horizontal"
                     android:indeterminate="true"
                     android:visibility="gone" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Não há itens para exibir"
+                    android:id="@+id/activity_items_noitems"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="15dp"
+                    android:visibility="gone" />
             </LinearLayout>
         </com.ntxdev.zuptecnico.ui.InfinityScrollView>
 
