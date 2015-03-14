@@ -41,7 +41,7 @@ public class InventoryItem {
         public float longitude;
     }
 
-    //@JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Data
     {
         public int id;

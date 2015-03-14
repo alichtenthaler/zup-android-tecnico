@@ -63,7 +63,7 @@ dependencies {
     compile files('lib/jackson-databind-2.2.3.jar')
     compile files('lib/jackson-annotations-2.2.3.jar')
     compile files('lib/image-chooser-library-1.3.0.jar')
-    //compile 'com.crashlytics.sdk.android:crashlytics:2.2.1'
+    //compile 'com.crashlytics.sdk.android:crashlytics:2.2.2'
     compile('com.crashlytics.sdk.android:crashlytics:2.1.0@aar') {
         transitive = true;
     }

@@ -79,7 +79,7 @@
                 android:id="@+id/sidebar_cell_documents"
                 android:clickable="true"
                 android:background="@drawable/sidebar_cell"
-                android:visibility="visible">
+                android:visibility="gone">
 
                 <TextView
                     android:layout_width="wrap_content"

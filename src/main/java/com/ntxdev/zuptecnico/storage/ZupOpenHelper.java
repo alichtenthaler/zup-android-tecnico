@@ -43,6 +43,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories (id INTEGER PRIMARY KEY, title VARCHAR(120), description VARCHAR(120), require_item_status INTEGER, created_at VARCHAR(120), plot_format VARCHAR(20));");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_sections (id INTEGER PRIMARY KEY, inventory_category_id INTEGER, title VARCHAR(120), required INTEGER);");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_sections_fields (id INTEGER PRIMARY KEY, inventory_category_id INTEGER, inventory_section_id INTEGER, title VARCHAR(120), kind VARCHAR(120), position INTEGER, label VARCHAR(120), size VARCHAR(120), required INTEGER, location INTEGER, available_values TEXT, minimum INTEGER NULL, maximum INTEGER NULL);");
+        sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_sections_fields_options (id INTEGER PRIMARY KEY, inventory_category_id INTEGER, field_id INTEGER, value VARCHAR(120), disabled INTEGER);");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_statuses (id INTEGER PRIMARY KEY, inventory_category_id INTEGER, title VARCHAR(120), color VARCHAR(120));");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_pins (inventory_category_id INTEGER PRIMARY KEY, url_web TEXT, url_mobile TEXT);");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_markers (inventory_category_id INTEGER PRIMARY KEY, url_web TEXT, url_mobile TEXT);");
@@ -72,6 +73,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         getWritableDatabase().execSQL("DELETE FROM inventory_categories");
         getWritableDatabase().execSQL("DELETE FROM inventory_categories_sections");
         getWritableDatabase().execSQL("DELETE FROM inventory_categories_sections_fields");
+        getWritableDatabase().execSQL("DELETE FROM inventory_categories_sections_fields_options");
         getWritableDatabase().execSQL("DELETE FROM inventory_categories_statuses");
         getWritableDatabase().execSQL("DELETE FROM inventory_categories_pins");
         getWritableDatabase().execSQL("DELETE FROM inventory_categories_markers");
@@ -1203,6 +1205,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         getWritableDatabase().execSQL("DELETE FROM inventory_categories WHERE id=" + id);
         getWritableDatabase().execSQL("DELETE FROM inventory_categories_sections WHERE inventory_category_id=" + id);
         getWritableDatabase().execSQL("DELETE FROM inventory_categories_sections_fields WHERE inventory_category_id=" + id);
+        getWritableDatabase().execSQL("DELETE FROM inventory_categories_sections_fields_options WHERE inventory_category_id=" + id);
         getWritableDatabase().execSQL("DELETE FROM inventory_categories_statuses WHERE inventory_category_id=" + id);
         getWritableDatabase().execSQL("DELETE FROM inventory_categories_pins WHERE inventory_category_id=" + id);
         getWritableDatabase().execSQL("DELETE FROM inventory_categories_markers WHERE inventory_category_id=" + id);
@@ -1346,16 +1349,25 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
                 values.put("location", field.location ? 1 : 0);
                 values.put("minimum", field.minimum);
                 values.put("maximum", field.maximum);
-                if(field.available_values != null)
+
+                if(field.field_options != null)
                 {
-                    String availableValues = "";
-                    for(int x = 0; x < field.available_values.length; x++)
+                    // inventory_categories_sections_fields_options
+
+                    for(int x = 0; x < field.field_options.length; x++)
                     {
-                        availableValues += field.available_values[x];
-                        if(x + 1 < field.available_values.length)
-                            availableValues += "|";
+                        InventoryCategory.Section.Field.Option option = field.field_options[x];
+
+                        ContentValues cv = new ContentValues();
+                        cv.put("id", option.id);
+                        cv.put("value", option.value);
+                        cv.put("field_id", field.id);
+                        cv.put("disabled", option.disabled ? 1 : 0);
+                        cv.put("inventory_category_id", category.id);
+
+                        getWritableDatabase().insertOrThrow("inventory_categories_sections_fields_options", null, cv);
                     }
-                    values.put("available_values", availableValues);
+
                 }
 
                 getWritableDatabase().insert("inventory_categories_sections_fields", null, values);
@@ -1384,6 +1396,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
 
             category.pin = pins;
         }
+        cursor.close();
 
         cursor = getReadableDatabase().rawQuery("SELECT url_web, url_mobile FROM inventory_categories_markers WHERE inventory_category_id=?", new String[] { Integer.toString(category.id) });
         if(cursor.moveToNext())
@@ -1395,6 +1408,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
 
             category.marker = markers;
         }
+        cursor.close();
 
         // sections
         ArrayList<InventoryCategory.Section> sections = new ArrayList<InventoryCategory.Section>();
@@ -1427,15 +1441,27 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
                 field.minimum = !cursor2.isNull(9) ? cursor2.getInt(9) : null;
                 field.maximum = !cursor2.isNull(10) ? cursor2.getInt(10) : null;
 
-                String availablevalues = cursor2.getString(8);
-                if(availablevalues != null)
-                    field.available_values = availablevalues.split("\\|");
+                ArrayList<InventoryCategory.Section.Field.Option> options = new ArrayList<InventoryCategory.Section.Field.Option>();
+                Cursor cursor3 = getReadableDatabase().rawQuery("SELECT id, value, disabled FROM inventory_categories_sections_fields_options WHERE field_id=" + field.id, null);
+                while(cursor3.moveToNext())
+                {
+                    InventoryCategory.Section.Field.Option option = new InventoryCategory.Section.Field.Option();
+                    option.id = cursor3.getInt(0);
+                    option.value = cursor3.getString(1);
+                    option.disabled = cursor3.getInt(2) == 1;
+
+                    options.add(option);
+                }
+
+                field.field_options = options.toArray(new InventoryCategory.Section.Field.Option[0]);
 
                 fields.add(field);
             }
+            cursor2.close();
 
             section.fields = fields.toArray(new InventoryCategory.Section.Field[0]);
         }
+        cursor.close();
 
         category.sections = sections.toArray(new InventoryCategory.Section[0]);
 

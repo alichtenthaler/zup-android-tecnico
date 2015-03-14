@@ -33,6 +33,7 @@ import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.ntxdev.zuptecnico.api.ApiHttpClient;
 import com.ntxdev.zuptecnico.api.DeleteInventoryItemSyncAction;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.api.ZupCache;
@@ -44,6 +45,8 @@ import com.ntxdev.zuptecnico.entities.InventoryItem;
 import com.ntxdev.zuptecnico.entities.InventoryItemImage;
 import com.ntxdev.zuptecnico.ui.UIHelper;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -212,7 +215,17 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
     {
         @Override
         protected Object[] doInBackground(Object... objects) {
-            String url = (String) objects[0];
+            String url;
+
+            try
+            {
+                URL urlObj = new URL(new URL(ApiHttpClient.mBasePath), (String) objects[0]);
+                url = urlObj.toString(); //(String) objects[0];
+            }
+            catch (MalformedURLException ex)
+            {
+                url = (String) objects[0];
+            }
             ImageView imageView = (ImageView) objects[1];
 
             int resourceId = Zup.getInstance().requestImage(url, false);
@@ -526,7 +539,7 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
 
                         container.addView(scroll);
                     }
-                    else if(field.kind.equals("checkbox"))
+                    else if(field.kind.equals("checkbox") || field.kind.equals("radio") || field.kind.equals("select"))
                     {
                         ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_text, container, false);
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
@@ -539,14 +552,21 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
                         {
                             for(int x = 0; x < value.size(); x++)
                             {
-                                String val = (String)value.get(x);
+                                //String val = (String)value.get(x);
+                                Integer val = (Integer)value.get(x);
                                 if(val == null)
                                     continue;
+
+                                InventoryCategory.Section.Field.Option option = field.getOption(val);
+                                String val_str = "";
+
+                                if(option != null)
+                                    val_str = option.value;
 
                                 if(x > 0)
                                     strvalue += "\n";
 
-                                strvalue += val;
+                                strvalue += val_str;
                             }
 
                             fieldValue.setText(strvalue);

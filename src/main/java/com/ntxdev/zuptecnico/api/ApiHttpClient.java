@@ -28,7 +28,7 @@ import java.util.Hashtable;
 public class ApiHttpClient
 {
     //private HttpClient httpClient;
-    private String mBasePath;
+    public static String mBasePath;
 
     public ApiHttpClient()
     {
@@ -36,18 +36,18 @@ public class ApiHttpClient
         //this.mBasePath = "http://zup-api-sbc.cognita.ntxdev.com.br/";
         if(BuildConfig.APPLICATION_ID != null && BuildConfig.APPLICATION_ID.equals("com.ntxdev.zuptecnico_boavista"))
         {
-            this.mBasePath = "http://zup-api-boa-vista.cognita.ntxdev.com.br/";
+            ApiHttpClient.mBasePath = "http://zup-api-boa-vista.cognita.ntxdev.com.br/";
         }
         else if(BuildConfig.APPLICATION_ID.equals("com.ntxdev.zuptecnico_sbc_hmg"))
         {
-            this.mBasePath = "http://zuphmg.saobernardo.sp.gov.br:8282/";
+            ApiHttpClient.mBasePath = "http://zuphmg.saobernardo.sp.gov.br:8282/";
         }
         else if(BuildConfig.APPLICATION_ID.equals("com.ntxdev.zuptecnico_sbc_ntx"))
         {
-            this.mBasePath = "http://sbc.zeladoriaurbana.com.br/";
+            ApiHttpClient.mBasePath = "http://sbc.zeladoriaurbana.com.br/";
         }
         else
-            this.mBasePath = "http://zup-staging.cognita.ntxdev.com.br/";
+            ApiHttpClient.mBasePath = "http://zup-staging.cognita.ntxdev.com.br/";
         //this.mBasePath = "http://dti-zuphmg-01:9292/";
         //this.httpClient = new DefaultHttpClient();
     }

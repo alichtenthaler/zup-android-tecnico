@@ -19,8 +19,12 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.ImageView;
 
+import com.ntxdev.zuptecnico.api.ApiHttpClient;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.entities.InventoryItemImage;
+
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import uk.co.senab.photoview.PhotoViewAttacher;
 
@@ -67,7 +71,17 @@ public class FullScreenImageActivity extends ActionBarActivity implements Runnab
         {
             @Override
             protected Object[] doInBackground(Object... objects) {
-                String url = (String) objects[0];
+                String url;
+
+                try
+                {
+                    URL urlObj = new URL(new URL(ApiHttpClient.mBasePath), (String) objects[0]);
+                    url = urlObj.toString(); //(String) objects[0];
+                }
+                catch (MalformedURLException ex)
+                {
+                    url = (String) objects[0];
+                }
                 ImageView imageView = (ImageView) objects[1];
 
                 int resourceId = Zup.getInstance().requestImage(url, false);

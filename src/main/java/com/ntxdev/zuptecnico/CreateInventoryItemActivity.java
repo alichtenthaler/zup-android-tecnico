@@ -107,9 +107,11 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
             ArrayList<View> result = new ArrayList<View>();
 
-            if(field.available_values != null) {
-                for (int i = 0; i < field.available_values.length; i++) {
-                    if(filter != null && filter.length() > 0 && !field.available_values[i].toLowerCase().contains(filter.toLowerCase()))
+            if(field.field_options != null) {
+                for (int i = 0; i < field.field_options.length; i++) {
+                    InventoryCategory.Section.Field.Option option = field.field_options[i];
+
+                    if(filter != null && filter.length() > 0 && !option.value.toLowerCase().contains(filter.toLowerCase()))
                         continue;
 
                     View separator = new View(CreateInventoryItemActivity.this);
@@ -120,9 +122,10 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
                     TextView itemView = new TextView(CreateInventoryItemActivity.this);
                     itemView.setClickable(true);
-                    itemView.setText(field.available_values[i]);
+                    itemView.setText(option.value);
                     itemView.setBackgroundResource(R.drawable.sidebar_cell);
                     itemView.setPadding(20, 20, 20, 20);
+                    itemView.setTag(option.id);
 
                     //container.addView(itemView);
 
@@ -135,7 +138,7 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
                             TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
                             fieldValue.setText(tv.getText());
-                            fieldValue.setTag(tv.getText());
+                            fieldValue.setTag(tv.getTag());
                         }
                     });
 
@@ -524,13 +527,23 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
             value = result;
         }
-        else if(field.kind.equals("select") || field.kind.equals("date") || field.kind.equals("time"))
+        else if(field.kind.equals("date") || field.kind.equals("time"))
         {
             TextView txtValue = (TextView) childContainer.findViewById(R.id.inventory_item_text_value);
 
             String tvalue = (String) txtValue.getTag();
             if(tvalue != null && tvalue.length() > 0)
                 value = tvalue;
+        }
+        else if(field.kind.equals("select"))
+        {
+            TextView txtValue = (TextView) childContainer.findViewById(R.id.inventory_item_text_value);
+
+            Integer tvalue = (Integer) txtValue.getTag();
+            if(tvalue != null)
+            {
+                value = new int[] { tvalue };
+            }
         }
         else if(field.kind == null || field.kind.equals("text") || field.kind.equals("cpf") || field.kind.equals("cnpj") || field.kind.equals("url") || field.kind.equals("email") || field.kind.equals("textarea"))
         {
@@ -712,22 +725,24 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                         fieldTitle.setText(label);
 
                         ViewGroup radiocontainer = (ViewGroup)fieldView.findViewById(R.id.inventory_item_radio_container);
-                        if(field.available_values != null)
+                        if(field.field_options != null)
                         {
                             RadioGroup group = new RadioGroup(this);
                             group.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                            for(int x = 0; x < field.available_values.length; x++)
+                            for(int x = 0; x < field.field_options.length; x++)
                             {
                                 //ViewGroup radioElement = (ViewGroup)getLayoutInflater().inflate(R.layout.inventory_item_item_radio_element, radiocontainer, false);
 
-                                RadioButton button = new RadioButton(this);//(RadioButton)radioElement.findViewById(R.id.inventory_item_item_radio_radio);
-                                button.setText(field.available_values[x]);
-                                button.setTag(R.id.tag_button_value, field.available_values[x]);
+                                InventoryCategory.Section.Field.Option option = field.field_options[x];
 
-                                if(!createMode && item.getFieldValue(field.id) != null && item.getFieldValue(field.id).equals(field.available_values[x]))
-                                    button.setChecked(true);
+                                RadioButton button = new RadioButton(this);//(RadioButton)radioElement.findViewById(R.id.inventory_item_item_radio_radio);
+                                button.setText(option.value);
+                                button.setTag(R.id.tag_button_value, option.id);
 
                                 group.addView(button);
+
+                                if(!createMode && item.getFieldValue(field.id) != null && item.getFieldValue(field.id).equals(field.id))
+                                    button.setChecked(true);
                             }
                             radiocontainer.addView(group);
                         }
@@ -742,25 +757,27 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                         fieldTitle.setText(label);
 
                         ViewGroup radiocontainer = (ViewGroup)fieldView.findViewById(R.id.inventory_item_radio_container);
-                        if(field.available_values != null)
+                        if(field.field_options != null)
                         {
-                            for(int x = 0; x < field.available_values.length; x++)
+                            for(int x = 0; x < field.field_options.length; x++)
                             {
+                                InventoryCategory.Section.Field.Option option = field.field_options[x];
+
                                 CheckBox button = new CheckBox(this);//(RadioButton)radioElement.findViewById(R.id.inventory_item_item_radio_radio);
-                                button.setText(field.available_values[x]);
-                                button.setTag(R.id.tag_button_value, field.available_values[x]);
+                                button.setText(option.value);
+                                button.setTag(R.id.tag_button_value, option.id);
 
                                 boolean contains = false;
 
-                                if(!createMode && item.getFieldValue(field.id) != null && field.available_values[x] != null) {
-                                    ArrayList<String> selected = (ArrayList<String>) item.getFieldValue(field.id);
-                                    contains = selected.contains(field.available_values[x]);
+                                if(!createMode && item.getFieldValue(field.id) != null && option != null) {
+                                    ArrayList<Integer> selected = (ArrayList<Integer>) item.getFieldValue(field.id);
+                                    contains = selected.contains(option.id);
                                 }
+
+                                radiocontainer.addView(button);
 
                                 if(!createMode && item.getFieldValue(field.id) != null && contains)
                                     button.setChecked(true);
-
-                                radiocontainer.addView(button);
                             }
                         }
                         container.addView(fieldView);

@@ -42,9 +42,32 @@ public class InventoryCategory
             public String size;
             public Boolean required;
             public Boolean location;
-            public String[] available_values;
+            //public String[] available_values;
+            public Option[] field_options;
             public Integer minimum;
             public Integer maximum;
+
+            @JsonIgnoreProperties(ignoreUnknown = true)
+            public static class Option
+            {
+                public int id;
+                public String value;
+                public boolean disabled;
+            }
+
+            public Option getOption(int id)
+            {
+                if(field_options == null)
+                    return null;
+
+                for(Option opt : field_options)
+                {
+                    if(opt.id == id)
+                        return opt;
+                }
+
+                return null;
+            }
         }
 
         public boolean isLocationSection()
