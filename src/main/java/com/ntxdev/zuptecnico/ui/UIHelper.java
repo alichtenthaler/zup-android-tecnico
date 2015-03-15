@@ -29,6 +29,7 @@ import com.ntxdev.zuptecnico.SyncActivity;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.User;
+import com.ntxdev.zuptecnico.util.ViewUtils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -125,6 +126,7 @@ public class UIHelper
             @Override
             public void onClick(View view) {
                 hideSearchBar(activity, listener, menu);
+                ViewUtils.hideKeyboard(activity, searchText);
             }
         });
         drawer.setImageDrawable(activity.getResources().getDrawable(R.drawable.actionbar_back_dynamic));

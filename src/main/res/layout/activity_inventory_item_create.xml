@@ -9,6 +9,23 @@
         android:layout_width="fill_parent"
         android:layout_height="fill_parent">
 
+        <FrameLayout
+            android:layout_width="fill_parent"
+            android:layout_height="0dp"
+            android:background="#ff6049"
+            android:id="@+id/bar_no_connection">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sem conexão com a internet"
+                android:id="@+id/textView"
+                android:layout_gravity="center"
+                android:singleLine="false"
+                android:textColor="#fff"
+                android:clickable="false" />
+        </FrameLayout>
+
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="fill_parent"

@@ -61,6 +61,10 @@
         <activity
             android:name="com.ntxdev.zuptecnico.CreateInventoryItemActivity"
             android:label="@string/title_activity_profile" >
+
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+            </intent-filter>
         </activity>
 
         <meta-data

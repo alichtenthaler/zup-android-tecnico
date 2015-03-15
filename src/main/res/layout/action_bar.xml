@@ -62,7 +62,10 @@
                 android:textColor="#fff"
                 android:layout_gravity="center_vertical"
                 android:hint="Buscar..."
-                android:textColorHint="#99ffffff"/>
+                android:textColorHint="#99ffffff"
+                android:lines="1"
+                android:maxLines="1"
+                android:inputType="text" />
 
             <FrameLayout
                 android:layout_width="wrap_content"

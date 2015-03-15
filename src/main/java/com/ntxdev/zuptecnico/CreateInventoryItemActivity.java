@@ -4,15 +4,22 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.Address;
+import android.location.Location;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBarActivity;
 import android.text.InputType;
 import android.util.Base64;
@@ -34,12 +41,15 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+import com.google.android.gms.common.GooglePlayServicesClient;
+import com.google.android.gms.location.LocationClient;
 import com.kbeanie.imagechooser.api.ChooserType;
 import com.kbeanie.imagechooser.api.ChosenImage;
 import com.kbeanie.imagechooser.api.ImageChooserListener;
 import com.kbeanie.imagechooser.api.ImageChooserManager;
 import com.ntxdev.zuptecnico.api.EditInventoryItemSyncAction;
 import com.ntxdev.zuptecnico.api.PublishInventoryItemSyncAction;
+import com.ntxdev.zuptecnico.api.SyncAction;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.api.ZupCache;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
@@ -49,6 +59,7 @@ import com.ntxdev.zuptecnico.entities.InventoryItemImage;
 import com.ntxdev.zuptecnico.ui.UIHelper;
 import com.ntxdev.zuptecnico.util.GPSUtils;
 import com.ntxdev.zuptecnico.util.IOUtil;
+import com.ntxdev.zuptecnico.util.ResizeAnimation;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -67,6 +78,27 @@ import br.com.rezende.mascaras.Mask;
  * Created by igorlira on 3/9/14.
  */
 public class CreateInventoryItemActivity extends ActionBarActivity implements ImageChooserListener {
+
+    public class Receiver extends BroadcastReceiver
+    {
+        public Receiver()
+        {
+
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent)
+        {
+            CreateInventoryItemActivity.this.onReceive(context, intent);
+        }
+    }
+
+    public void onReceive(Context context, Intent intent)
+    {
+        boolean noConnectivity = intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY, false);
+        if(noConnectivity)
+            finish();
+    }
 
     class SelectDialogSearchTask extends AsyncTask<String, Void, View[]>
     {
@@ -174,6 +206,8 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
     private static final String URL_PATTERN = "^(https?:\\/\\/)?([\\da-zA-Z0-9\\.-]+)\\.([a-zA-Z0-9\\.]{2,6})([\\/\\w \\.-]*)*\\/?$";
     private static final String EMAIL_PATTERN = "[a-z0-9A-Z!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9A-Z!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9A-Z](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?";
 
+    private ArrayList<ViewGroup> locationFields;
+    private LocationClient locationClient;
     boolean createMode;
     InventoryCategory category;
     InventoryItem item;
@@ -197,6 +231,10 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
         UIHelper.initActivity(this, false);
         Intent intent = getIntent();
 
+        this.locationFields = new ArrayList<ViewGroup>();
+        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
+        manager.registerReceiver(new Receiver(), new IntentFilter("android.net.conn.CONNECTIVITY_CHANGE"));
+
         createMode = intent.getBooleanExtra("create", true);
         if (createMode) {
             int categoryId = intent.getIntExtra("category_id", 0);
@@ -213,8 +251,58 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                 item = ZupCache.getInventoryItem(itemId);
         }
 
+        locationClient = new LocationClient(this, new GooglePlayServicesClient.ConnectionCallbacks() {
+            @Override
+            public void onConnected(Bundle bundle) {
+                locationAvailable();
+            }
+
+            @Override
+            public void onDisconnected() {
+                locationUnavailable();
+            }
+        }, null);
+        locationClient.connect();
+
         if (category != null) {
             buildPage();
+        }
+    }
+
+
+    void showNoConnectionBar()
+    {
+        View view = findViewById(R.id.bar_no_connection);
+        ViewGroup.LayoutParams params = view.getLayoutParams();
+        if(params.height == 35)
+            return;
+
+        ResizeAnimation animation = new ResizeAnimation(view, 0, 35);
+        animation.setDuration(350);
+
+        view.startAnimation(animation);
+
+        for(ViewGroup vg : locationFields)
+        {
+            vg.findViewById(R.id.inventory_item_create_field_button_button).setEnabled(false);
+        }
+    }
+
+    void hideNoConnectionBar()
+    {
+        View view = findViewById(R.id.bar_no_connection);
+        ViewGroup.LayoutParams params = view.getLayoutParams();
+        if(params.height == 0)
+            return;
+
+        ResizeAnimation animation = new ResizeAnimation(view, 35, 0);
+        animation.setDuration(350);
+
+        view.startAnimation(animation);
+
+        for(ViewGroup vg : locationFields)
+        {
+            vg.findViewById(R.id.inventory_item_create_field_button_button).setEnabled(true);
         }
     }
 
@@ -555,10 +643,49 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
         return value;
     }
 
+    void fillPos()
+    {
+        ViewGroup latitudeContainer = getFieldView("latitude");
+        ViewGroup longitudeContainer = getFieldView("longitude");
+        TextView latitudeText = (TextView)latitudeContainer.findViewById(R.id.inventory_item_text_value);
+        TextView longitudeText = (TextView)longitudeContainer.findViewById(R.id.inventory_item_text_value);
+
+        Location lastLocation = locationClient.getLastLocation();
+        if(lastLocation == null)
+            return;
+
+        double latitude = lastLocation.getLatitude();
+        double longitude = lastLocation.getLongitude();
+
+        latitudeText.setText(Double.toString(latitude));
+        longitudeText.setText(Double.toString(longitude));
+    }
+
+    void locationAvailable()
+    {
+        for(ViewGroup vg : this.locationFields)
+        {
+            Button btn = (Button) vg.findViewById(R.id.inventory_item_fill_pos_button);
+
+            btn.setEnabled(true);
+        }
+    }
+
+    void locationUnavailable()
+    {
+        for(ViewGroup vg : this.locationFields)
+        {
+            Button btn = (Button) vg.findViewById(R.id.inventory_item_fill_pos_button);
+
+            btn.setEnabled(false);
+        }
+    }
+
     private void buildPage()
     {
         ViewGroup container = (ViewGroup)findViewById(R.id.inventory_item_create_container);
         container.removeAllViews();
+        locationFields.clear();
 
         if(category.sections != null) {
             Iterator<InventoryCategoryStatus> statuses = Zup.getInstance().getInventoryCategoryStatusIterator(category.id);
@@ -637,8 +764,20 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                 {
                     ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_create_field_button, container, false);
 
+                    locationFields.add(fieldView);
+
                     Button btn = (Button)fieldView.findViewById(R.id.inventory_item_create_field_button_button);
                     btn.setText("Localizar no mapa");
+
+                    Button fillPos = (Button) fieldView.findViewById(R.id.inventory_item_fill_pos_button);
+                    fillPos.setClickable(true);
+                    fillPos.setEnabled(locationClient != null && locationClient.isConnected());
+                    fillPos.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            fillPos();
+                        }
+                    });
 
                     btn.setClickable(true);
                     final Activity activity = this;
@@ -1242,6 +1381,14 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
         super.onResume();
 
         ScrollView scrollView = (ScrollView)findViewById(R.id.inventory_item_create_scroll);
+
+        ConnectivityManager connectivityManager = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo(); //.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+        boolean isConnected = activeNetInfo != null && activeNetInfo.isConnectedOrConnecting();
+        if (isConnected)
+            hideNoConnectionBar();
+        else
+            showNoConnectionBar();
     }
 
     private ViewGroup getFieldView(int id)
