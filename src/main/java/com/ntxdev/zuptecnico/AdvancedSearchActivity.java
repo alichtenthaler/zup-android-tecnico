@@ -13,10 +13,16 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.ntxdev.zuptecnico.api.Zup;
+import com.ntxdev.zuptecnico.entities.Flow;
+import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
+import com.ntxdev.zuptecnico.ui.InventoryItemFilterViewController;
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.Iterator;
 
 /**
@@ -28,6 +34,8 @@ public class AdvancedSearchActivity extends ActionBarActivity implements DatePic
     public static final int RESULT_SEARCH = 1;
 
     private int _categoryId;
+
+    private ArrayList<InventoryItemFilterViewController> filters;
 
     public void onCreate(Bundle savedInstance)
     {
@@ -43,6 +51,8 @@ public class AdvancedSearchActivity extends ActionBarActivity implements DatePic
             return;
 
         _categoryId = categoryId;
+
+        filters = new ArrayList<InventoryItemFilterViewController>();
 
         ViewGroup statusesContainer = (ViewGroup)findViewById(R.id.advancedsearch_status_container);
         Iterator<InventoryCategoryStatus> statuses = Zup.getInstance().getInventoryCategoryStatusIterator(categoryId);
@@ -125,6 +135,78 @@ public class AdvancedSearchActivity extends ActionBarActivity implements DatePic
                 ((EditText)findViewById(R.id.advancedsearch_longitude)).setText(searchData.getStringExtra("longitude"));
             if(searchData.hasExtra("address"))
                 ((EditText)findViewById(R.id.advancedsearch_address)).setText(searchData.getStringExtra("address"));
+        }
+
+        buildPage();
+    }
+
+    private void buildPage()
+    {
+        ViewGroup container = (ViewGroup)findViewById(R.id.items_search_container);
+        InventoryCategory category = Zup.getInstance().getInventoryCategory(_categoryId);
+
+        container.removeAllViews();
+        filters.clear();
+
+        if(category.sections != null)
+        {
+            Arrays.sort(category.sections, new Comparator<InventoryCategory.Section>() {
+                @Override
+                public int compare(InventoryCategory.Section section, InventoryCategory.Section section2) {
+                    int pos1 = 0;
+                    int pos2 = 0;
+
+                    if (section.position != null) {
+                        pos1 = section.position;
+                    }
+                    if (section2.position != null) {
+                        pos2 = section2.position;
+                    }
+
+                    if (section.position == null)
+                        pos1 = pos2;
+
+                    if (section2.position == null)
+                        pos2 = pos1;
+
+                    if (pos1 < pos2)
+                        return -1;
+                    else if (pos1 == pos2)
+                        return 0;
+                    else
+                        return 1;
+                }
+            });
+
+            for(InventoryCategory.Section section : category.sections)
+            {
+                for(InventoryCategory.Section.Field field : section.fields)
+                {
+                    ViewGroup vg = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_filter, null);
+                    container.addView(vg);
+
+                    InventoryItemFilterViewController vc = new InventoryItemFilterViewController(vg, field, this);
+                    filters.add(vc);
+
+                    if(getIntent().hasExtra("search_data"))
+                    {
+                        Intent searchData = (Intent) getIntent().getExtras().get("search_data");
+                        if (searchData.hasExtra("filter_" + field.id + "_type"))
+                        {
+                            Object first = searchData.getExtras().get("filter_" + field.id + "_first");
+                            Object second = searchData.getExtras().get("filter_" + field.id + "_second");
+
+                            vc.setType((InventoryItemFilterViewController.FilterType) searchData.getExtras().get("filter_" + field.id + "_type"));
+                            vc.setValues(first, second);
+                            vc.setEnabled(true);
+                        }
+                        else
+                        {
+                            vc.setEnabled(false);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -211,6 +293,18 @@ public class AdvancedSearchActivity extends ActionBarActivity implements DatePic
             intent.putExtra("address", raw_address);
         if(raw_statuses.size() > 0)
             intent.putExtra("statuses", (Integer[])raw_statuses.toArray(new Integer[0]));
+
+        for(InventoryItemFilterViewController filter : filters)
+        {
+            if(filter.isEnabled())
+            {
+                Object[] values = filter.getValues();
+
+                intent.putExtra("filter_" + filter.getField().id + "_type", filter.getType());
+                intent.putExtra("filter_" + filter.getField().id + "_first", (Serializable) values[0]);
+                intent.putExtra("filter_" + filter.getField().id + "_second", (Serializable) values[1]);
+            }
+        }
 
         intent.putExtra("category_id", _categoryId);
         this.setResult(RESULT_SEARCH, intent);
