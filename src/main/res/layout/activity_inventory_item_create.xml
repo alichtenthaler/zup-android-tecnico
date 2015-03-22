@@ -45,7 +45,7 @@
                 <ImageView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:id="@+id/imageView"
+                    android:id="@+id/pickmap_pin"
                     android:src="@drawable/ic_action_accept"
                     android:layout_gravity="center_vertical"
                     android:layout_marginRight="10dp" />
@@ -54,7 +54,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="CONCLUIDO"
-                    android:id="@+id/textView"
+                    android:id="@+id/textView9"
                     android:layout_gravity="center_vertical"
                     android:textColor="#777"
                     android:layout_marginTop="1dp"

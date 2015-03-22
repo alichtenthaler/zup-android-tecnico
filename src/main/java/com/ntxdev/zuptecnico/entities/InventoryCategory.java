@@ -74,7 +74,7 @@ public class InventoryCategory
         {
             for(int i = 0; i < fields.length; i++)
             {
-                if(fields[i].location != null && fields[i].location == true)
+                if(fields[i].location != null && fields[i].location == true || fields[i].title.equals("latitude"))
                     return true;
             }
 

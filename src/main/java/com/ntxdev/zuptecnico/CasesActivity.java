@@ -133,12 +133,16 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
                     flow.steps = steps.steps;
                 }*/
 
+                Log.d("FLOW", "Processing flow #" + flow.id);
                 if(flow.version_id == null && flow.list_versions != null) // Unpublished, let's take other versions
                 {
+                    Log.d("FLOW", "Flow #" + flow.id + " last version is unpublished. Processing previous versions");
                     for(Flow version : flow.list_versions)
                     {
                         if(version.version_id == null)
                             continue;
+
+                        Log.d("FLOW", "Saving Flow #" + version.id + " v" + version.version_id);
 
                         if(Zup.getInstance().hasFlow(version.id, version.version_id))
                         {
@@ -152,6 +156,8 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
                 }
                 else if(flow.version_id != null)
                 {
+                    Log.d("FLOW", "Saving Flow #" + flow.id + " v" + flow.version_id);
+
                     if(Zup.getInstance().hasFlow(flow.id, flow.version_id))
                     {
                         Zup.getInstance().updateFlow(flow.id, flow.version_id, flow);

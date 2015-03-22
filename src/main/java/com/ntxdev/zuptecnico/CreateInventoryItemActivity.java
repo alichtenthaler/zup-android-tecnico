@@ -809,6 +809,8 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                                 intent.putExtra("position_longitude", longitude);
                             }
 
+                            intent.putExtra("inventory_category_id", category.id);
+
                             startActivityForResult(intent, PICK_LOCATION);
                         }
                     });

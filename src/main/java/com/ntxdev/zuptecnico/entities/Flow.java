@@ -133,7 +133,7 @@ public class Flow implements Serializable
     public String created_at;
     public String updated_at;
 
-    @JsonProperty("my_steps_flows")
+    @JsonProperty("my_steps")
     public Step[] steps;
 
     public Flow[] list_versions;

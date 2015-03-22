@@ -3,6 +3,8 @@ package com.ntxdev.zuptecnico;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.location.Address;
 import android.location.Location;
 import android.os.AsyncTask;
@@ -14,6 +16,7 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -21,6 +24,9 @@ import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.Filter;
 import android.widget.Filterable;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -35,9 +41,13 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.ntxdev.zuptecnico.api.Zup;
+import com.ntxdev.zuptecnico.api.callbacks.ResourceLoadedListener;
+import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.util.GPSUtils;
 import com.ntxdev.zuptecnico.util.GeoUtils;
 import com.ntxdev.zuptecnico.util.ViewUtils;
@@ -57,7 +67,7 @@ import java.util.List;
 import java.util.Locale;
 
 
-public class PickMapLocationActivity extends ActionBarActivity implements GoogleMap.OnCameraChangeListener, AdapterView.OnItemClickListener {
+public class PickMapLocationActivity extends ActionBarActivity implements ResourceLoadedListener, GoogleMap.OnCameraChangeListener, AdapterView.OnItemClickListener {
 
     private SupportMapFragment mapFragment;
     private GoogleMap map;
@@ -80,6 +90,8 @@ public class PickMapLocationActivity extends ActionBarActivity implements Google
     private double latitude, longitude;
 
     private Address enderecoAtual = new Address(Locale.CANADA);
+
+    private InventoryCategory category;
 
     class AddressAdapter extends ArrayAdapter<String> implements Filterable
     {
@@ -247,7 +259,45 @@ public class PickMapLocationActivity extends ActionBarActivity implements Google
             }
         });
 
+        if(getIntent().hasExtra("inventory_category_id"))
+        {
+            this.category = Zup.getInstance().getInventoryCategory(getIntent().getIntExtra("inventory_category_id", -1));
+            if(this.category != null) {
+                ImageView markerView = (ImageView) findViewById(R.id.pickmap_pin);
+
+                Bitmap markerIcon = ((BitmapDrawable) getResources().getDrawable(R.drawable.ic_marker)).getBitmap();
+                int resourceId = Zup.getInstance().getInventoryCategoryPinResourceId(category.id);
+                if (resourceId != 0 && Zup.getInstance().isResourceLoaded(resourceId)) {
+                    markerIcon = Zup.getInstance().getBitmap(resourceId);
+                }
+
+                markerView.setImageBitmap(markerIcon);
+
+                FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) markerView.getLayoutParams();
+                lp.topMargin = -(markerIcon.getHeight() / 2);
+            }
+        }
+
         setUpMapIfNeeded();
+    }
+
+    @Override
+    public void onResourceLoaded(String url, int resourceId)
+    {
+        if(this.category != null) {
+            ImageView markerView = (ImageView) findViewById(R.id.pickmap_pin);
+
+            Bitmap markerIcon = ((BitmapDrawable) getResources().getDrawable(R.drawable.ic_marker)).getBitmap();
+            int catresourceId = Zup.getInstance().getInventoryCategoryPinResourceId(category.id);
+            if (resourceId == catresourceId && catresourceId != 0 && Zup.getInstance().isResourceLoaded(catresourceId)) {
+                markerIcon = Zup.getInstance().getBitmap(resourceId);
+            }
+
+            markerView.setImageBitmap(markerIcon);
+
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) markerView.getLayoutParams();
+            lp.topMargin = -(markerIcon.getHeight() / 2);
+        }
     }
 
     void numeroEditado(String texto)
@@ -412,6 +462,9 @@ public class PickMapLocationActivity extends ActionBarActivity implements Google
     public void onResume()
     {
         super.onResume();
+
+        Zup.getInstance().setResourceLoadedListener(this);
+
         setUpMapIfNeeded();
     }
 

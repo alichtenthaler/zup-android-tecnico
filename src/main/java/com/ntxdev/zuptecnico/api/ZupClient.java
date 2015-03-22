@@ -279,7 +279,7 @@ public class ZupClient
 
     public ApiHttpResult<FlowCollection> retrieveFlows()
     {
-        ApiHttpResult<FlowCollection> result = httpClient.get("flows?" + (sessionToken != null ? "&token=" + sessionToken : ""), FlowCollection.class);
+        ApiHttpResult<FlowCollection> result = httpClient.get("flows?display_type=full" + (sessionToken != null ? "&token=" + sessionToken : ""), FlowCollection.class);
         return result;
     }
 

@@ -39,10 +39,12 @@
             <ImageView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:id="@+id/imageView"
+                android:id="@+id/pickmap_pin"
                 android:src="@drawable/ic_marker"
                 android:layout_gravity="center"
-                android:layout_marginTop="-32dp" />
+                android:layout_marginTop="-32dp"
+                android:scaleType="matrix"
+                android:baselineAlignBottom="false" />
 
             <LinearLayout
                 android:orientation="horizontal"

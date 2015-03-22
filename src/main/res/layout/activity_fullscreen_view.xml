@@ -26,7 +26,7 @@
             <ImageView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:id="@+id/imageView"
+                android:id="@+id/pickmap_pin"
                 android:src="@drawable/actionbar_back_dynamic_darkbg"
                 android:onClick="back" />
         </LinearLayout>

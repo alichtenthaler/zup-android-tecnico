@@ -537,7 +537,7 @@ public class ViewCaseStepFormActivity extends ActionBarActivity
 
     View createNonEditableFieldView(Flow.Step.Field field)
     {
-        Case.Step stepData = theCase.getStep(field.step_id);
+        Case.Step stepData = theCase.getStep(this.step.id);//field.step_id);
 
         View view = getLayoutInflater().inflate(R.layout.inventory_item_item_text, null);
         TextView title = (TextView) view.findViewById(R.id.inventory_item_text_name);
