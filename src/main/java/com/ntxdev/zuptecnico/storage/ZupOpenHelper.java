@@ -172,14 +172,38 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         return query.moveToNext();
     }
 
-    public Case getCase(int id)
+    public Iterator<Case> getCasesIterator()
     {
+        ArrayList<Case> result = new ArrayList<Case>();
+
         Cursor cursor = getReadableDatabase().query("cases", new String[] { "id", "created_at", "updated_at", "initial_flow_id",
-                "flow_version", "next_step_id", "status", "current_case_step_id" }, "id=" +  id, null, null, null, null); //.rawQuery("SELECT id FROM cases WHERE id=" + id + " LIMIT 1", null);
+                "flow_version", "next_step_id", "status", "current_case_step_id" }, null, null, null, null, null);
 
-        if(!cursor.moveToNext())
-            return null;
+        while (cursor.moveToNext()) {
+            Case item = parseCase(cursor);
+            result.add(item);
+        }
 
+        return result.iterator();
+    }
+
+    public Iterator<Case> getCasesIterator(int flowId)
+    {
+        ArrayList<Case> result = new ArrayList<Case>();
+
+        Cursor cursor = getReadableDatabase().query("cases", new String[] { "id", "created_at", "updated_at", "initial_flow_id",
+                "flow_version", "next_step_id", "status", "current_case_step_id" }, "initial_flow_id=" + flowId, null, null, null, null);
+
+        while (cursor.moveToNext()) {
+            Case item = parseCase(cursor);
+            result.add(item);
+        }
+
+        return result.iterator();
+    }
+
+    Case parseCase(Cursor cursor)
+    {
         Case kase = new Case();
         kase.id = cursor.getInt(0);
         kase.created_at = cursor.getString(1);
@@ -199,6 +223,17 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         }
 
         return kase;
+    }
+
+    public Case getCase(int id)
+    {
+        Cursor cursor = getReadableDatabase().query("cases", new String[] { "id", "created_at", "updated_at", "initial_flow_id",
+                "flow_version", "next_step_id", "status", "current_case_step_id" }, "id=" +  id, null, null, null, null); //.rawQuery("SELECT id FROM cases WHERE id=" + id + " LIMIT 1", null);
+
+        if(!cursor.moveToNext())
+            return null;
+
+        return parseCase(cursor);
     }
 
     Case.Step[] getCaseSteps(int caseId)
@@ -295,6 +330,11 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
             }
         }
 
+    }
+
+    public void removeCase(int id)
+    {
+        getWritableDatabase().delete("cases", "id=" + id, null);
     }
 
     public void resetSyncActions()

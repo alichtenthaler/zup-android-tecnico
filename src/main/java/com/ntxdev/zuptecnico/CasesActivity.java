@@ -79,6 +79,23 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.documents, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if(item.getItemId() == R.id.action_items_viewdownloaded)
+        {
+            Intent intent = new Intent(this, DownloadedCasesActivity.class);
+            this.startActivity(intent);
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
     protected void onStop() {
         super.onStop();
         this.clear();

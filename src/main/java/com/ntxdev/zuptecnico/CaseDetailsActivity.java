@@ -83,6 +83,21 @@ public class CaseDetailsActivity extends ActionBarActivity
         return super.onCreateOptionsMenu(menu);
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if(item.getItemId() == R.id.action_items_download && this._case != null && !Zup.getInstance().hasCase(this._caseId))
+        {
+            Zup.getInstance().addCase(this._case);
+            refreshMenu();
+        }
+        else if(item.getItemId() == R.id.action_items_delete_download &&Zup.getInstance().hasCase(this._caseId))
+        {
+            Zup.getInstance().removeCase(this._caseId);
+            refreshMenu();
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
     void refreshMenu()
     {
         if(_menu == null)

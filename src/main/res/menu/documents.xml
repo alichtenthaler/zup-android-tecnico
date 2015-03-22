@@ -3,7 +3,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.ntxdev.zup.DocumentsActivity" >
 
-    <item android:id="@+id/action_search"
+
+    <item android:id="@+id/action_items_viewdownloaded"
+        android:title="Ver itens transferidos"
+        android:orderInCategory="100"
+        ntxdev:showAsAction="never" />
+
+    <!--<item android:id="@+id/action_search"
         android:icon="@drawable/ic_action_search"
         android:title="Procurar"
         ntxdev:showAsAction="always"/>
@@ -13,7 +19,7 @@
         android:title="Sincronizar"
         ntxdev:showAsAction="always"/>
 
-    <!--<item android:id="@+id/action_settings"
+    <item android:id="@+id/action_settings"
         android:title="Ordenar por última modificação"
         android:orderInCategory="100"
         ntxdev:showAsAction="never" />

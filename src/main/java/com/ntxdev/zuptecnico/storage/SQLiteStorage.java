@@ -229,4 +229,13 @@ public class SQLiteStorage implements IStorage {
     {
         return db.hasCase(id);
     }
+
+    public void removeCase(int id)
+    {
+        db.removeCase(id);
+    }
+
+    public Iterator<Case> getCasesIterator() { return db.getCasesIterator(); }
+
+    public Iterator<Case> getCasesIterator(int flowId) { return db.getCasesIterator(flowId); }
 }

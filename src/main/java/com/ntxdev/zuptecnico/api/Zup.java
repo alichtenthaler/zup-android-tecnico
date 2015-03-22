@@ -256,6 +256,18 @@ public class Zup
         storage.updateCase(kase);
     }
 
+    public void removeCase(int caseId) { storage.removeCase(caseId); }
+
+    public Iterator<Case> getCasesIterator()
+    {
+        return storage.getCasesIterator();
+    }
+
+    public Iterator<Case> getCasesIterator(int flowId)
+    {
+        return storage.getCasesIterator(flowId);
+    }
+
     private BitmapResource getResource(int id)
     {
         for(int i = 0; i < bitmaps.size(); i++)

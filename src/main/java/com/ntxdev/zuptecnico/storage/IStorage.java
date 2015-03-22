@@ -103,4 +103,10 @@ public interface IStorage {
     public Case getCase(int id);
 
     public boolean hasCase(int id);
+
+    public void removeCase(int id);
+
+    public Iterator<Case> getCasesIterator();
+
+    public Iterator<Case> getCasesIterator(int flowId);
 }
