@@ -2,9 +2,13 @@ package com.ntxdev.zuptecnico.ui;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.drawable.ColorDrawable;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.view.KeyEvent;
@@ -26,6 +30,7 @@ import com.ntxdev.zuptecnico.ProfileActivity;
 import com.ntxdev.zuptecnico.R;
 import com.ntxdev.zuptecnico.SearchBarListener;
 import com.ntxdev.zuptecnico.SyncActivity;
+import com.ntxdev.zuptecnico.api.SyncAction;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.User;
@@ -39,6 +44,25 @@ import java.util.Iterator;
  */
 public class UIHelper
 {
+    static class Receiver extends BroadcastReceiver
+    {
+        ActionBarActivity activity;
+
+        public Receiver(ActionBarActivity activity)
+        {
+            this.activity = activity;
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent)
+        {
+            if(intent.getAction().equals(SyncAction.ACTION_SYNC_BEGIN))
+                UIHelper.showSyncProcess(activity);
+            else if(intent.getAction().equals(SyncAction.ACTION_SYNC_END))
+                UIHelper.hideSyncProcess(activity);
+        }
+    }
+
     public static void initActivity(final ActionBarActivity activity, boolean isRoot)
     {
         initActionBar(activity);
@@ -69,6 +93,21 @@ public class UIHelper
             });
             drawer.setImageDrawable(activity.getResources().getDrawable(R.drawable.actionbar_back_dynamic));
         }
+
+        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(activity);
+
+        manager.registerReceiver(new Receiver(activity), new IntentFilter(SyncAction.ACTION_SYNC_BEGIN));
+        manager.registerReceiver(new Receiver(activity), new IntentFilter(SyncAction.ACTION_SYNC_END));
+    }
+
+    private static void showSyncProcess(ActionBarActivity activity)
+    {
+        activity.findViewById(R.id.actionbar_sync_progress).setVisibility(View.VISIBLE);
+    }
+
+    private static void hideSyncProcess(ActionBarActivity activity)
+    {
+        activity.findViewById(R.id.actionbar_sync_progress).setVisibility(View.GONE);
     }
 
     private static void initActionBar(ActionBarActivity activity)

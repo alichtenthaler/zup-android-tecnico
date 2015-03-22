@@ -17,6 +17,14 @@
             android:id="@+id/sidebar_drawer"
             android:src="@drawable/actionbar_drawer_dynamic" />
 
+        <ProgressBar
+            style="?android:attr/progressBarStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:id="@+id/actionbar_sync_progress"
+            android:layout_marginRight="3dp"
+            android:visibility="gone" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="match_parent"

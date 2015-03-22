@@ -21,6 +21,8 @@ import org.json.JSONException;
 import org.json.JSONStringer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -56,7 +58,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         sqLiteDatabase.execSQL("CREATE TABLE flows_steps_fields (id INTEGER PRIMARY KEY, server_id INTEGER, flow_id INTEGER, step_id INTEGER, title VARCHAR(120), field_type VARCHAR(120), category_inventory_id INTEGER, category_report_id INTEGER, origin_field_id INTEGER, active INTEGER, multiple INTEGER, requirements TEXT NULL, order_number INTEGER, ovalues TEXT NULL, version_id INTEGER);");
 
         sqLiteDatabase.execSQL("CREATE TABLE flows_resolution_states_relation (flow_id INTEGER, flow_version INTEGER, state_id INTEGER, state_version INTEGER);");
-        sqLiteDatabase.execSQL("CREATE TABLE flows_steps_relation (flow_id INTEGER, flow_version INTEGER, step_id INTEGER, step_version INTEGER);");
+        sqLiteDatabase.execSQL("CREATE TABLE flows_steps_relation (flow_id INTEGER, flow_version INTEGER, step_id INTEGER, step_version INTEGER, order_number INTEGER);");
         sqLiteDatabase.execSQL("CREATE TABLE flows_steps_fields_relation (step_id INTEGER, step_version INTEGER, field_id INTEGER, field_version INTEGER);");
 
         sqLiteDatabase.execSQL("CREATE TABLE cases (id INTEGER PRIMARY KEY, created_at VARCHAR(120), updated_at VARCHAR(120), initial_flow_id INTEGER, flow_version INTEGER, next_step_id INTEGER, status VARCHAR(120), current_case_step_id INTEGER NULL);");
@@ -394,7 +396,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         getWritableDatabase().insert("flows_resolution_states_relation", null, contentValues);
     }
 
-    void addFlowStepRelation(Flow flow, Flow.Step step)
+    void addFlowStepRelation(Flow flow, Flow.Step step, int orderNumber)
     {
         if(hasFlowStepRelation(flow, step))
             return;
@@ -404,17 +406,19 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         contentValues.put("flow_version", flow.version_id);
         contentValues.put("step_id", step.id);
         contentValues.put("step_version", step.version_id);
+        contentValues.put("order_number", orderNumber);
 
         getWritableDatabase().insert("flows_steps_relation", null, contentValues);
     }
 
-    void addFlowStepRelation(Flow flow, int stepId, int stepVersion)
+    void addFlowStepRelation(Flow flow, int stepId, int stepVersion, int orderNumber)
     {
         Flow.Step fakeStep = new Flow.Step();
         fakeStep.id = stepId;
         fakeStep.version_id = stepVersion;
+        fakeStep.order_number = orderNumber;
 
-        addFlowStepRelation(flow, fakeStep);
+        addFlowStepRelation(flow, fakeStep, orderNumber);
     }
 
     void addFlowStepFieldRelation(Flow.Step step, Flow.Step.Field field)
@@ -697,7 +701,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         count = countCursor.getInt(0);
 
         //Cursor stepsCursor = getReadableDatabase().rawQuery("SELECT server_id, title, step_type, child_flow, order_number, active, last_version FROM flows_steps WHERE flow_id = ? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.last_version) });
-        relationCursor = getReadableDatabase().rawQuery("SELECT step_id, step_version FROM flows_steps_relation WHERE flow_id = ? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.version_id) });
+        relationCursor = getReadableDatabase().rawQuery("SELECT step_id, step_version FROM flows_steps_relation WHERE flow_id = ? AND flow_version=? ORDER BY order_number ASC", new String[] { Integer.toString(flow.id), Integer.toString(flow.version_id) });
         flow.steps = new Flow.Step[count];
         flow.steps_versions = new HashMap<String, Integer>(count);
         x = 0;
@@ -722,6 +726,19 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
             flow.steps[x] = step;
             x++;
         }
+
+        if(flow.steps != null)
+            Arrays.sort(flow.steps, new Comparator<Flow.Step>() {
+                @Override
+                public int compare(Flow.Step step, Flow.Step step2) {
+                    if(step.order_number > step2.order_number)
+                        return 1;
+                    else if(step.order_number < step2.order_number)
+                        return -1;
+                    else
+                        return 0;
+                }
+            });
 
 
         return flow;
@@ -838,8 +855,21 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         {
             int stepId = Integer.parseInt(key);
             int stepVersion = data.steps_versions.get(key);
+            int order = -1;
 
-            addFlowStepRelation(data, stepId, stepVersion);
+            if(data.steps != null)
+            {
+                for (int i = 0; i < data.steps.length; i++)
+                {
+                    if(data.steps[i].id == stepId)
+                    {
+                        order = i;
+                        break;
+                    }
+                }
+            }
+
+            addFlowStepRelation(data, stepId, stepVersion, order);
         }
 
         if(data.steps != null)
@@ -947,21 +977,36 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
             addFlowResolutionStateRelation(flow, flow.resolution_states[i]);
         }*/
 
-        //if(flow.steps_versions != null)
+        if(flow.steps_versions != null)
         {
             for(String key : flow.steps_versions.keySet())
             {
                 int stepId = Integer.parseInt(key);
                 int stepVersion = flow.steps_versions.get(key);
+                int order = -1;
 
-                addFlowStepRelation(flow, stepId, stepVersion);
+                if(flow.steps != null)
+                {
+                    for (int i = 0; i < flow.steps.length; i++)
+                    {
+                        if(flow.steps[i].id == stepId)
+                        {
+                            order = i;
+                            break;
+                        }
+                    }
+                }
+
+                addFlowStepRelation(flow, stepId, stepVersion, order);
             }
         }
 
         if(flow.steps != null)
         {
+            int i = 0;
             for (Flow.Step step : flow.steps)
             {
+                step.order_number = i;
                 step.version_id = flow.steps_versions.get(Integer.toString(step.id));
 
                 if(hasStep(step.id, step.version_id))
