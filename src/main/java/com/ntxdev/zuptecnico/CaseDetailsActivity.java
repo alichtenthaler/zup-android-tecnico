@@ -38,6 +38,8 @@ public class CaseDetailsActivity extends ActionBarActivity
 
     private Menu _menu;
 
+    private boolean isNew = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,6 +52,7 @@ public class CaseDetailsActivity extends ActionBarActivity
         if(caseId == -1)
             return;
 
+        isNew = getIntent().getBooleanExtra("is_new", false);
         _flowId = getIntent().getIntExtra("flow_id", -1);
         _flowVersion = getIntent().getIntExtra("flow_version", -1);
         this._case = (Case) getIntent().getSerializableExtra("case");
@@ -158,7 +161,7 @@ public class CaseDetailsActivity extends ActionBarActivity
 
         Case.Step stepData = item.getStep(step.id);
         String statusT = "Status desconhecido";
-        if(done || (stepData != null && stepData.executed))
+        if(!isNew && (done || (stepData != null && stepData.executed)))
         {
             statusT = "Finalizado";
         }
@@ -206,13 +209,14 @@ public class CaseDetailsActivity extends ActionBarActivity
         overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
     }
 
-    void openSubflow(int flowId, int flowVersion, Case thecase)
+    void openSubflow(int flowId, int flowVersion, Case thecase, boolean done)
     {
         Intent intent = new Intent(this, CaseDetailsActivity.class);
         intent.putExtra("case_id", thecase.id);
         intent.putExtra("flow_id", flowId);
         intent.putExtra("flow_version", flowVersion);
         intent.putExtra("case", thecase);
+        intent.putExtra("is_new", !done);
 
         this.startActivity(intent);
     }
@@ -250,6 +254,9 @@ public class CaseDetailsActivity extends ActionBarActivity
         container.addView(view);
 
         boolean done = true;
+        if(isNew)
+            done = false;
+
         for(int i = 0; i < initialFlow.steps.length; i++)
         {
             final Flow.Step step = initialFlow.steps[i];
@@ -262,6 +269,8 @@ public class CaseDetailsActivity extends ActionBarActivity
                     done = false;
             }
 
+            final boolean stepdone = done;
+
             View stepView = createStepView(item, initialFlow, step, done);
             stepView.setTag(R.id.tag_case, item);
             stepView.setTag(R.id.tag_step_id, step.id);
@@ -272,7 +281,7 @@ public class CaseDetailsActivity extends ActionBarActivity
                 @Override
                 public void onClick(View view) {
                     if(step.step_type.equals("flow"))
-                        openSubflow(step.getChildFlowId(), step.getChildFlowVersion(), item);
+                        openSubflow(step.getChildFlowId(), step.getChildFlowVersion(), item, stepdone);
                     else
                         openStep((Integer)view.getTag(R.id.tag_step_id), (Integer)view.getTag(R.id.tag_flow_id), (Integer)view.getTag(R.id.tag_flow_version), (Case)view.getTag(R.id.tag_case));
                 }

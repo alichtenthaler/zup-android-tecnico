@@ -1029,6 +1029,12 @@ public class Zup
             return null;
     }
 
+    public ApiHttpResult<UpdateCaseStepResponse> updateCaseStepFull(int caseId, int stepId, int stepVersion, Hashtable<Integer, Object> fields)
+    {
+        ApiHttpResult<UpdateCaseStepResponse> result = client.updateCaseStep(caseId, stepId, stepVersion, fields);
+        return result;
+    }
+
     public User retrieveUserInfo(int userId)
     {
         ApiHttpResult<SingleUserCollection> result = client.retrieveUser(userId);

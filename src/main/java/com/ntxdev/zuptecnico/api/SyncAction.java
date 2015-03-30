@@ -22,6 +22,7 @@ public abstract class SyncAction implements Serializable
     static final int SYNCACTION_CREATE_ITEM = 0;
     static final int SYNCACTION_EDIT_ITEM = 1;
     static final int SYNCACTION_DELETE_ITEM = 2;
+    static final int SYNCACTION_UPDATE_CASE_STEP = 3;
 
     int id;
     boolean running = false;
@@ -68,6 +69,10 @@ public abstract class SyncAction implements Serializable
         else if(type == SYNCACTION_DELETE_ITEM)
         {
             action = new DeleteInventoryItemSyncAction(info_o, mapper);
+        }
+        else if(type == SYNCACTION_UPDATE_CASE_STEP)
+        {
+            action = new FillCaseStepSyncAction(info_o, mapper);
         }
         else
             throw new Exception("Invalid sync action type");
@@ -178,6 +183,8 @@ public abstract class SyncAction implements Serializable
             return SYNCACTION_EDIT_ITEM;
         else if(this instanceof DeleteInventoryItemSyncAction)
             return SYNCACTION_DELETE_ITEM;
+        else if(this instanceof FillCaseStepSyncAction)
+            return SYNCACTION_UPDATE_CASE_STEP;
         else
             return -1;
     }

@@ -63,7 +63,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
 
         sqLiteDatabase.execSQL("CREATE TABLE cases (id INTEGER PRIMARY KEY, created_at VARCHAR(120), updated_at VARCHAR(120), initial_flow_id INTEGER, flow_version INTEGER, next_step_id INTEGER, status VARCHAR(120), current_case_step_id INTEGER NULL);");
         sqLiteDatabase.execSQL("CREATE TABLE cases_steps (id INTEGER PRIMARY KEY, case_id INTEGER, step_id INTEGER, step_version INTEGER, responsible_user_id INTEGER, executed INTEGER);");
-        sqLiteDatabase.execSQL("CREATE TABLE cases_steps_data (id INTEGER PRIMARY KEY, case_step_id INTEGER, field_id INTEGER, value TEXT NULL);");
+        sqLiteDatabase.execSQL("CREATE TABLE cases_steps_data (id INTEGER PRIMARY KEY, case_step_id INTEGER, field_id INTEGER, value TEXT NULL, case_id INTEGER);");
 
         sqLiteDatabase.execSQL("CREATE TABLE sync_actions (id INTEGER PRIMARY KEY, type INTEGER, date BIGINT, info TEXT, pending INTEGER, running INTEGER, successful INTEGER);");
     }
@@ -129,13 +129,14 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         return contentValues;
     }
 
-    ContentValues createCaseStepDataContentValues(Case.Step step, Case.Step.DataField data)
+    ContentValues createCaseStepDataContentValues(Case kase, Case.Step step, Case.Step.DataField data)
     {
         // id INTEGER PRIMARY KEY, case_step_id INTEGER, field_id INTEGER, value TEXT
         ContentValues contentValues = new ContentValues();
         contentValues.put("id", data.id);
         contentValues.put("case_step_id", step.id);
         contentValues.put("field_id", data.getFieldId());
+        contentValues.put("case_id", kase.id);
 
         ObjectMapper mapper = new ObjectMapper();
         String json = null;
@@ -305,7 +306,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
 
             for(Case.Step.DataField data : step.case_step_data_fields)
             {
-                getWritableDatabase().insertOrThrow("cases_steps_data", null, createCaseStepDataContentValues(step, data));
+                getWritableDatabase().insertOrThrow("cases_steps_data", null, createCaseStepDataContentValues(kase, step, data));
             }
         }
     }
@@ -323,9 +324,9 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
 
                 for (Case.Step.DataField data : step.case_step_data_fields) {
                     if (hasCaseStepData(data.id))
-                        getWritableDatabase().update("cases_steps_data", createCaseStepDataContentValues(step, data), "id=" + data.id, null);
+                        getWritableDatabase().update("cases_steps_data", createCaseStepDataContentValues(kase, step, data), "id=" + data.id, null);
                     else
-                        getWritableDatabase().insertOrThrow("cases_steps_data", null, createCaseStepDataContentValues(step, data));
+                        getWritableDatabase().insertOrThrow("cases_steps_data", null, createCaseStepDataContentValues(kase, step, data));
                 }
             }
         }
@@ -335,6 +336,8 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
     public void removeCase(int id)
     {
         getWritableDatabase().delete("cases", "id=" + id, null);
+        getWritableDatabase().delete("cases_steps", "case_id=" + id, null);
+        getWritableDatabase().delete("cases_steps_data", "case_id=" + id, null);
     }
 
     public void resetSyncActions()
@@ -871,23 +874,26 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         getWritableDatabase().update("flows", contentValues, "server_id = ? AND version_id=?", new String[] { Integer.toString(id), Integer.toString(version) });
 
         String notPresentIds = "flow_id=" + id + " AND flow_version=" + data.version_id;
-        for(int i = 0; i < data.resolution_states.length; i++)
-        {
-            //if(i > 0)
+        if(data.resolution_states != null) {
+            for (int i = 0; i < data.resolution_states.length; i++) {
+                //if(i > 0)
                 notPresentIds += " AND ";
 
-            notPresentIds += "(state_id != " + data.resolution_states[i].id + " OR state_version != " + data.resolution_states[i].last_version + ")";
+                notPresentIds += "(state_id != " + data.resolution_states[i].id + " OR state_version != " + data.resolution_states[i].last_version + ")";
 
-            if(hasFlowResolutionState(data.resolution_states[i].id, data.resolution_states[i].last_version))
-                updateFlowResolutionState(data.resolution_states[i].id, data.resolution_states[i].last_version, data.resolution_states[i]);
-            else
-                addFlowResolutionState(data.resolution_states[i]);
+                if (hasFlowResolutionState(data.resolution_states[i].id, data.resolution_states[i].last_version))
+                    updateFlowResolutionState(data.resolution_states[i].id, data.resolution_states[i].last_version, data.resolution_states[i]);
+                else
+                    addFlowResolutionState(data.resolution_states[i]);
 
-            addFlowResolutionStateRelation(data, data.resolution_states[i]);
+                addFlowResolutionStateRelation(data, data.resolution_states[i]);
+            }
+
+
+            if (notPresentIds.length() > 0)
+                getWritableDatabase().delete("flows_resolution_states_relation", notPresentIds, null);
         }
 
-        if(notPresentIds.length() > 0)
-            getWritableDatabase().delete("flows_resolution_states_relation", notPresentIds, null);
 
         getWritableDatabase().delete("flows_steps_relation", "flow_id=" + id + " AND flow_version=" + version, null);
 

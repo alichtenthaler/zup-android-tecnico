@@ -55,20 +55,22 @@ public class Flow implements Serializable
 
         public int child_flow_id;
         public int child_flow_version;
-        public Flow child_flow;
+
+        //@JsonProperty("my_child_flow")
+        public Flow my_child_flow;
 
         public int getChildFlowId()
         {
-            if(child_flow != null)
-                return child_flow.id;
+            if(my_child_flow != null)
+                return my_child_flow.id;
             else
                 return child_flow_id;
         }
 
         public int getChildFlowVersion()
         {
-            if(child_flow != null)
-                return child_flow.version_id;
+            if(my_child_flow != null && my_child_flow.version_id != null)
+                return my_child_flow.version_id;
             else
                 return child_flow_version;
         }
@@ -162,6 +164,20 @@ public class Flow implements Serializable
         {
             if(steps[i].id == id)
                 return steps[i];
+        }
+
+        return null;
+    }
+
+    public Step getStepAfter(int stepId)
+    {
+        if(steps == null)
+            return null;
+
+        for(int i = 0; i < steps.length; i++)
+        {
+            if(steps[i].id == stepId && i + 1 < steps.length)
+                return steps[i + 1];
         }
 
         return null;

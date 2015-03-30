@@ -21,6 +21,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.ntxdev.zuptecnico.api.FillCaseStepSyncAction;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.entities.Case;
 import com.ntxdev.zuptecnico.entities.Flow;
@@ -29,6 +30,7 @@ import com.ntxdev.zuptecnico.ui.UIHelper;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Hashtable;
+import java.util.Random;
 
 /**
  * Created by igorlira on 7/30/14.
@@ -680,8 +682,60 @@ public class ViewCaseStepFormActivity extends ActionBarActivity
                 fields.put(fieldId, value);
         }
 
-        PublishTask task = new PublishTask(fields);
-        task.execute();
+        FillCaseStepSyncAction syncAction = new FillCaseStepSyncAction(theCase.id, step.id, step.version_id, fields);
+        Zup.getInstance().addSyncAction(syncAction);
+        Zup.getInstance().sync();
+
+
+        Case.Step step = this.theCase.getStep(this.step.id);
+        if(step == null) {
+            step = new Case.Step();
+
+            Case.Step[] newArray = new Case.Step[theCase.case_steps.length + 1];
+            for (int i = 0; i < theCase.case_steps.length; i++) {
+                newArray[i] = theCase.case_steps[i];
+            }
+            newArray[theCase.case_steps.length] = step;
+
+            theCase.case_steps = newArray;
+            step.id = (theCase.id * this.step.id) * (new Random(System.currentTimeMillis()).nextInt(1337) + 1);
+        }
+
+        step.responsible_user_id = Zup.getInstance().getSessionUserId();
+        step.executed = true;
+        step.step_version = this.step.version_id;
+        step.step_id = this.step.id;
+        step.case_step_data_fields = new Case.Step.DataField[fields.size()];
+
+        int i = 0;
+        for(Integer key : fields.keySet())
+        {
+            Case.Step.DataField data = new Case.Step.DataField();
+            data.fieldId = key;
+            data.id = step.id * key * (new Random(System.currentTimeMillis()).nextInt(1337) + 1);
+            data.value = fields.get(key);
+
+            step.case_step_data_fields[i++] = data;
+        }
+
+        Flow.Step nextStep = flow.getStepAfter(step.step_id);
+
+        theCase.status = "sync_pending";
+        if(nextStep != null)
+            theCase.next_step_id = nextStep.id;
+        else
+            theCase.next_step_id = null;
+
+        if(Zup.getInstance().hasCase(theCase.id))
+            Zup.getInstance().updateCase(theCase);
+        else
+            Zup.getInstance().addCase(theCase);
+
+        edited = true;
+        leaveEditMode();
+
+        //PublishTask task = new PublishTask(fields);
+        //task.execute();
     }
 
     boolean isIntegerField(Flow.Step.Field field)

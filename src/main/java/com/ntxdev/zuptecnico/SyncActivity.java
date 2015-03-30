@@ -17,10 +17,13 @@ import android.widget.TextView;
 
 import com.ntxdev.zuptecnico.api.DeleteInventoryItemSyncAction;
 import com.ntxdev.zuptecnico.api.EditInventoryItemSyncAction;
+import com.ntxdev.zuptecnico.api.FillCaseStepSyncAction;
 import com.ntxdev.zuptecnico.api.PublishInventoryItemSyncAction;
 import com.ntxdev.zuptecnico.api.SyncAction;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.api.ZupCache;
+import com.ntxdev.zuptecnico.entities.Case;
+import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.ui.UIHelper;
 
@@ -162,6 +165,19 @@ public class SyncActivity extends ActionBarActivity
 
             textTitle.setText("Remover Item de Inventário");
             textDescription.setText("ID: " + delete.itemId + ", Categoria: " + category.title);
+        }
+        else if(action instanceof FillCaseStepSyncAction)
+        {
+            FillCaseStepSyncAction fill = (FillCaseStepSyncAction) action;
+
+            Case kase = Zup.getInstance().getCase(fill.caseId);
+            Flow flow = Zup.getInstance().getFlow(kase.initial_flow_id, kase.flow_version);
+
+            textTitle.setText("Preencher Etapa do Caso");
+            if(kase != null && flow != null)
+                textDescription.setText(flow.title + " #" + kase.id);
+            else
+                textDescription.setText("Caso #" + fill.caseId + " Etapa #" + fill.stepId);
         }
 
         int color;

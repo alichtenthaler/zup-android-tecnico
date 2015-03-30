@@ -4,14 +4,18 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.text.InputType;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import com.ntxdev.zuptecnico.R;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
+import com.ntxdev.zuptecnico.entities.InventoryItem;
 
 /**
  * Created by igorlira on 3/15/15.
@@ -30,6 +34,7 @@ public class InventoryItemFilterViewController
 
     }
 
+    private boolean isSelect;
     private FilterType type;
     private Activity activity;
     private ViewGroup viewGroup;
@@ -45,28 +50,132 @@ public class InventoryItemFilterViewController
 
         this.init();
         this.setMultipleValues(false);
+
+        if(this.field.kind.equals("select") || this.field.kind.equals("radio") || this.field.kind.equals("checkbox"))
+        {
+            this.setSelect();
+            return;
+        }
     }
 
     public void setValues(Object firstV, Object secondV)
     {
+        if(isSelect)
+        {
+            Integer[] val = null;
+
+            if(firstV instanceof Integer[])
+                val = (Integer[]) firstV;
+
+            int opt = 0;
+            if(val != null && val.length > 0)
+                opt = val[0];
+
+            InventoryCategory.Section.Field.Option option = field.getOption(opt);
+
+            TextView between = (TextView) findViewById(R.id.inventory_item_filter_between);
+            if(option != null)
+            {
+                between.setText(option.value);
+                between.setTag(option.id);
+            }
+            else
+            {
+                between.setText("Selecione");
+                between.setTag(null);
+            }
+        }
+        else
+        {
+            EditText first = (EditText) findViewById(R.id.inventory_item_filter_first);
+            EditText second = (EditText) findViewById(R.id.inventory_item_filter_second);
+
+            first.setTag(firstV);
+            second.setTag(secondV);
+
+            if (firstV == null)
+                firstV = "";
+
+            if (secondV == null)
+                secondV = "";
+
+            first.setText(firstV.toString());
+            second.setText(secondV.toString());
+        }
+    }
+
+    void setSelect()
+    {
+        isSelect = true;
+
         EditText first = (EditText) findViewById(R.id.inventory_item_filter_first);
         EditText second = (EditText) findViewById(R.id.inventory_item_filter_second);
+        View extra = findViewById(R.id.inventory_item_filter_extra);
+        View pointer = findViewById(R.id.inventory_item_filter_select_pointer);
+        TextView between = (TextView) findViewById(R.id.inventory_item_filter_between);
 
-        first.setTag(firstV);
-        second.setTag(secondV);
 
-        if(firstV == null)
-            firstV = "";
+        first.setVisibility(View.GONE);
+        second.setVisibility(View.GONE);
+        extra.setVisibility(View.GONE);
+        pointer.setVisibility(View.VISIBLE);
+        between.setVisibility(View.VISIBLE);
 
-        if(secondV == null)
-            secondV = "";
+        between.setText("Selecione");
+        between.setTag(null);
 
-        first.setText(firstV.toString());
-        second.setText(secondV.toString());
+        between.setClickable(true);
+        between.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showSelectDialog();
+            }
+        });
+    }
+
+    void showSelectDialog()
+    {
+        TextView between = (TextView) findViewById(R.id.inventory_item_filter_between);
+
+        android.support.v7.widget.PopupMenu menu = new android.support.v7.widget.PopupMenu(this.activity, between);
+        int i = 0;
+        for(InventoryCategory.Section.Field.Option option : this.field.field_options)
+        {
+            menu.getMenu().add(0, option.id, i++, option.value);
+        }
+
+        menu.setOnMenuItemClickListener(new android.support.v7.widget.PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem menuItem) {
+                setSelectedValue(menuItem.getItemId());
+                return false;
+            }
+        });
+
+        menu.show();
+    }
+
+    void setSelectedValue(int id)
+    {
+        InventoryCategory.Section.Field.Option option = field.getOption(id);
+        if(option == null)
+            return;
+
+        Integer[] ret = new Integer[] { id };
+
+        TextView between = (TextView) findViewById(R.id.inventory_item_filter_between);
+        between.setText(option.value);
+        between.setTag(ret);
     }
 
     public Object[] getValues()
     {
+        if(isSelect)
+        {
+            TextView between = (TextView) findViewById(R.id.inventory_item_filter_between);
+            return new Object[] { between.getTag(), null };
+        }
+
         EditText first = (EditText) findViewById(R.id.inventory_item_filter_first);
         EditText second = (EditText) findViewById(R.id.inventory_item_filter_second);
 
@@ -256,6 +365,9 @@ public class InventoryItemFilterViewController
         TextView tv = (TextView) findViewById(R.id.inventory_item_filter_type_button);
         tv.setText(getTypeName(type));
 
+        if(this.isSelect)
+            return;
+
         switch (type)
         {
             case Between:
@@ -358,15 +470,33 @@ public class InventoryItemFilterViewController
     void addFilter()
     {
         isFilterEnabled = true;
-        findViewById(R.id.inventory_item_filter_add_button).setVisibility(View.GONE);
-        findViewById(R.id.inventory_item_filter_fields).setVisibility(View.VISIBLE);
+
+        if(isSelect)
+        {
+            findViewById(R.id.inventory_item_filter_add_button).setVisibility(View.GONE);
+            findViewById(R.id.inventory_item_filter_fields).setVisibility(View.VISIBLE);
+        }
+        else
+        {
+            findViewById(R.id.inventory_item_filter_add_button).setVisibility(View.GONE);
+            findViewById(R.id.inventory_item_filter_fields).setVisibility(View.VISIBLE);
+        }
     }
 
     void removeFilter()
     {
         isFilterEnabled = false;
-        findViewById(R.id.inventory_item_filter_add_button).setVisibility(View.VISIBLE);
-        findViewById(R.id.inventory_item_filter_fields).setVisibility(View.GONE);
+
+        if(isSelect)
+        {
+            findViewById(R.id.inventory_item_filter_add_button).setVisibility(View.VISIBLE);
+            findViewById(R.id.inventory_item_filter_fields).setVisibility(View.GONE);
+        }
+        else
+        {
+            findViewById(R.id.inventory_item_filter_add_button).setVisibility(View.VISIBLE);
+            findViewById(R.id.inventory_item_filter_fields).setVisibility(View.GONE);
+        }
     }
 
     View findViewById(int id)
