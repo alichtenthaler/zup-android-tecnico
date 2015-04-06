@@ -167,6 +167,30 @@ public class ZupClient
         return result;
     }
 
+    public ApiHttpResult<InventoryItemCollection> searchInventoryItems(int page, int per_page, int[] inventory_category_ids, Integer[] inventory_statuses_ids, String query)
+    {
+        String inventory_category_ids_joined = "";
+        for(int i = 0; i < inventory_category_ids.length; i++)
+        {
+            inventory_category_ids_joined += inventory_category_ids[i];
+            if(i + 1 < inventory_category_ids.length)
+                inventory_category_ids_joined += ",";
+        }
+        String inventory_statuses_ids_joined = "";
+        if(inventory_statuses_ids != null)
+        {
+            for (int i = 0; i < inventory_statuses_ids.length; i++) {
+                inventory_statuses_ids_joined += inventory_statuses_ids[i];
+                if (i + 1 < inventory_statuses_ids.length)
+                    inventory_statuses_ids_joined += ",";
+            }
+        }
+
+        String escapedQuery = URLEncoder.encode(query);
+        ApiHttpResult<InventoryItemCollection> result = httpClient.get("search/inventory/items?page=" + page + "&per_page=" + per_page + "&inventory_categories_ids=" + inventory_category_ids_joined + (inventory_statuses_ids != null ? "&inventory_statuses_ids=" + inventory_statuses_ids_joined : "") + "&query=" + escapedQuery + (sessionToken != null ? "&token=" + sessionToken : ""), InventoryItemCollection.class);
+        return result;
+    }
+
     public ApiHttpResult<InventoryItemCollection> searchInventoryItems(int page, int per_page, int[] inventory_category_ids, Integer[] inventory_statuses_ids, String address, String title, Calendar creation_from, Calendar creation_to, Calendar modification_from, Calendar modification_to, Float latitude, Float longitude)
     {
         String inventory_category_ids_joined = "";

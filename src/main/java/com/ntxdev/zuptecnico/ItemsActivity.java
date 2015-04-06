@@ -565,7 +565,8 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
             else
                 _pageJobId = Zup.getInstance().searchInventoryItems(_page, 30, new int[] { _categoryId }, new Integer[] { _stateId }, null, null, null, null, null, null, null, null, this, this);
         else
-            _pageJobId = Zup.getInstance().searchInventoryItems(_page, 30, new int[] { _categoryId }, (_stateId != null ? new Integer[] { _stateId } : null), null, _searchQuery, null, null, null, null, null, null, this, this);
+            _pageJobId = Zup.getInstance().searchInventoryItems(_page, 30, new int[] { _categoryId }, ( _stateId != null ? new Integer[] { _stateId } : null), _searchQuery, this, this);
+            //_pageJobId = Zup.getInstance().searchInventoryItems(_page, 30, new int[] { _categoryId }, (_stateId != null ? new Integer[] { _stateId } : null), null, _searchQuery, null, null, null, null, null, null, this, this);
 
         showLoading();
     }

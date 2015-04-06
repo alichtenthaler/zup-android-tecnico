@@ -858,6 +858,29 @@ public class Zup
         return result.result.item;
     }
 
+    public int searchInventoryItems(final int page, final int per_page, final int[] inventory_category_ids, final Integer[] inventory_statuses_ids, final String query, final InventoryItemsListener listener, final JobFailedListener failedListener)
+    {
+        final int job_id = generateJobId();
+        Thread worker = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final ApiHttpResult<InventoryItemCollection> result = client.searchInventoryItems(page, per_page, inventory_category_ids, inventory_statuses_ids, query);
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if(result.statusCode == 200)
+                            listener.onInventoryItemsReceived(result.result.items, page, per_page, inventory_category_ids, null, query, null, null, null, null, null, null, job_id);
+                        else if(failedListener != null)
+                            failedListener.onJobFailed(job_id);
+                    }
+                });
+            }
+        });
+        worker.start();
+
+        return job_id;
+    }
+
     public int searchInventoryItems(final int page, final int per_page, final int[] inventory_category_ids, final Integer[] inventory_statuses_ids, final String address, final String title, final Calendar creation_from, final Calendar creation_to, final Calendar modification_from, final Calendar modification_to, final Float latitude, final Float longitude, final InventoryItemsListener listener, final JobFailedListener failedListener)
     {
         final int job_id = generateJobId();
