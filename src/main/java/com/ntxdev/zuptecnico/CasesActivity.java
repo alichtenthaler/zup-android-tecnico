@@ -227,6 +227,11 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
         }
     }
 
+    @Override
+    public void onBackPressed() {
+
+    }
+
     void refreshMenu()
     {
         Iterator<Flow> flows;

@@ -1094,6 +1094,11 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
     }
 
     @Override
+    public void onBackPressed() {
+
+    }
+
+    @Override
     public void startActivity(Intent intent) {
         super.startActivity(intent);
         overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);

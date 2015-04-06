@@ -55,6 +55,12 @@ android {
         sbc_hmg {
             applicationId 'com.ntxdev.zuptecnico_sbc_hmg'
         }
+        maceio {
+            applicationId 'com.ntxdev.zuptecnico_maceio'
+        }
+        floripa {
+            applicationId 'com.ntxdev.zuptecnico_floripa'
+        }
     }
 }
 

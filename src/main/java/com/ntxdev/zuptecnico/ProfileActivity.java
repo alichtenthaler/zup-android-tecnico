@@ -38,6 +38,10 @@ public class ProfileActivity extends ActionBarActivity {
         UIHelper.setTitle(this, user.name);
     }
 
+    @Override
+    public void onBackPressed() {
+
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

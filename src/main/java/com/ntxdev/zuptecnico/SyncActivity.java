@@ -220,6 +220,11 @@ public class SyncActivity extends ActionBarActivity
         return view;
     }
 
+    @Override
+    public void onBackPressed() {
+
+    }
+
     void showError(final SyncAction action)
     {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);

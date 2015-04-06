@@ -551,7 +551,7 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
             }
         }
         else if(field.kind.equals("checkbox")) {
-            ArrayList<String> result = new ArrayList<String>();
+            ArrayList<Integer> result = new ArrayList<Integer>();
 
             ViewGroup radioContainer = (ViewGroup) childContainer.findViewById(R.id.inventory_item_radio_container);
             for (int i = 0; i < radioContainer.getChildCount(); i++) {
@@ -560,7 +560,7 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
                 CheckBox checkBox = (CheckBox) radioContainer.getChildAt(i);
                 if (checkBox.isChecked()) {
-                    result.add((String) checkBox.getTag(R.id.tag_button_value));
+                    result.add((Integer) checkBox.getTag(R.id.tag_button_value));
                 }
             }
 
@@ -882,7 +882,11 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
                                 group.addView(button);
 
-                                if(!createMode && item.getFieldValue(field.id) != null && item.getFieldValue(field.id).equals(field.id))
+                                ArrayList<Integer> selected = null;
+                                if(item.getFieldValue(field.id) instanceof ArrayList<?>)
+                                    selected = (ArrayList<Integer>) item.getFieldValue(field.id);
+
+                                if(!createMode && selected != null && selected.contains(option.id))// item.getFieldValue(field.id).equals(field.id))
                                     button.setChecked(true);
                             }
                             radiocontainer.addView(group);
@@ -987,8 +991,21 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                         fieldTitle.setText(label);
 
                         if(!createMode && item.getFieldValue(field.id) != null) {
-                            fieldValue.setText(item.getFieldValue(field.id).toString());
-                            fieldValue.setTag(item.getFieldValue(field.id).toString());
+                            ArrayList<Integer> selected = (ArrayList<Integer>) item.getFieldValue(field.id);
+                            if(selected.size() > 0)
+                            {
+                                Integer id = selected.get(0);
+                                InventoryCategory.Section.Field.Option option = field.getOption(id);
+
+                                fieldValue.setText(option.value);
+                                fieldValue.setTag(id);
+                            }
+                            else
+                            {
+                                fieldValue.setText("Escolha uma opção...");
+                            }
+                            //fieldValue.setText(item.getFieldValue(field.id).toString());
+                            //fieldValue.setTag(item.getFieldValue(field.id).toString());
                         }
                         else
                             fieldValue.setText("Escolha uma opção...");

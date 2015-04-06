@@ -44,7 +44,15 @@ public class ApiHttpClient
         }
         else if(BuildConfig.APPLICATION_ID.equals("com.ntxdev.zuptecnico_sbc_ntx"))
         {
-            ApiHttpClient.mBasePath = "http://sbc.zeladoriaurbana.com.br/";
+            ApiHttpClient.mBasePath = "http://zup-api-sbc.cognita.ntxdev.com.br/"; //"http://sbc.zeladoriaurbana.com.br/";
+        }
+        else if(BuildConfig.APPLICATION_ID.equals("com.ntxdev.zuptecnico_floripa"))
+        {
+            ApiHttpClient.mBasePath = "http://zup-api-florianopolis.cognita.ntxdev.com.br/";
+        }
+        else if(BuildConfig.APPLICATION_ID.equals("com.ntxdev.zuptecnico_maceio"))
+        {
+            ApiHttpClient.mBasePath = "http://zup-api-maceio.cognita.ntxdev.com.br/";
         }
         else
             ApiHttpClient.mBasePath = "http://zup-staging.cognita.ntxdev.com.br/";
