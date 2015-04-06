@@ -555,6 +555,10 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
     }
 
     private void loadPage() {
+        // Don't load if there's no category selected
+        if(_categoryId == 0)
+            return;
+
         if(_searchQuery.equals(""))
             if(_stateId == null)
                 _pageJobId = Zup.getInstance().requestInventoryItems(_categoryId, _page, _sort, _order, this, this);
