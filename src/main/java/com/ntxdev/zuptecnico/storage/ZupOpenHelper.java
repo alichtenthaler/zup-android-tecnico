@@ -44,7 +44,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
         sqLiteDatabase.execSQL("CREATE TABLE users (id INTEGER PRIMARY KEY, name VARCHAR(120), email VARCHAR(120), phone VARCHAR(120), document VARCHAR(120), address VARCHAR(120));");
         sqLiteDatabase.execSQL("CREATE TABLE session (user_id INTEGER, token VARCHAR(120));");
-        sqLiteDatabase.execSQL("CREATE TABLE inventory_categories (id INTEGER PRIMARY KEY, title VARCHAR(120), description VARCHAR(120), require_item_status INTEGER, created_at VARCHAR(120), plot_format VARCHAR(20), color VARCHAR(10));");
+        sqLiteDatabase.execSQL("CREATE TABLE inventory_categories (id INTEGER PRIMARY KEY, title VARCHAR(120), description VARCHAR(120), require_item_status INTEGER, created_at VARCHAR(120), plot_format VARCHAR(20));");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_sections (id INTEGER PRIMARY KEY, inventory_category_id INTEGER, title VARCHAR(120), required INTEGER);");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_sections_fields (id INTEGER PRIMARY KEY, inventory_category_id INTEGER, inventory_section_id INTEGER, title VARCHAR(120), kind VARCHAR(120), position INTEGER, label VARCHAR(120), size VARCHAR(120), required INTEGER, location INTEGER, available_values TEXT, minimum INTEGER NULL, maximum INTEGER NULL);");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_sections_fields_options (id INTEGER PRIMARY KEY, inventory_category_id INTEGER, field_id INTEGER, value VARCHAR(120), disabled INTEGER);");
@@ -1415,7 +1415,6 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         values.put("require_item_status", category.require_item_status ? 1 : 0);
         values.put("created_at", category.created_at);
         values.put("plot_format", category.plot_format != null ? category.plot_format.toString() : null);
-        values.put("color", category.color);
 
         getWritableDatabase().insert("inventory_categories", null, values);
 
@@ -1500,7 +1499,6 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         category.created_at = cursor.getString(3);
         category.require_item_status = cursor.getInt(4) == 1;
         category.plot_format = cursor.getString(5);
-        //category.color = cursor.getString(6);
 
         // inventory_category_id INTEGER, web VARCHAR(255), mobile VARCHAR(255)
         cursor = getReadableDatabase().rawQuery("SELECT url_web, url_mobile FROM inventory_categories_pins WHERE inventory_category_id=?", new String[] { Integer.toString(category.id) });

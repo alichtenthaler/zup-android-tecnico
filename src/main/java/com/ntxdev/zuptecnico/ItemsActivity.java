@@ -54,11 +54,9 @@ import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
 import com.ntxdev.zuptecnico.entities.InventoryItemImage;
-import com.ntxdev.zuptecnico.entities.MapCluster;
 import com.ntxdev.zuptecnico.ui.InfinityScrollView;
 import com.ntxdev.zuptecnico.ui.SingularTabHost;
 import com.ntxdev.zuptecnico.ui.UIHelper;
-import com.ntxdev.zuptecnico.util.BitmapUtil;
 import com.ntxdev.zuptecnico.util.ResizeAnimation;
 
 import java.util.ArrayList;
@@ -76,7 +74,6 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
     private boolean _viewingMap;
     private int googlePlayStatus;
     private Hashtable<Marker, InventoryItem> itemMarkers;
-    private Hashtable<Marker, MapCluster> clusterMarkers;
     private LocationClient locationClient;
 
     private int _categoryId;
@@ -285,7 +282,6 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.itemMarkers = new Hashtable<Marker, InventoryItem>();
-        this.clusterMarkers = new Hashtable<Marker, MapCluster>();
         setContentView(R.layout.activity_items);
 
         Zup.getInstance().initStorage(getApplicationContext());
@@ -758,7 +754,7 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
         return d; // returns the distance in meter
     }
 
-    public void onInventoryItemsReceived(InventoryItem[] items, MapCluster[] clusters, double latitude, double longitude, double radius, double zoom, int job_id)
+    public void onInventoryItemsReceived(InventoryItem[] items, double latitude, double longitude, double radius, double zoom, int job_id)
     {
         //itemMarkers.clear();
         //_map.clear();
@@ -826,31 +822,6 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
             this.findViewById(R.id.items_map_toomany).setVisibility(View.VISIBLE);
         }
 
-        for(Marker marker : clusterMarkers.keySet())
-        {
-            marker.remove();
-        }
-        this.clusterMarkers.clear();
-
-        if(clusters != null)
-        {
-            for(MapCluster cluster : clusters)
-            {
-                Bitmap markerBitmap = BitmapUtil.getMapClusterBitmap(cluster, getResources().getDisplayMetrics());
-                BitmapDescriptor markerIcon = BitmapDescriptorFactory.fromBitmap(markerBitmap);
-
-                LatLng pos = new LatLng(cluster.position[0], cluster.position[1]);
-
-                MarkerOptions markerOptions = new MarkerOptions();
-                markerOptions.position(pos);
-                markerOptions.flat(true);
-                markerOptions.title("(cluster)");
-                markerOptions.icon(markerIcon);
-
-                clusterMarkers.put(_map.addMarker(markerOptions), cluster);
-            }
-        }
-
         for(Marker marker : markersToRemove)
         {
             marker.remove();
@@ -901,9 +872,6 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
             _map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                 @Override
                 public boolean onMarkerClick(Marker marker) {
-                    if(marker.getTitle().equals("(cluster)"))
-                        return true;
-
                     marker.showInfoWindow();
                     return true;
                 }

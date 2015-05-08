@@ -18,7 +18,6 @@ public class InventoryCategory
     public Pins pin;
     public Pins marker;
     public boolean require_item_status;
-    public String color;
 
     //@JsonIgnore(true)
     //public int defaultPinResourceId;

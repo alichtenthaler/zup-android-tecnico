@@ -26,7 +26,6 @@ import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
 import com.ntxdev.zuptecnico.entities.InventoryItemImage;
-import com.ntxdev.zuptecnico.entities.MapCluster;
 import com.ntxdev.zuptecnico.entities.Session;
 import com.ntxdev.zuptecnico.entities.User;
 import com.ntxdev.zuptecnico.entities.collections.CaseCollection;
@@ -46,7 +45,6 @@ import com.ntxdev.zuptecnico.entities.responses.TransferCaseStepResponse;
 import com.ntxdev.zuptecnico.entities.responses.UpdateCaseStepResponse;
 import com.ntxdev.zuptecnico.storage.IStorage;
 import com.ntxdev.zuptecnico.storage.SQLiteStorage;
-import com.ntxdev.zuptecnico.ui.UIHelper;
 import com.ntxdev.zuptecnico.util.InventoryItemLoaderTask;
 import com.ntxdev.zuptecnico.util.UserLoaderTask;
 
@@ -429,16 +427,8 @@ public class Zup
 
     public int getInventoryCategoryPinResourceId(int categoryId)
     {
-        if(!categoriesPinResources.containsKey(categoryId) || categoriesPinResources.get(categoryId) == null)
-        {
-            if(categoriesPinResources.get(categoryId) == null)
-                categoriesPinResources.remove(categoryId);
-
+        if(!categoriesPinResources.containsKey(categoryId))
             requestInventoryCategoryPin(categoryId);
-        }
-
-        if(categoriesPinResources.get(categoryId) == null)
-            return -1;
 
         return categoriesPinResources.get(categoryId);
     }
@@ -985,7 +975,7 @@ public class Zup
                     @Override
                     public void run() {
                         if(result.statusCode == 200)
-                            listener.onInventoryItemsReceived(result.result.items, result.result.clusters, latitude, longitude, radius, zoom, job_id);
+                            listener.onInventoryItemsReceived(result.result.items, latitude, longitude, radius, zoom, job_id);
                         else if (failedListener != null)
                             failedListener.onJobFailed(job_id);
                     }

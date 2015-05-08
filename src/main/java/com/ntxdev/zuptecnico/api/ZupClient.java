@@ -273,7 +273,7 @@ public class ZupClient
     {
         // display_type=basic
         // position,id,inventory_category_id,title
-        ApiHttpResult<InventoryItemCollection> result = httpClient.get("search/inventory/items?clusterize=true&return_fields=count,category_id,position,id,inventory_category_id,title&inventory_categories_ids=" + categoryId + "&position[latitude]=" + latitude + "&position[longitude]=" + longitude + "&position[distance]=" + radius + "&zoom=" + (int)zoom + (sessionToken != null ? "&limit=100&token=" + sessionToken : ""), InventoryItemCollection.class);
+        ApiHttpResult<InventoryItemCollection> result = httpClient.get("inventory/items?return_fields=position,id,inventory_category_id,title&inventory_category_id=" + categoryId + "&position[latitude]=" + latitude + "&position[longitude]=" + longitude + "&position[distance]=" + radius + "&zoom=" + zoom + (sessionToken != null ? "&limit=100&token=" + sessionToken : ""), InventoryItemCollection.class);
         return result;
     }
 

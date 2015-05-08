@@ -20,7 +20,6 @@ import com.ntxdev.zuptecnico.api.callbacks.InventoryItemsListener;
 import com.ntxdev.zuptecnico.api.callbacks.JobFailedListener;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
-import com.ntxdev.zuptecnico.entities.MapCluster;
 import com.ntxdev.zuptecnico.entities.collections.SingleInventoryItemCollection;
 import com.ntxdev.zuptecnico.ui.InfinityScrollView;
 
@@ -187,7 +186,7 @@ public class TransferItemsActivity extends ActionBarActivity implements View.OnC
 
     @Override
     public void onJobFailed(int job_id) {
-        Toast.makeText(this, "Não foi possível obter a listagem de itens.", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Não foi possível obter a listagem de itens.", 3).show();
     }
 
     public class Tasker extends AsyncTask<Void, Void, Void>
@@ -259,7 +258,7 @@ public class TransferItemsActivity extends ActionBarActivity implements View.OnC
     }
 
     @Override
-    public void onInventoryItemsReceived(InventoryItem[] items, MapCluster[] clusters, double latitude, double longitude, double radius, double zoom, int job_id) {
+    public void onInventoryItemsReceived(InventoryItem[] items, double latitude, double longitude, double radius, double zoom, int job_id) {
 
     }
 }
