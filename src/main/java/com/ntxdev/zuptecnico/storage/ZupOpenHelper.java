@@ -10,6 +10,7 @@ import android.util.Log;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ntxdev.zuptecnico.api.SyncAction;
+import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.entities.Case;
 import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
@@ -20,6 +21,7 @@ import com.ntxdev.zuptecnico.entities.User;
 import org.json.JSONException;
 import org.json.JSONStringer;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -42,7 +44,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
         sqLiteDatabase.execSQL("CREATE TABLE users (id INTEGER PRIMARY KEY, name VARCHAR(120), email VARCHAR(120), phone VARCHAR(120), document VARCHAR(120), address VARCHAR(120));");
         sqLiteDatabase.execSQL("CREATE TABLE session (user_id INTEGER, token VARCHAR(120));");
-        sqLiteDatabase.execSQL("CREATE TABLE inventory_categories (id INTEGER PRIMARY KEY, title VARCHAR(120), description VARCHAR(120), require_item_status INTEGER, created_at VARCHAR(120), plot_format VARCHAR(20));");
+        sqLiteDatabase.execSQL("CREATE TABLE inventory_categories (id INTEGER PRIMARY KEY, title VARCHAR(120), description VARCHAR(120), require_item_status INTEGER, created_at VARCHAR(120), plot_format VARCHAR(20), color VARCHAR(10));");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_sections (id INTEGER PRIMARY KEY, inventory_category_id INTEGER, title VARCHAR(120), required INTEGER);");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_sections_fields (id INTEGER PRIMARY KEY, inventory_category_id INTEGER, inventory_section_id INTEGER, title VARCHAR(120), kind VARCHAR(120), position INTEGER, label VARCHAR(120), size VARCHAR(120), required INTEGER, location INTEGER, available_values TEXT, minimum INTEGER NULL, maximum INTEGER NULL);");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_sections_fields_options (id INTEGER PRIMARY KEY, inventory_category_id INTEGER, field_id INTEGER, value VARCHAR(120), disabled INTEGER);");
@@ -105,7 +107,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         contentValues.put("initial_flow_id", kase.initial_flow_id);
         contentValues.put("flow_version", kase.flow_version);
         contentValues.put("next_step_id", kase.next_step_id);
-        contentValues.put("status", kase.status);
+        contentValues.put("status", kase.getStatus());
         if(kase.current_step != null)
             contentValues.put("current_case_step_id", kase.current_step.id);
         else
@@ -212,7 +214,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         kase.initial_flow_id = cursor.getInt(3);
         kase.flow_version = cursor.getInt(4);
         kase.next_step_id = cursor.getInt(5);
-        kase.status = cursor.getString(6);
+        kase.setStatus(cursor.getString(6));
 
         int currentCaseStepId = cursor.getInt(7);
         kase.case_steps = getCaseSteps(kase.id);
@@ -294,7 +296,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
     {
         if(hasCase(kase.id))
         {
-            updateCase(kase);
+            updateCase(kase, true);
             return;
         }
 
@@ -311,8 +313,12 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         }
     }
 
-    public void updateCase(Case kase)
+    public void updateCase(Case kase, boolean fromapi)
     {
+        // Don't overwrite our changes! >:(
+        if(Zup.getInstance().hasSyncActionRelatedToCase(kase.id) && fromapi)
+            return;
+
         getWritableDatabase().update("cases", createCaseContentValues(kase), "id=" + kase.id, null);
 
         if(kase.case_steps != null) {
@@ -620,12 +626,13 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         step.version_id = cursor.getInt(6);
         step.child_flow_version = cursor.getInt(7);
 
-        Cursor countCursor = getReadableDatabase().rawQuery("SELECT COUNT(step_id) FROM flows_steps_fields_relation WHERE step_id = " + step.id + " AND step_version = " + step.version_id, null);
-        //Cursor countCursor = getReadableDatabase().rawQuery("SELECT COUNT(server_id) FROM flows_steps_fields WHERE step_id = " + step.id + " AND flow_version=" + flow.last_version + " AND step_version=" + step.last_version, null);
-        countCursor.moveToNext();
+        //Cursor countCursor = getReadableDatabase().rawQuery("SELECT COUNT(step_id) FROM flows_steps_fields_relation WHERE step_id = " + step.id + " AND step_version = " + step.version_id, null);
+        ////Cursor countCursor = getReadableDatabase().rawQuery("SELECT COUNT(server_id) FROM flows_steps_fields WHERE step_id = " + step.id + " AND flow_version=" + flow.last_version + " AND step_version=" + step.last_version, null);
+        //countCursor.moveToNext();
 
-        int count = countCursor.getInt(0);
-        step.fields = new Flow.Step.Field[count];
+        //int count = countCursor.getInt(0);
+        //step.fields = new Flow.Step.Field[count];
+        ArrayList<Flow.Step.Field> fields = new ArrayList<Flow.Step.Field>();
 
         //Cursor fieldCursor = getReadableDatabase().rawQuery("SELECT server_id, step_id, title, field_type, category_inventory_id, category_report_id, origin_field_id, active, multiple, requirements, order_number, ovalues FROM flows_steps_fields WHERE step_id=" + step.id + " AND flow_version=" + flow.last_version + " AND step_version=" + step.last_version, null);
         Cursor fieldRelationCursor = getReadableDatabase().rawQuery("SELECT field_id, field_version FROM flows_steps_fields_relation WHERE step_id = " + step.id + " AND step_version = " + step.version_id, null);
@@ -673,9 +680,13 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
                 Log.e("JSON", "Could not decode flow step field", ex);
             }
 
-            step.fields[x] = field;
+            fields.add(field);
+            //step.fields[x] = field;
             x++;
         }
+
+        step.fields = new Flow.Step.Field[fields.size()];
+        fields.toArray(step.fields);
 
         return step;
     }
@@ -707,14 +718,16 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         flow.created_at = cursor.getString(9);
         flow.updated_at = cursor.getString(10);
 
-        //Cursor countCursor = getReadableDatabase().rawQuery("SELECT COUNT(server_id) FROM flows_resolution_states WHERE flow_id=? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.last_version) });
-        Cursor countCursor = getReadableDatabase().rawQuery("SELECT COUNT(state_id) FROM flows_resolution_states_relation WHERE flow_id=? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.version_id) });
-        countCursor.moveToNext();
-        int count = countCursor.getInt(0);
+        ////Cursor countCursor = getReadableDatabase().rawQuery("SELECT COUNT(server_id) FROM flows_resolution_states WHERE flow_id=? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.last_version) });
+        //Cursor countCursor = getReadableDatabase().rawQuery("SELECT COUNT(state_id) FROM flows_resolution_states_relation WHERE flow_id=? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.version_id) });
+        //countCursor.moveToNext();
+        //int count = countCursor.getInt(0);
+
+        ArrayList<Flow.ResolutionState> resolutionStates = new ArrayList<Flow.ResolutionState>();
 
         //Cursor statesCursor = getReadableDatabase().rawQuery("SELECT server_id, flow_id, title, _default, active, created_at, updated_at, last_version, last_version_id FROM flows_resolution_states WHERE flow_id = ? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.last_version) });
         Cursor relationCursor = getReadableDatabase().rawQuery("SELECT state_id, state_version FROM flows_resolution_states_relation WHERE flow_id = ? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.version_id) });
-        flow.resolution_states = new Flow.ResolutionState[count];
+        //flow.resolution_states = new Flow.ResolutionState[count];
         int x = 0;
         while(relationCursor.moveToNext())
         {
@@ -734,19 +747,24 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
             state.last_version = statesCursor.getInt(7);
             state.last_version_id = statesCursor.getInt(8);
 
-            flow.resolution_states[x] = state;
+            resolutionStates.add(state);
+            //flow.resolution_states[x] = state;
             x++;
         }
 
-        //countCursor = getReadableDatabase().rawQuery("SELECT COUNT(server_id) FROM flows_steps WHERE flow_id=? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.last_version) });
-        countCursor = getReadableDatabase().rawQuery("SELECT COUNT(step_id) FROM flows_steps_relation WHERE flow_id=? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.version_id) });
-        countCursor.moveToNext();
-        count = countCursor.getInt(0);
+        flow.resolution_states = new Flow.ResolutionState[resolutionStates.size()];
+        resolutionStates.toArray(flow.resolution_states);
+
+        ////countCursor = getReadableDatabase().rawQuery("SELECT COUNT(server_id) FROM flows_steps WHERE flow_id=? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.last_version) });
+        //countCursor = getReadableDatabase().rawQuery("SELECT COUNT(step_id) FROM flows_steps_relation WHERE flow_id=? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.version_id) });
+        //countCursor.moveToNext();
+        //count = countCursor.getInt(0);
+        ArrayList<Flow.Step> steps = new ArrayList<Flow.Step>();
 
         //Cursor stepsCursor = getReadableDatabase().rawQuery("SELECT server_id, title, step_type, child_flow, order_number, active, last_version FROM flows_steps WHERE flow_id = ? AND flow_version=?", new String[] { Integer.toString(flow.id), Integer.toString(flow.last_version) });
         relationCursor = getReadableDatabase().rawQuery("SELECT step_id, step_version FROM flows_steps_relation WHERE flow_id = ? AND flow_version=? ORDER BY order_number ASC", new String[] { Integer.toString(flow.id), Integer.toString(flow.version_id) });
-        flow.steps = new Flow.Step[count];
-        flow.steps_versions = new HashMap<String, Integer>(count);
+        //flow.steps = new Flow.Step[count];
+        flow.steps_versions = new HashMap<String, Integer>();
         x = 0;
 
         boolean hasNotFound = false;
@@ -766,8 +784,14 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
 
             Flow.Step step = parseStep(flow, stepsCursor);
 
-            flow.steps[x] = step;
+            steps.add(step);
+            //flow.steps[x] = step;
             x++;
+        }
+
+        if(!hasNotFound) {
+            flow.steps = new Flow.Step[steps.size()];
+            steps.toArray(flow.steps);
         }
 
         if(flow.steps != null)
@@ -1391,6 +1415,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         values.put("require_item_status", category.require_item_status ? 1 : 0);
         values.put("created_at", category.created_at);
         values.put("plot_format", category.plot_format != null ? category.plot_format.toString() : null);
+        values.put("color", category.color);
 
         getWritableDatabase().insert("inventory_categories", null, values);
 
@@ -1475,6 +1500,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         category.created_at = cursor.getString(3);
         category.require_item_status = cursor.getInt(4) == 1;
         category.plot_format = cursor.getString(5);
+        //category.color = cursor.getString(6);
 
         // inventory_category_id INTEGER, web VARCHAR(255), mobile VARCHAR(255)
         cursor = getReadableDatabase().rawQuery("SELECT url_web, url_mobile FROM inventory_categories_pins WHERE inventory_category_id=?", new String[] { Integer.toString(category.id) });

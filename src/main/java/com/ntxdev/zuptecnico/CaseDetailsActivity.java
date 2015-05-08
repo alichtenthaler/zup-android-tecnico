@@ -288,7 +288,8 @@ public class CaseDetailsActivity extends ActionBarActivity
             });
 
             if(!done)
-                stepView.setBackgroundDrawable(getResources().getDrawable(R.drawable.case_item_cell_new));
+                stepView.setBackgroundColor(getResources().getColor(R.color.case_item_cell_notselected_new));
+                //stepView.setBackgroundDrawable(getResources().getDrawable(R.drawable.case_item_cell_new));
 
             container.addView(stepView);
         }
@@ -303,9 +304,9 @@ public class CaseDetailsActivity extends ActionBarActivity
         TextView state = (TextView)findViewById(R.id.document_details_state_desc);
         ImageView stateicon = (ImageView)findViewById(R.id.document_details_state_icon);
 
-        stateicon.setImageDrawable(getResources().getDrawable(Zup.getInstance().getCaseStatusBigDrawable(item.status)));
-        state.setBackgroundColor(Zup.getInstance().getCaseStatusColor(item.status));
-        state.setText(Zup.getInstance().getCaseStatusString(item.status));
+        stateicon.setImageDrawable(getResources().getDrawable(Zup.getInstance().getCaseStatusBigDrawable(item.getStatus())));
+        state.setBackgroundColor(Zup.getInstance().getCaseStatusColor(item.getStatus()));
+        state.setText(Zup.getInstance().getCaseStatusString(item.getStatus()));
 
         title.setText("Caso " + item.id);
         flow.setText(initialFlow.title);

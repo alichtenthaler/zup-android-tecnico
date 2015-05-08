@@ -30,7 +30,13 @@
                 android:orientation="vertical"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"
-                android:id="@+id/documents_container"></LinearLayout>
+                android:id="@+id/documents_container"
+                android:baselineAligned="false"
+                android:fillViewport="true"
+                android:measureWithLargestChild="false">
+
+
+            </LinearLayout>
         </ScrollView>
 
     </LinearLayout>

@@ -2,6 +2,7 @@ package com.ntxdev.zuptecnico.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.ntxdev.zuptecnico.api.Zup;
 
 import java.io.Serializable;
 
@@ -92,10 +93,27 @@ public class Case implements Serializable
     public Integer next_step_id;
     //public Integer responsible_user_id;
     //public Integer responsible_group_id;
-    public String status; // active, pending, transfer, inactive e finished
+    private String status; // active, pending, transfer, inactive e finished
 
     public Step current_step;
     public Step[] case_steps;
+
+    public String getStatus()
+    {
+        if(Zup.getInstance().hasSyncActionRelatedToCase(id))
+        {
+            return "sync_pending";
+        }
+        else
+        {
+            return this.status;
+        }
+    }
+
+    public void setStatus(String status)
+    {
+        this.status = status;
+    }
 
     public Step getStep(int stepId)
     {

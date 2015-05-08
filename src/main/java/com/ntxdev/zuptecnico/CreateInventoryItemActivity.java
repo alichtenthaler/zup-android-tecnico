@@ -883,7 +883,7 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                                 group.addView(button);
 
                                 ArrayList<Integer> selected = null;
-                                if(item.getFieldValue(field.id) instanceof ArrayList<?>)
+                                if(!createMode && item.getFieldValue(field.id) instanceof ArrayList<?>)
                                     selected = (ArrayList<Integer>) item.getFieldValue(field.id);
 
                                 if(!createMode && selected != null && selected.contains(option.id))// item.getFieldValue(field.id).equals(field.id))

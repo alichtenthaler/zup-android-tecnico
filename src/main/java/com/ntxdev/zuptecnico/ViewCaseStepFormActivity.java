@@ -214,7 +214,7 @@ public class ViewCaseStepFormActivity extends ActionBarActivity
                 if(!Zup.getInstance().hasCase(theCase.id))
                     Zup.getInstance().addCase(theCase);
                 else
-                    Zup.getInstance().updateCase(theCase);
+                    Zup.getInstance().updateCase(theCase, true);
 
                 edited = true;
                 enterEditMode();
@@ -641,7 +641,7 @@ public class ViewCaseStepFormActivity extends ActionBarActivity
                 if(!Zup.getInstance().hasCase(aCase.id))
                     Zup.getInstance().addCase(aCase);
                 else
-                    Zup.getInstance().updateCase(aCase);
+                    Zup.getInstance().updateCase(aCase, true);
 
                 edited = true;
                 theCase = aCase;
@@ -720,14 +720,14 @@ public class ViewCaseStepFormActivity extends ActionBarActivity
 
         Flow.Step nextStep = flow.getStepAfter(step.step_id);
 
-        theCase.status = "sync_pending";
+        //theCase.status = "sync_pending";
         if(nextStep != null)
             theCase.next_step_id = nextStep.id;
         else
             theCase.next_step_id = null;
 
         if(Zup.getInstance().hasCase(theCase.id))
-            Zup.getInstance().updateCase(theCase);
+            Zup.getInstance().updateCase(theCase, false);
         else
             Zup.getInstance().addCase(theCase);
 

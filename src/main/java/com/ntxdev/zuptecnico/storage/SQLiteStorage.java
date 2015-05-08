@@ -215,9 +215,9 @@ public class SQLiteStorage implements IStorage {
         db.addCase(kase);
     }
 
-    public void updateCase(Case kase)
+    public void updateCase(Case kase, boolean fromapi)
     {
-        db.updateCase(kase);
+        db.updateCase(kase, fromapi);
     }
 
     public Case getCase(int id)

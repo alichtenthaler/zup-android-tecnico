@@ -239,9 +239,9 @@ public class DownloadedCasesActivity extends ActionBarActivity implements Singul
             downloadicon.setVisibility(View.VISIBLE);
         }
 
-        stateicon.setImageDrawable(getResources().getDrawable(Zup.getInstance().getCaseStatusDrawable(item.status)));
-        state.setBackgroundColor(Zup.getInstance().getCaseStatusColor(item.status));
-        state.setText(Zup.getInstance().getCaseStatusString(item.status));
+        stateicon.setImageDrawable(getResources().getDrawable(Zup.getInstance().getCaseStatusDrawable(item.getStatus())));
+        state.setBackgroundColor(Zup.getInstance().getCaseStatusColor(item.getStatus()));
+        state.setText(Zup.getInstance().getCaseStatusString(item.getStatus()));
 
         title.setText("Caso " + item.id);
         flow.setText(_flow.title);// + " v" + item.flow_version);
@@ -258,10 +258,10 @@ public class DownloadedCasesActivity extends ActionBarActivity implements Singul
         root.removeAllViews();
         for(Case item : cases)
         {
-            if(Zup.getInstance().hasCase(item.id))
-                Zup.getInstance().updateCase(item);
+            //if(Zup.getInstance().hasCase(item.id))
+            //    Zup.getInstance().updateCase(item);
 
-            if(_status == null || _status.equals(item.status))
+            if(_status == null || _status.equals(item.getStatus()))
             {
                 View view = setUpCaseView(item);
                 if (view == null) // Couldnt find some flow

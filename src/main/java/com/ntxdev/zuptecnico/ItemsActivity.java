@@ -16,6 +16,12 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.Interpolator;
+import android.view.animation.RotateAnimation;
+import android.view.animation.TranslateAnimation;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -48,9 +54,11 @@ import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
 import com.ntxdev.zuptecnico.entities.InventoryItemImage;
+import com.ntxdev.zuptecnico.entities.MapCluster;
 import com.ntxdev.zuptecnico.ui.InfinityScrollView;
 import com.ntxdev.zuptecnico.ui.SingularTabHost;
 import com.ntxdev.zuptecnico.ui.UIHelper;
+import com.ntxdev.zuptecnico.util.BitmapUtil;
 import com.ntxdev.zuptecnico.util.ResizeAnimation;
 
 import java.util.ArrayList;
@@ -68,6 +76,7 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
     private boolean _viewingMap;
     private int googlePlayStatus;
     private Hashtable<Marker, InventoryItem> itemMarkers;
+    private Hashtable<Marker, MapCluster> clusterMarkers;
     private LocationClient locationClient;
 
     private int _categoryId;
@@ -276,6 +285,7 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.itemMarkers = new Hashtable<Marker, InventoryItem>();
+        this.clusterMarkers = new Hashtable<Marker, MapCluster>();
         setContentView(R.layout.activity_items);
 
         Zup.getInstance().initStorage(getApplicationContext());
@@ -356,7 +366,21 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
         Zup.getInstance().setInventoryItemPublishedListener(this);
 
         this.updateCategories.start();
-        showLoading();
+        showBigLoading();
+
+        View image = findViewById(R.id.activity_items_loading_image);
+        image.measure(0, 0);
+
+        RotateAnimation animation = new RotateAnimation(360, 0, image.getMeasuredWidth() / 2, image.getMeasuredHeight() / 2);
+        animation.setRepeatCount(Animation.INFINITE);
+        animation.setDuration(2000);
+        animation.setInterpolator(new Interpolator() {
+            @Override
+            public float getInterpolation(float v) {
+                return v;
+            }
+        });
+        findViewById(R.id.activity_items_loading_image).startAnimation(animation);
     }
 
     @Override
@@ -373,6 +397,7 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
             _pageJobId = 0;
 
         hideLoading();
+        hideBigLoading();
         showNoConnectionBar();
         //Toast.makeText(this, "Não foi possível obter a listagem de itens.", 3).show();
 
@@ -546,18 +571,30 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
 
     void showLoading()
     {
-        findViewById(R.id.activity_items_loading).setVisibility(View.VISIBLE);
+        findViewById(R.id.activity_items_loading_old).setVisibility(View.VISIBLE);
     }
 
     void hideLoading()
     {
-        findViewById(R.id.activity_items_loading).setVisibility(View.INVISIBLE);
+        findViewById(R.id.activity_items_loading_old).setVisibility(View.INVISIBLE);
+    }
+
+    void showBigLoading()
+    {
+        findViewById(R.id.activity_items_loading).setVisibility(View.VISIBLE);
+    }
+
+    void hideBigLoading()
+    {
+        findViewById(R.id.activity_items_loading).setVisibility(View.GONE);
     }
 
     private void loadPage() {
         // Don't load if there's no category selected
         if(_categoryId == 0)
             return;
+
+        hideNoItems();
 
         if(_searchQuery.equals(""))
             if(_stateId == null)
@@ -568,7 +605,10 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
             _pageJobId = Zup.getInstance().searchInventoryItems(_page, 30, new int[] { _categoryId }, ( _stateId != null ? new Integer[] { _stateId } : null), _searchQuery, this, this);
             //_pageJobId = Zup.getInstance().searchInventoryItems(_page, 30, new int[] { _categoryId }, (_stateId != null ? new Integer[] { _stateId } : null), null, _searchQuery, null, null, null, null, null, null, this, this);
 
-        showLoading();
+        if(_page == 1)
+            showBigLoading();
+        else
+            showLoading();
     }
 
     public void onInventoryItemsReceived(InventoryItem[] items, int categoryId, int page, int job_id) {
@@ -580,10 +620,12 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
 
         if (job_id == _pageJobId && _page == page && _categoryId == categoryId) {
             hideNoConnectionBar();
-            _page++; // Next page that will be loaded
+            if(items != null && items.length > 0)
+                _page++; // Next page that will be loaded
             _pageJobId = 0;
             fillCategoryItems(items);
             hideLoading();
+            hideBigLoading();
         }
     }
 
@@ -597,10 +639,12 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
 
         if (job_id == _pageJobId) {
             hideNoConnectionBar();
-            _page++; // Next page that will be loaded
+            if(items != null && items.length > 0)
+                _page++; // Next page that will be loaded
             _pageJobId = 0;
             fillCategoryItems(items);
             hideLoading();
+            hideBigLoading();
         }
     }
 
@@ -639,6 +683,7 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
         ViewGroup rootView = (ViewGroup)getLayoutInflater().inflate(R.layout.fragment_inventory_item, null);
         rootView.setTag(R.id.tag_item_id, item.id);
         rootView.setTag(R.id.tag_category_id, item.inventory_category_id);
+        //rootView.setClickable(true);
         rootView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -713,7 +758,7 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
         return d; // returns the distance in meter
     }
 
-    public void onInventoryItemsReceived(InventoryItem[] items, double latitude, double longitude, double radius, double zoom, int job_id)
+    public void onInventoryItemsReceived(InventoryItem[] items, MapCluster[] clusters, double latitude, double longitude, double radius, double zoom, int job_id)
     {
         //itemMarkers.clear();
         //_map.clear();
@@ -781,6 +826,31 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
             this.findViewById(R.id.items_map_toomany).setVisibility(View.VISIBLE);
         }
 
+        for(Marker marker : clusterMarkers.keySet())
+        {
+            marker.remove();
+        }
+        this.clusterMarkers.clear();
+
+        if(clusters != null)
+        {
+            for(MapCluster cluster : clusters)
+            {
+                Bitmap markerBitmap = BitmapUtil.getMapClusterBitmap(cluster, getResources().getDisplayMetrics());
+                BitmapDescriptor markerIcon = BitmapDescriptorFactory.fromBitmap(markerBitmap);
+
+                LatLng pos = new LatLng(cluster.position[0], cluster.position[1]);
+
+                MarkerOptions markerOptions = new MarkerOptions();
+                markerOptions.position(pos);
+                markerOptions.flat(true);
+                markerOptions.title("(cluster)");
+                markerOptions.icon(markerIcon);
+
+                clusterMarkers.put(_map.addMarker(markerOptions), cluster);
+            }
+        }
+
         for(Marker marker : markersToRemove)
         {
             marker.remove();
@@ -831,6 +901,9 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
             _map.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                 @Override
                 public boolean onMarkerClick(Marker marker) {
+                    if(marker.getTitle().equals("(cluster)"))
+                        return true;
+
                     marker.showInfoWindow();
                     return true;
                 }
@@ -934,11 +1007,44 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
     private void fillCategoryItems(InventoryItem[] items)
     {
         ViewGroup root = (ViewGroup)findViewById(R.id.inventory_items_container);
+        int i = 0;
         for(InventoryItem item : items)
         {
             View view = setUpItemView(item);
             root.addView(view);
+
+            TranslateAnimation animation = new TranslateAnimation(root.getWidth() + ((float)root.getWidth() * 0.2f * (float)i), 0, 0, 0);
+            animation.setDuration(250);
+
+            AlphaAnimation animation1 = new AlphaAnimation(0, 1);
+            animation1.setDuration(250);
+
+            AnimationSet set = new AnimationSet(true);
+            set.addAnimation(animation);
+            set.addAnimation(animation1);
+            view.startAnimation(set);
+
+            i++;
         }
+
+        if(_page == 1 && items.length == 0)
+        {
+            showNoItems();
+        }
+        else
+        {
+            hideNoItems();
+        }
+    }
+
+    void showNoItems()
+    {
+        findViewById(R.id.activity_items_noitems).setVisibility(View.VISIBLE);
+    }
+
+    void hideNoItems()
+    {
+        findViewById(R.id.activity_items_noitems).setVisibility(View.GONE);
     }
 
     public void onTabChange(SingularTabHost tabHost, String oldIdentifier, String newIdentifier)
@@ -1175,6 +1281,7 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
             super.onPostExecute(inventoryItems);
 
             hideLoading();
+            hideBigLoading();
             fillCategoryItems(inventoryItems);
 
             if(inventoryItems.length > 0)

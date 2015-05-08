@@ -4,16 +4,22 @@ import android.content.Context;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
+import android.hardware.display.DisplayManager;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.TranslateAnimation;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
 
 import com.ntxdev.zuptecnico.R;
+import com.ntxdev.zuptecnico.util.ResizeAnimation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,24 +29,27 @@ import java.util.List;
  * Created by igorlira on 2/9/14.
  */
 public class SingularTabHost extends FrameLayout implements View.OnClickListener {
-    private static class Tab extends View {
+    private static class Tab extends CustomRipple {
         private boolean active;
         private String identifier;
         private String label;
 
         public Tab(Context context) {
             super(context);
-            setBackgroundDrawable(getResources().getDrawable(R.drawable.tab_item));
+            init();
+            //setBackgroundDrawable(getResources().getDrawable(R.drawable.tab_item));
         }
 
         public Tab(Context context, AttributeSet attrs) {
             super(context, attrs);
-            setBackgroundDrawable(getResources().getDrawable(R.drawable.tab_item));
+            init();
+            //setBackgroundDrawable(getResources().getDrawable(R.drawable.tab_item));
         }
 
         public Tab(Context context, AttributeSet attrs, int defStyleAttr) {
             super(context, attrs, defStyleAttr);
-            setBackgroundDrawable(getResources().getDrawable(R.drawable.tab_item));
+            init();
+            //setBackgroundDrawable(getResources().getDrawable(R.drawable.tab_item));
         }
 
         public void setIdentifier(String identifier)
@@ -82,8 +91,8 @@ public class SingularTabHost extends FrameLayout implements View.OnClickListener
 
             if(active)
             {
-                paint.setColor(getResources().getColor(R.color.zupblue));
-                canvas.drawRect(new Rect(0, canvas.getHeight() - 5, canvas.getWidth(), canvas.getHeight()), paint);
+                //paint.setColor(getResources().getColor(R.color.zupblue));
+                //canvas.drawRect(new Rect(0, canvas.getHeight() - 5, canvas.getWidth(), canvas.getHeight()), paint);
             }
 
             paint.setColor(getResources().getColor(R.color.tabborder));
@@ -100,12 +109,79 @@ public class SingularTabHost extends FrameLayout implements View.OnClickListener
 
             canvas.drawText(this.label.toUpperCase(), xPos, yPos, textPaint);
         }
+
+        void init()
+        {
+            setRippleColor(this.getResources().getColor(R.color.tab_pressed));
+            PAINT_ALPHA = 255;
+            rippleType = 2;
+        }
+    }
+
+    private static class ActiveTabIndicator extends View {
+        int toX;
+        int newWidth;
+
+        public ActiveTabIndicator(Context context) {
+            super(context);
+        }
+
+        public ActiveTabIndicator(Context context, AttributeSet attrs) {
+            super(context, attrs);
+        }
+
+        public ActiveTabIndicator(Context context, AttributeSet attrs, int defStyleAttr) {
+            super(context, attrs, defStyleAttr);
+        }
+
+        public void beginMoveTo(int toX, int newWidth)
+        {
+            ResizeAnimation animation = new ResizeAnimation(this, this.getWidth(), 5, newWidth, 5);
+            animation.setDuration(250);
+
+            this.toX = toX;
+            this.newWidth = newWidth;
+
+            float fromX = this.getLeft();
+            final int fromWidth = this.getWidth();
+            float y = 0;
+
+            TranslateAnimation animation1 = new TranslateAnimation(TranslateAnimation.ABSOLUTE, fromX, TranslateAnimation.ABSOLUTE, toX, TranslateAnimation.ABSOLUTE, y, TranslateAnimation.ABSOLUTE, y);
+            animation1.setDuration(250);
+            animation1.setFillAfter(false);
+
+            RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) this.getLayoutParams();
+            params.setMargins(0, 0, 0, 0);
+            params.width = fromWidth;
+
+            this.setLayoutParams(params);
+
+            AnimationSet set = new AnimationSet(true);
+            set.addAnimation(animation);
+            set.addAnimation(animation1);
+            set.setDuration(250);
+            this.startAnimation(set);
+
+            set.setFillAfter(false);
+        }
+
+        @Override
+        protected void onAnimationEnd() {
+            super.onAnimationEnd();
+
+            RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) this.getLayoutParams();
+            params.setMargins(toX, 0, 0, 0);
+            params.width = newWidth;
+
+            this.setLayoutParams(params);
+        }
     }
 
     public static interface OnTabChangeListener {
         public void onTabChange(SingularTabHost tabHost, String oldIdentifier, String newIdentifier);
     }
 
+    private ActiveTabIndicator activeIndicatorView;
     private HorizontalScrollView scrollView;
     private LinearLayout container;
     private ArrayList<Tab> tabs;
@@ -139,10 +215,23 @@ public class SingularTabHost extends FrameLayout implements View.OnClickListener
         this.scrollView.setHorizontalScrollBarEnabled(false);
         this.addView(scrollView);
 
+        RelativeLayout mainContainer = new RelativeLayout(this.getContext());
+        mainContainer.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        this.scrollView.addView(mainContainer);
+
         this.container = new LinearLayout(this.getContext());
         this.container.setOrientation(LinearLayout.HORIZONTAL);
         this.container.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        this.scrollView.addView(this.container);
+        mainContainer.addView(this.container);
+
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(100, 5);
+        params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+
+        this.activeIndicatorView = new ActiveTabIndicator(this.getContext());
+        this.activeIndicatorView.setLayoutParams(params);
+        this.activeIndicatorView.setBackgroundColor(getResources().getColor(R.color.zupblue));
+        mainContainer.addView(this.activeIndicatorView);
 
         this.tabs = new ArrayList<Tab>();
         if(Build.VERSION.SDK_INT >= 11)
@@ -181,6 +270,14 @@ public class SingularTabHost extends FrameLayout implements View.OnClickListener
         }
 
         tab.setLayoutParams(new LinearLayout.LayoutParams(defaultWidth, /*44*/ViewGroup.LayoutParams.MATCH_PARENT));
+        if(tab == getActiveTab()) {
+            if(activeIndicatorView.getAnimation() != null)
+                activeIndicatorView.getAnimation().cancel();
+
+            RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) activeIndicatorView.getLayoutParams();
+            params.width = defaultWidth - 1;
+            activeIndicatorView.setLayoutParams(params);
+        }
     }
 
     public void setOnTabChangeListener(OnTabChangeListener listener)
@@ -233,7 +330,7 @@ public class SingularTabHost extends FrameLayout implements View.OnClickListener
 
     private void setActiveTab(Tab sender)
     {
-        Tab activetab = getActiveTab();
+        final Tab activetab = getActiveTab();
         String oldIdentifier = null;
         if(activetab != null)
         {
@@ -249,6 +346,16 @@ public class SingularTabHost extends FrameLayout implements View.OnClickListener
             else
             {
                 this.tabs.get(i).setActive(false);
+            }
+        }
+
+        if(sender != null) {
+            final int fromWidth = this.activeIndicatorView.getWidth();
+            final int toWidth = sender.getWidth() - 1;
+
+            // Layout was calculated?
+            if(toWidth > 0) {
+                this.activeIndicatorView.beginMoveTo((int)sender.getX(), toWidth);
             }
         }
 

@@ -63,7 +63,7 @@ public class FillCaseStepSyncAction extends SyncAction {
             if(!Zup.getInstance().hasCase(response.result._case.id))
                 Zup.getInstance().addCase(response.result._case);
             else
-                Zup.getInstance().updateCase(response.result._case);
+                Zup.getInstance().updateCase(response.result._case, true);
 
             error = null;
             return true;

@@ -98,7 +98,7 @@ public interface IStorage {
 
     public void addCase(Case kase);
 
-    public void updateCase(Case kase);
+    public void updateCase(Case kase, boolean fromapi);
 
     public Case getCase(int id);
 

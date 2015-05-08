@@ -10,6 +10,12 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.Interpolator;
+import android.view.animation.RotateAnimation;
+import android.view.animation.TranslateAnimation;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -76,6 +82,21 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
 
         flowLoader = new FlowLoader();
         flowLoader.execute();
+
+        // Spinner animation
+        View image = findViewById(R.id.activity_items_loading_image);
+        image.measure(0, 0);
+
+        RotateAnimation animation = new RotateAnimation(360, 0, image.getMeasuredWidth() / 2, image.getMeasuredHeight() / 2);
+        animation.setRepeatCount(Animation.INFINITE);
+        animation.setDuration(2000);
+        animation.setInterpolator(new Interpolator() {
+            @Override
+            public float getInterpolation(float v) {
+                return v;
+            }
+        });
+        findViewById(R.id.activity_items_loading_image).startAnimation(animation);
     }
 
     @Override
@@ -104,7 +125,7 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
             this.pageLoader.cancel(true);
 
         if(this.flowLoader != null)
-            this.pageLoader.cancel(true);
+            this.flowLoader.cancel(true);
 
         casesWaiting = null;
         casesShown = null;
@@ -128,6 +149,7 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
         protected void onPreExecute() {
             super.onPreExecute();
 
+            showBigLoading();
             UIHelper.showProgress(CasesActivity.this);
         }
 
@@ -278,11 +300,6 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
         selectFlow(menuItem.getItemId(), menuItem.getTitle().toString());
     }
 
-    void clear()
-    {
-        ((ViewGroup)findViewById(R.id.inventory_items_container)).removeAllViews();
-    }
-
     void loadPage()
     {
         if(this.pageLoader != null)
@@ -297,7 +314,11 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            showLoading();
+
+            if(_page == 1)
+                showBigLoading();
+            else
+                showLoading();
         }
 
         @Override
@@ -316,6 +337,7 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
             super.onPostExecute(caseCollection);
 
             hideLoading();
+            hideBigLoading();
             if(caseCollection == null || caseCollection.cases == null)
             {
                 showNoConnectionBar();
@@ -324,10 +346,14 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
             {
                 hideNoConnectionBar();
 
-                _page++; // Next page that will be loaded
+                if(caseCollection.cases.length > 0)
+                    _page++; // Next page that will be loaded
+
                 _pageJobId = 0;
                 fillCases(caseCollection.cases);
             }
+
+            pageLoader = null;
         }
     }
 
@@ -367,9 +393,9 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
             downloadicon.setVisibility(View.VISIBLE);
         }
 
-        stateicon.setImageDrawable(getResources().getDrawable(Zup.getInstance().getCaseStatusDrawable(item.status)));
-        state.setBackgroundColor(Zup.getInstance().getCaseStatusColor(item.status));
-        state.setText(Zup.getInstance().getCaseStatusString(item.status));
+        stateicon.setImageDrawable(getResources().getDrawable(Zup.getInstance().getCaseStatusDrawable(item.getStatus())));
+        state.setBackgroundColor(Zup.getInstance().getCaseStatusColor(item.getStatus()));
+        state.setText(Zup.getInstance().getCaseStatusString(item.getStatus()));
 
         title.setText("Caso " + item.id);
         flow.setText(_flow.title);// + " v" + item.flow_version);
@@ -378,18 +404,24 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
         return rootView;
     }
 
+    void clear()
+    {
+        ViewGroup root = (ViewGroup)findViewById(R.id.inventory_items_container);
+        root.removeAllViews();
+    }
+
     private void fillCases(Case[] cases)
     {
         casesShown = cases;
 
         ViewGroup root = (ViewGroup)findViewById(R.id.inventory_items_container);
-        root.removeAllViews();
         for(Case item : cases)
         {
             if(Zup.getInstance().hasCase(item.id))
-                Zup.getInstance().updateCase(item);
+                Zup.getInstance().updateCase(item, true);
 
-            if(_status == null || _status.equals(item.status))
+            int i = 0;
+            if(_status == null || _status.equals(item.getStatus()))
             {
                 View view = setUpCaseView(item);
                 if (view == null) // Couldnt find some flow
@@ -399,18 +431,41 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
                     return;
                 }
                 root.addView(view);
+
+                TranslateAnimation animation = new TranslateAnimation(root.getWidth() + ((float)root.getWidth() * 0.2f * (float)i), 0, 0, 0);
+                animation.setDuration(250);
+
+                AlphaAnimation animation1 = new AlphaAnimation(0, 1);
+                animation1.setDuration(250);
+
+                AnimationSet set = new AnimationSet(true);
+                set.addAnimation(animation);
+                set.addAnimation(animation1);
+                view.startAnimation(set);
+
+                i++;
             }
         }
     }
 
     void showLoading()
     {
-        findViewById(R.id.activity_items_loading).setVisibility(View.VISIBLE);
+        findViewById(R.id.activity_items_loading_old).setVisibility(View.VISIBLE);
     }
 
     void hideLoading()
     {
-        findViewById(R.id.activity_items_loading).setVisibility(View.INVISIBLE);
+        findViewById(R.id.activity_items_loading_old).setVisibility(View.INVISIBLE);
+    }
+
+    void showBigLoading()
+    {
+        findViewById(R.id.activity_items_loading).setVisibility(View.VISIBLE);
+    }
+
+    void hideBigLoading()
+    {
+        findViewById(R.id.activity_items_loading).setVisibility(View.GONE);
     }
 
     void showNoConnectionBar()
@@ -474,12 +529,21 @@ public class CasesActivity extends ActionBarActivity implements SingularTabHost.
     }
 
     @Override
-    public void onScrollChanged(InfinityScrollView v, int l, int t, int oldl, int oldt) {
+    public void onScrollChanged(InfinityScrollView v, int l, int t, int oldl, int oldt)
+    {
+        int height = v.getChildAt(0).getHeight();
+        int scrollHeight = v.getHeight();
 
+        int bottom = height - scrollHeight - t;
+        if (bottom < 50 * getResources().getDisplayMetrics().density && pageLoader == null) {
+            loadPage();
+        }
     }
 
     @Override
     public void onTabChange(SingularTabHost tabHost, String oldIdentifier, String newIdentifier) {
+        clear();
+
         if(newIdentifier.equals("all"))
             _status = null;
         else
