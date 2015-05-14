@@ -109,4 +109,6 @@ public interface IStorage {
     public Iterator<Case> getCasesIterator();
 
     public Iterator<Case> getCasesIterator(int flowId);
+
+    public String getInventoryCateGoryColor(int id);
 }

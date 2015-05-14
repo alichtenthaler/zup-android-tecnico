@@ -17,6 +17,7 @@ import com.ntxdev.zuptecnico.api.callbacks.InventoryItemsListener;
 import com.ntxdev.zuptecnico.api.callbacks.JobFailedListener;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
+import com.ntxdev.zuptecnico.entities.MapCluster;
 import com.ntxdev.zuptecnico.ui.InfinityScrollView;
 import com.ntxdev.zuptecnico.ui.UIHelper;
 
@@ -270,7 +271,7 @@ public class InventoryItemsAdvancedSearchResultActivity extends ActionBarActivit
     }
 
     @Override
-    public void onInventoryItemsReceived(InventoryItem[] items, double latitude, double longitude, double radius, double zoom, int job_id) {
+    public void onInventoryItemsReceived(InventoryItem[] items, MapCluster[] clusters, double latitude, double longitude, double radius, double zoom, int job_id) {
 
     }
 
