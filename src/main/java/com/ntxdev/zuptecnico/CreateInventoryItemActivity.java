@@ -21,9 +21,12 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBarActivity;
+import android.text.Editable;
 import android.text.InputType;
+import android.text.TextWatcher;
 import android.util.Base64;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -155,6 +158,7 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                     TextView itemView = new TextView(CreateInventoryItemActivity.this);
                     itemView.setClickable(true);
                     itemView.setText(option.value);
+                    itemView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
                     itemView.setBackgroundResource(R.drawable.sidebar_cell);
                     itemView.setPadding(20, 20, 20, 20);
                     itemView.setTag(option.id);
@@ -701,7 +705,7 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                 statusesContainer.setOrientation(LinearLayout.VERTICAL);
 
                 LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                params.setMargins(20, 10, 20, 5);
+                params.setMargins(30, 10, 20, 5);
                 statusesContainer.setLayoutParams(params);
 
                 while(statuses.hasNext())
@@ -711,6 +715,7 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                     RadioButton checkBox = new RadioButton(this);
                     checkBox.setText(status.title);
                     checkBox.setTag(status);
+                    checkBox.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 25);
                     statusesContainer.addView(checkBox);
 
                     if(!createMode && item.inventory_status_id != null && item.inventory_status_id == status.id)
@@ -879,12 +884,24 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                                 RadioButton button = new RadioButton(this);//(RadioButton)radioElement.findViewById(R.id.inventory_item_item_radio_radio);
                                 button.setText(option.value);
                                 button.setTag(R.id.tag_button_value, option.id);
+                                button.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 25);
+
+                                button.setMinimumHeight(60);
+
+                                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                                //params.setMargins(15, 0, 0, 0);
+                                button.setLayoutParams(params);
 
                                 group.addView(button);
 
                                 ArrayList<Integer> selected = null;
                                 if(!createMode && item.getFieldValue(field.id) instanceof ArrayList<?>)
                                     selected = (ArrayList<Integer>) item.getFieldValue(field.id);
+                                else if(!createMode && item.getFieldValue(field.id) instanceof Integer && item.getFieldValue(field.id) != null)
+                                {
+                                    selected = new ArrayList<Integer>();
+                                    selected.add((Integer)item.getFieldValue(field.id));
+                                }
 
                                 if(!createMode && selected != null && selected.contains(option.id))// item.getFieldValue(field.id).equals(field.id))
                                     button.setChecked(true);
@@ -911,6 +928,13 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                                 CheckBox button = new CheckBox(this);//(RadioButton)radioElement.findViewById(R.id.inventory_item_item_radio_radio);
                                 button.setText(option.value);
                                 button.setTag(R.id.tag_button_value, option.id);
+                                button.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 25);
+
+                                button.setMinimumHeight(60);
+
+                                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                                //params.setMargins(15, 0, 0, 0);
+                                button.setLayoutParams(params);
 
                                 boolean contains = false;
 
@@ -954,8 +978,15 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                         fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
 
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
-                        EditText fieldValue = (EditText) fieldView.findViewById(R.id.inventory_item_text_value);
+                        final EditText fieldValue = (EditText) fieldView.findViewById(R.id.inventory_item_text_value);
                         TextView fieldExtra = (TextView) fieldView.findViewById(R.id.inventory_item_text_extra);
+
+                        fieldView.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                fieldValue.requestFocus();
+                            }
+                        });
 
                         int flags = InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED;
                         if(field.kind.equals("decimal") || field.kind.equals("meters") || field.kind.equals("centimeters") || field.kind.equals("kilometers") || field.kind.equals("angle"))
@@ -964,7 +995,10 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                         }
 
                         fieldTitle.setText(label);
-                        fieldValue.setLayoutParams(new LinearLayout.LayoutParams(100, ViewGroup.LayoutParams.WRAP_CONTENT));
+                        LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) fieldValue.getLayoutParams();
+                        params.width = 100;
+                        fieldValue.setLayoutParams(params);
+                        //fieldValue.setLayoutParams(new LinearLayout.LayoutParams(100, ViewGroup.LayoutParams.WRAP_CONTENT));
                         fieldValue.setInputType(flags);
 
                         String pkgName = this.getClass().getPackage().getName();
@@ -1016,6 +1050,12 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                                 createSelectDialog(field, fieldView);
                             }
                         });
+                        fieldView.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                createSelectDialog(field, fieldView);
+                            }
+                        });
 
                         container.addView(fieldView);
                     }
@@ -1037,6 +1077,12 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                             fieldValue.setText("Escolha uma data...");
 
                         fieldValue.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                createDatePickerDialog(field, fieldView);
+                            }
+                        });
+                        fieldView.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View view) {
                                 createDatePickerDialog(field, fieldView);
@@ -1068,6 +1114,12 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                                 createTimePickerDialog(field, fieldView);
                             }
                         });
+                        fieldView.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                createTimePickerDialog(field, fieldView);
+                            }
+                        });
 
                         container.addView(fieldView);
                     }
@@ -1077,7 +1129,7 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                         fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
 
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
-                        TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
+                        final TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
 
                         fieldValue.setInputType(InputType.TYPE_CLASS_NUMBER);
                         if(field.kind.equals("cpf"))
@@ -1089,6 +1141,13 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                         if(!createMode && item.getFieldValue(field.id) != null)
                             fieldValue.setText(item.getFieldValue(field.id).toString());
 
+                        fieldView.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                fieldValue.requestFocus();
+                            }
+                        });
+
                         container.addView(fieldView);
                     }
                     else if(field.kind.equals("url") || field.kind.equals("email"))
@@ -1097,11 +1156,18 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                         fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
 
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
-                        TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
+                        final TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
 
                         fieldTitle.setText(label);
                         if(!createMode && item.getFieldValue(field.id) != null)
                             fieldValue.setText(item.getFieldValue(field.id).toString());
+
+                        fieldView.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                fieldValue.requestFocus();
+                            }
+                        });
 
                         container.addView(fieldView);
                     }
@@ -1110,7 +1176,7 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                         fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
 
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
-                        TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
+                        final TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
 
                         if(field.kind != null && !field.kind.equals("text") && !field.kind.equals("textarea")) {
                             label += " (Unknown field kind: " + field.kind + ")";
@@ -1128,6 +1194,13 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                         fieldTitle.setText(label);
                         if(!createMode && item.getFieldValue(field.id) != null)
                             fieldValue.setText(item.getFieldValue(field.id).toString());
+
+                        fieldView.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                fieldValue.requestFocus();
+                            }
+                        });
 
                         container.addView(fieldView);
                     }
@@ -1283,14 +1356,30 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
         this.refreshSelectDialog(null, field, fieldView, view, dialog);
 
-        input.setOnKeyListener(new View.OnKeyListener() {
+        input.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                refreshSelectDialog(editable.toString(), field, fieldView, view, dialog);
+            }
+        });
+        /*input.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View aview, int i, KeyEvent keyEvent) {
                 refreshSelectDialog(input.getText().toString(), field, fieldView, view, dialog);
 
                 return false;
             }
-        });
+        });*/
     }
 
     private void refreshSelectDialog(String filter, InventoryCategory.Section.Field field, final View fieldView, View dialogView, final AlertDialog dialog)

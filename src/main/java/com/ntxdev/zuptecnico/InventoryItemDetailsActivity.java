@@ -546,7 +546,17 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
                         TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
 
                         fieldTitle.setText(field.label != null ? field.label.toUpperCase() : field.title.toUpperCase());
-                        ArrayList value = (ArrayList)item.getFieldValue(field.id);
+
+                        Object valueObj = item.getFieldValue(field.id);
+                        ArrayList value;
+                        if(valueObj instanceof ArrayList)
+                            value = (ArrayList)item.getFieldValue(field.id);
+                        else
+                        {
+                            value = new ArrayList();
+                            value.add(valueObj);
+                        }
+
                         String strvalue = "";
                         if(value != null)
                         {

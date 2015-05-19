@@ -9,6 +9,10 @@ import com.ntxdev.zuptecnico.entities.responses.PublishInventoryItemResponse;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by igorlira on 3/25/14.
@@ -49,26 +53,28 @@ public class PublishInventoryItemSyncAction extends SyncAction {
             error = null;
             return true;
         }
-        else if(response.result != null)
+        else if(response.result != null && response.result.error instanceof Map)
         {
             String message = "";
             int j = 0;
-            for(String key : response.result.error.keySet())
+            for(Object key : ((Map)response.result.error).keySet())
             {
                 if(j > 0)
                     message += "\r\n\r\n";
 
-                InventoryCategory.Section.Field field = Zup.getInstance().getInventoryCategory(item.inventory_category_id).getField(key);
+                InventoryCategory.Section.Field field = Zup.getInstance().getInventoryCategory(item.inventory_category_id).getField(key.toString());
 
                 String fieldName;
                 if(field == null)
-                    fieldName = key;
+                    fieldName = key.toString();
                 else
                     fieldName = field.label;
 
                 message += fieldName + "\r\n";
+
+                List lst = (List)((Map)response.result.error).get(key.toString());
                 int i = 0;
-                for(String msg : response.result.error.get(key))
+                for(Object msg : lst)
                 {
                     if(i > 0)
                         message += "\r\n";
@@ -81,6 +87,11 @@ public class PublishInventoryItemSyncAction extends SyncAction {
             }
 
             error = message;
+            return false;
+        }
+        else if(response.result != null && response.result.error != null)
+        {
+            error = response.result.error.toString();
             return false;
         }
         else

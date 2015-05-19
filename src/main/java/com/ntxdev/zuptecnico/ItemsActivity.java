@@ -2,14 +2,18 @@ package com.ntxdev.zuptecnico;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Base64;
 import android.view.Menu;
@@ -143,7 +147,26 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
                 loadPage();
                 UIHelper.setTitle(this, category.title);
 
-                refreshTabHost();
+                new AsyncTask<Void, Void, Void>()
+                {
+                    @Override
+                    protected Void doInBackground(Void... voids) {
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+                        return null;
+                    }
+
+                    @Override
+                    protected void onPostExecute(Void aVoid) {
+                        super.onPostExecute(aVoid);
+
+                        refreshTabHost();
+                    }
+                }.execute();
             }
             i++;
         }
@@ -381,6 +404,14 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
             }
         });
         findViewById(R.id.activity_items_loading_image).startAnimation(animation);
+
+        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
+        manager.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                //refreshTabHost();
+            }
+        }, new IntentFilter(Zup.ACTION_STATUSES_RECEIVED));
     }
 
     @Override

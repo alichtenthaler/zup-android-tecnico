@@ -11,6 +11,8 @@ import android.graphics.drawable.ColorDrawable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.View;
@@ -135,11 +137,27 @@ public class UIHelper
 
         ViewGroup actionBar = (ViewGroup)activity.getSupportActionBar().getCustomView();
         final EditText searchText = (EditText)actionBar.findViewById(R.id.actionbar_search_text);
-        searchText.setOnKeyListener(new View.OnKeyListener() {
+        /*searchText.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View view, int i, KeyEvent keyEvent) {
                 listener.onSearchTextChanged(searchText.getText().toString());
                 return false;
+            }
+        });*/
+        searchText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i2, int i3) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                listener.onSearchTextChanged(editable.toString());
             }
         });
 

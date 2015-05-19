@@ -64,6 +64,8 @@ import java.util.LinkedHashMap;
  */
 public class Zup
 {
+    public static String ACTION_STATUSES_RECEIVED = "ACTION_STATUSES_RECEIVED";
+
     public class BitmapResource
     {
         public String url;
@@ -545,6 +547,18 @@ public class Zup
             this.storage.removeInventoryCategoryStatus(status.id);
             this.storage.addInventoryCategoryStatus(status);
         }
+
+        Intent intent = new Intent(ACTION_STATUSES_RECEIVED);
+        sendNotification(intent);
+    }
+
+    public void sendNotification(Intent intent)
+    {
+        if(ZupApplication.getContext() == null)
+            return;
+
+        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(ZupApplication.getContext());
+        manager.sendBroadcast(intent);
     }
 
     public Bitmap getBitmap(int id)

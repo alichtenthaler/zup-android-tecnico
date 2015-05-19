@@ -5,6 +5,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.hardware.display.DisplayManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.view.View;
@@ -110,6 +111,11 @@ public class SingularTabHost extends FrameLayout implements View.OnClickListener
             canvas.drawText(this.label.toUpperCase(), xPos, yPos, textPaint);
         }
 
+        @Override
+        public void setLayoutParams(ViewGroup.LayoutParams params) {
+            super.setLayoutParams(params);
+        }
+
         void init()
         {
             setRippleColor(this.getResources().getColor(R.color.tab_pressed));
@@ -132,6 +138,11 @@ public class SingularTabHost extends FrameLayout implements View.OnClickListener
 
         public ActiveTabIndicator(Context context, AttributeSet attrs, int defStyleAttr) {
             super(context, attrs, defStyleAttr);
+        }
+
+        @Override
+        public void setLayoutParams(ViewGroup.LayoutParams params) {
+            super.setLayoutParams(params);
         }
 
         public void beginMoveTo(int toX, int newWidth)
@@ -187,6 +198,8 @@ public class SingularTabHost extends FrameLayout implements View.OnClickListener
     private ArrayList<Tab> tabs;
     private OnTabChangeListener onTabChangeListener;
     private OnLayoutChangeListener onLayoutChangeListener;
+
+    private LayoutTask layoutTask;
 
     public SingularTabHost(Context context) {
         super(context);
@@ -250,6 +263,53 @@ public class SingularTabHost extends FrameLayout implements View.OnClickListener
         }
     }
 
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+
+        {
+            //if(layoutTask != null)
+              //  layoutTask.cancel(true);
+
+            //layoutTask = new LayoutTask();
+            //layoutTask.execute();
+        }
+    }
+
+    class LayoutTask extends AsyncTask<Void, Void, Boolean>
+    {
+        @Override
+        protected Boolean doInBackground(Void... voids) {
+            try {
+                Thread.sleep(500);
+                return true;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            return false;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean a) {
+            super.onPostExecute(a);
+
+            if(a)
+            {
+                updateTabWidths();
+            }
+                //u
+        }
+    }
+
+    public void updateTabWidths()
+    {
+        for(int j = 0; j < tabs.size(); j++)
+        {
+            updateTabWidth(tabs.get(j));
+        }
+    }
+
     void updateTabWidth(Tab tab)
     {
         int defaultWidth = getWidth() / tabs.size();
@@ -269,14 +329,20 @@ public class SingularTabHost extends FrameLayout implements View.OnClickListener
             defaultWidth = desiredMinWidth;
         }
 
-        tab.setLayoutParams(new LinearLayout.LayoutParams(defaultWidth, /*44*/ViewGroup.LayoutParams.MATCH_PARENT));
+        LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) tab.getLayoutParams();
+        params.width = defaultWidth;
+        params.height = 44;
+        params.leftMargin = 0;
+        params.topMargin = 0;
+
+        tab.setLayoutParams(params);
         if(tab == getActiveTab()) {
             if(activeIndicatorView.getAnimation() != null)
                 activeIndicatorView.getAnimation().cancel();
 
-            RelativeLayout.LayoutParams params = (RelativeLayout.LayoutParams) activeIndicatorView.getLayoutParams();
-            params.width = defaultWidth - 1;
-            activeIndicatorView.setLayoutParams(params);
+            RelativeLayout.LayoutParams rparams = (RelativeLayout.LayoutParams) activeIndicatorView.getLayoutParams();
+            rparams.width = defaultWidth - 1;
+            activeIndicatorView.setLayoutParams(rparams);
         }
     }
 
@@ -298,6 +364,7 @@ public class SingularTabHost extends FrameLayout implements View.OnClickListener
 
         for(Tab tab : viewsToRemove)
         {
+            //tab.setVisibility(GONE);
             container.removeView(tab);
         }
 
@@ -310,11 +377,11 @@ public class SingularTabHost extends FrameLayout implements View.OnClickListener
         Tab tab = new Tab(this.getContext());
         tab.setIdentifier(identifier);
         tab.setLabel(label);
-        tab.setLayoutParams(new LinearLayout.LayoutParams(100, 44));
         tab.setClickable(true);
         tab.setOnClickListener(this);
 
         this.container.addView(tab);
+        tab.setLayoutParams(new LinearLayout.LayoutParams(200, 44));
         //this.container.setWeightSum(tabs.size() + 1);
 
         this.tabs.add(tab);
@@ -323,9 +390,15 @@ public class SingularTabHost extends FrameLayout implements View.OnClickListener
             setActiveTab(tab);
         }
 
-        for(Tab _tab : tabs) {
+        /*for(Tab _tab : tabs) {
             updateTabWidth(_tab);
-        }
+        }*/
+
+        /*if(layoutTask != null)
+            layoutTask.cancel(true);
+
+        layoutTask = new LayoutTask();
+        layoutTask.execute();*/
     }
 
     private void setActiveTab(Tab sender)

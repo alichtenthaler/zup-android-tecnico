@@ -1489,6 +1489,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
                 getWritableDatabase().insert("inventory_categories_sections_fields", null, values);
             }
         }
+
     }
 
     public String getInventoryCateGoryColor(int id)

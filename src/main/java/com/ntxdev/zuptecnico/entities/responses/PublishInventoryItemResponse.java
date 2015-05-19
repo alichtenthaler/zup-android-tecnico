@@ -13,5 +13,6 @@ import java.util.Hashtable;
 public class PublishInventoryItemResponse {
     public String message;
     public InventoryItem item;
-    public Hashtable<String, ArrayList<String>> error;
+    //public Hashtable<String, ArrayList<String>> error;
+    public Object error;
 }

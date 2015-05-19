@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:text="DADOS GERAIS"
         android:id="@+id/inventory_item_section_title"
-        android:textSize="11dp"
+        android:textSize="18dp"
         android:textColor="#666"
         android:layout_marginLeft="5dp"
         android:layout_marginBottom="2dp"
