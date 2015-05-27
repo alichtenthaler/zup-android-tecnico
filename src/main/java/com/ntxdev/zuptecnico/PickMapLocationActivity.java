@@ -45,11 +45,14 @@ import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.ntxdev.zuptecnico.api.ApiHttpResult;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.api.callbacks.ResourceLoadedListener;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
+import com.ntxdev.zuptecnico.entities.responses.PositionValidationResponse;
 import com.ntxdev.zuptecnico.util.GPSUtils;
 import com.ntxdev.zuptecnico.util.GeoUtils;
+import com.ntxdev.zuptecnico.util.ResizeAnimation;
 import com.ntxdev.zuptecnico.util.ViewUtils;
 
 import org.json.JSONArray;
@@ -80,6 +83,7 @@ public class PickMapLocationActivity extends ActionBarActivity implements Resour
     private double givenLatitude;
     private double givenLongitude;
 
+    private PositionValidateTask validationTask;
     private AddressWaitTask addressWaitTask;
     private AddressTask addressTask;
     private GeocoderTask geocoderTask;
@@ -90,6 +94,7 @@ public class PickMapLocationActivity extends ActionBarActivity implements Resour
     private double latitude, longitude;
 
     private Address enderecoAtual = new Address(Locale.CANADA);
+    private boolean isValidPosition = false;
 
     private InventoryCategory category;
 
@@ -300,6 +305,43 @@ public class PickMapLocationActivity extends ActionBarActivity implements Resour
         }
     }
 
+    void showInvalidPositionBar()
+    {
+        View view = findViewById(R.id.pickmap_invalid);
+        ViewGroup.LayoutParams params = view.getLayoutParams();
+        if(params.height == 40)
+            return;
+
+        ResizeAnimation animation = new ResizeAnimation(view, view.getHeight(), 40);
+        animation.setDuration(350);
+
+        view.startAnimation(animation);
+    }
+
+    void hideInvalidPositionBar()
+    {
+        View view = findViewById(R.id.pickmap_invalid);
+        ViewGroup.LayoutParams params = view.getLayoutParams();
+        if(params.height == 0)
+            return;
+
+        ResizeAnimation animation = new ResizeAnimation(view, view.getHeight(), 0);
+        animation.setDuration(350);
+
+        view.startAnimation(animation);
+    }
+
+    void setValidPosition(boolean valid)
+    {
+        this.isValidPosition = valid;
+        View button = findViewById(R.id.pickmap_send);
+
+        if(valid)
+            button.setAlpha(1);
+        else
+            button.setAlpha(.5f);
+    }
+
     void numeroEditado(String texto)
     {
         if(numberEditTask != null)
@@ -349,6 +391,9 @@ public class PickMapLocationActivity extends ActionBarActivity implements Resour
 
     public void sendLocation(View view)
     {
+        if(!isValidPosition)
+            return;
+
         if(enderecoAtual == null)
         {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -496,12 +541,17 @@ public class PickMapLocationActivity extends ActionBarActivity implements Resour
             numberEditTask.cancel(true);
         if(addressWaitTask != null)
             addressWaitTask.cancel(true);
+        if(validationTask != null)
+            validationTask.cancel(true);
 
         addressWaitTask = new AddressWaitTask();
 
         //addressTask = new AddressTask();
         double lat = cameraPosition.target.latitude;
         double lng = cameraPosition.target.longitude;
+
+        validationTask = new PositionValidateTask();
+        validationTask.execute((float)lat, (float)lng);
 
         if(manualNumber && manualNumberAnimationPending) {
             manualNumberAnimationPending = false;
@@ -682,4 +732,35 @@ public class PickMapLocationActivity extends ActionBarActivity implements Resour
         }
     }
 
+    class PositionValidateTask extends AsyncTask<Float, Void, Boolean>
+    {
+        @Override
+        protected void onPreExecute()
+        {
+            hideInvalidPositionBar();
+            setValidPosition(false);
+            super.onPreExecute();
+        }
+
+        @Override
+        protected Boolean doInBackground(Float... doubles)
+        {
+            ApiHttpResult<PositionValidationResponse> result = Zup.getInstance().getClient().validateBoundaries(doubles[0], doubles[1]);
+            if(result == null || result.result == null)
+                return false;
+
+            return result.result.inside_boundaries;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean aBoolean)
+        {
+            super.onPostExecute(aBoolean);
+            setValidPosition(aBoolean);
+            if(aBoolean)
+                hideInvalidPositionBar();
+            else
+                showInvalidPositionBar();
+        }
+    }
 }

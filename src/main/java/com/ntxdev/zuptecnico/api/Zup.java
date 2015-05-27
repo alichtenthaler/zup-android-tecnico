@@ -16,6 +16,7 @@ import com.ntxdev.zuptecnico.api.callbacks.InventoryItemListener;
 import com.ntxdev.zuptecnico.api.callbacks.InventoryItemPublishedListener;
 import com.ntxdev.zuptecnico.api.callbacks.InventoryItemsListener;
 import com.ntxdev.zuptecnico.api.callbacks.JobFailedListener;
+import com.ntxdev.zuptecnico.api.callbacks.JobListener;
 import com.ntxdev.zuptecnico.api.callbacks.LoginListener;
 import com.ntxdev.zuptecnico.api.callbacks.ResourceLoadedListener;
 import com.ntxdev.zuptecnico.api.notifications.ZupNotificationCenter;
@@ -25,6 +26,7 @@ import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
+import com.ntxdev.zuptecnico.entities.InventoryItemFilter;
 import com.ntxdev.zuptecnico.entities.InventoryItemImage;
 import com.ntxdev.zuptecnico.entities.MapCluster;
 import com.ntxdev.zuptecnico.entities.Session;
@@ -221,6 +223,8 @@ public class Zup
 
         return instance;
     }
+
+    public ZupClient getClient() { return this.client; }
 
     public boolean hasSession()
     {
@@ -438,7 +442,7 @@ public class Zup
             if(categoriesPinResources.get(categoryId) == null)
                 categoriesPinResources.remove(categoryId);
 
-            requestInventoryCategoryPin(categoryId);
+            requestInventoryCategoryPin(categoryId, null);
         }
 
         if(categoriesPinResources.get(categoryId) == null)
@@ -447,11 +451,15 @@ public class Zup
         return categoriesPinResources.get(categoryId);
     }
 
-    public void requestInventoryCategoryPin(int categoryId)
+    public int requestInventoryCategoryPin(int categoryId, final JobListener listener)
     {
         final InventoryCategory category = getInventoryCategory(categoryId);
         if(category == null || categoriesPinResources.containsKey(categoryId) || category.pin == null)
-            return;
+        {
+            return -1;
+        }
+
+        final int jobId = generateJobId();
 
         final InventoryCategory.Pins pin;
         if(category.plot_format != null && category.plot_format.equals("marker"))
@@ -476,12 +484,19 @@ public class Zup
                         public void run() {
                             if (resourceLoadedListener != null)
                                 resourceLoadedListener.onResourceLoaded(category.pin._default.mobile, resource.id);
+
+                            if(listener != null)
+                                listener.onJobSuccess(jobId);
                         }
                     });
                 }
+                else
+                    listener.onJobFailed(jobId);
             }
         });
         worker.start();
+
+        return jobId;
     }
 
     public int requestImage(final String imageUrl)
@@ -521,7 +536,27 @@ public class Zup
         return this.getResource(resourceId).bitmap;
     }
 
-    public int requestInventoryCategoryStatuses(final int categoryId)
+    void runSuccessOnMainThread(final JobListener listener, final int jobId)
+    {
+        Zup.runOnMainThread(new Runnable() {
+            @Override
+            public void run() {
+                listener.onJobSuccess(jobId);
+            }
+        });
+    }
+
+    void runFailOnMainThread(final JobListener listener, final int jobId)
+    {
+        Zup.runOnMainThread(new Runnable() {
+            @Override
+            public void run() {
+                listener.onJobFailed(jobId);
+            }
+        });
+    }
+
+    public int requestInventoryCategoryStatuses(final int categoryId, final JobListener listener)
     {
         final int jobId = this.generateJobId();
 
@@ -529,8 +564,12 @@ public class Zup
             @Override
             public void run() {
             ApiHttpResult<InventoryCategoryStatusCollection> result = client.retrieveInventoryCategoryStatuses(categoryId);
-            if(result.statusCode == 200)
+            if(result.statusCode == 200) {
                 inventoryCategoryStatusesReceived(result.result);
+                runSuccessOnMainThread(listener, jobId);
+            }
+            else
+                runFailOnMainThread(listener, jobId);
             }
         });
         worker.start();
@@ -595,16 +634,27 @@ public class Zup
             return category.title + " *";
     }
 
-    public void refreshInventoryItemCategories()
+    public int refreshInventoryItemCategories(final JobListener listener)
     {
+        final int jobId = generateJobId();
+
         Thread worker = new Thread(new Runnable() {
             @Override
             public void run() {
-                InventoryCategoryCollection collection = client.retrieveInventoryCategories().result;
-                inventoryItemCategoriesReceived(collection);
+                ApiHttpResult<InventoryCategoryCollection> result = client.retrieveInventoryCategories();
+                if(result.success && result.statusCode == 200 && result.result != null)
+                {
+                    InventoryCategoryCollection collection = client.retrieveInventoryCategories().result;
+                    inventoryItemCategoriesReceived(collection);
+                    runSuccessOnMainThread(listener, jobId);
+                }
+                else
+                    runFailOnMainThread(listener, jobId);
             }
         });
         worker.start();
+
+        return jobId;
     }
 
     public void refreshInventoryItemCategoryInfo(final int categoryId)
@@ -637,15 +687,15 @@ public class Zup
         if(storage.hasInventoryCategory(category.id))
         {
             storage.updateInventoryCategoryInfo(category.id, category);
-            requestInventoryCategoryStatuses(category.id);
+            //requestInventoryCategoryStatuses(category.id);
         }
         else
         {
             storage.addInventoryCategory(category);
 
             // TODO Isso não deveria estar aqui
-            requestInventoryCategoryPin(category.id);
-            requestInventoryCategoryStatuses(category.id);
+            ///requestInventoryCategoryPin(category.id);
+            //requestInventoryCategoryStatuses(category.id);
         }
     }
 
@@ -921,13 +971,13 @@ public class Zup
         return job_id;
     }
 
-    public int searchInventoryItems(final int page, final int per_page, final int[] inventory_category_ids, final Integer[] inventory_statuses_ids, final String address, final String title, final Calendar creation_from, final Calendar creation_to, final Calendar modification_from, final Calendar modification_to, final Float latitude, final Float longitude, final InventoryItemsListener listener, final JobFailedListener failedListener)
+    public int searchInventoryItems(final int page, final int per_page, final int[] inventory_category_ids, final Integer[] inventory_statuses_ids, final String address, final String title, final Calendar creation_from, final Calendar creation_to, final Calendar modification_from, final Calendar modification_to, final Float latitude, final Float longitude, final InventoryItemFilter[] filters, final InventoryItemsListener listener, final JobFailedListener failedListener)
     {
         final int job_id = generateJobId();
         Thread worker = new Thread(new Runnable() {
             @Override
             public void run() {
-                final ApiHttpResult<InventoryItemCollection> result = client.searchInventoryItems(page, per_page, inventory_category_ids, inventory_statuses_ids, address, title, creation_from, creation_to, modification_from, modification_to, latitude, longitude);
+                final ApiHttpResult<InventoryItemCollection> result = client.searchInventoryItems(page, per_page, inventory_category_ids, inventory_statuses_ids, address, title, creation_from, creation_to, modification_from, modification_to, latitude, longitude, filters);
                 runOnMainThread(new Runnable() {
                     @Override
                     public void run() {

@@ -29,9 +29,10 @@ public class LoginActivity extends ActionBarActivity implements LoginListener {
         Zup.getInstance().initStorage(this.getApplicationContext());
         if(Zup.getInstance().hasSessionToken())
         {
-            Zup.getInstance().refreshInventoryItemCategories();
+            //Zup.getInstance().refreshInventoryItemCategories();
             //Intent intent = new Intent(this.getApplicationContext(), CasesActivity.class);
-            Intent intent = new Intent(this.getApplicationContext(), ItemsActivity.class);
+            //Intent intent = new Intent(this.getApplicationContext(), ItemsActivity.class);
+            Intent intent = new Intent(this.getApplicationContext(), LoadingDataActivity.class);
             this.startActivity(intent);
         }
         //Zup.getInstance().initLocationClient(this);
@@ -83,7 +84,7 @@ public class LoginActivity extends ActionBarActivity implements LoginListener {
 
     public void onLoginSuccess()
     {
-        Zup.getInstance().refreshInventoryItemCategories();
+        //Zup.getInstance().refreshInventoryItemCategories();
         //Zup.getInstance().refreshInventoryItems();
 
         TextView txtLogin = (TextView)findViewById(R.id.txt_login);
@@ -96,7 +97,8 @@ public class LoginActivity extends ActionBarActivity implements LoginListener {
         ViewUtils.hideKeyboard(this, txtLogin.getWindowToken());
 
         //Intent intent = new Intent(this.getApplicationContext(), CasesActivity.class);
-        Intent intent = new Intent(this.getApplicationContext(), ItemsActivity.class);
+        //Intent intent = new Intent(this.getApplicationContext(), ItemsActivity.class);
+        Intent intent = new Intent(this.getApplicationContext(), LoadingDataActivity.class);
         this.startActivity(intent);
     }
 

@@ -16,6 +16,7 @@ import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
+import com.ntxdev.zuptecnico.entities.InventoryItemFilter;
 import com.ntxdev.zuptecnico.ui.InventoryItemFilterViewController;
 
 import java.io.Serializable;
@@ -294,11 +295,21 @@ public class AdvancedSearchActivity extends ActionBarActivity implements DatePic
         if(raw_statuses.size() > 0)
             intent.putExtra("statuses", (Integer[])raw_statuses.toArray(new Integer[0]));
 
+        int i = 0;
         for(InventoryItemFilterViewController filter : filters)
         {
             if(filter.isEnabled())
             {
                 Object[] values = filter.getValues();
+
+                InventoryItemFilter f = new InventoryItemFilter();
+                f.fieldId = filter.getField().id;
+                f.type = filter.getTypeString();
+                f.value1 = (Serializable) values[0];
+                f.value2 = (Serializable) values[1];
+                f.isArray = filter.isArray();
+
+                intent.putExtra("filter" + (i++), f);
 
                 intent.putExtra("filter_" + filter.getField().id + "_type", filter.getType());
                 intent.putExtra("filter_" + filter.getField().id + "_first", (Serializable) values[0]);

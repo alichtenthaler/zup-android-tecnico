@@ -28,6 +28,8 @@ import android.view.animation.RotateAnimation;
 import android.view.animation.TranslateAnimation;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.TabHost;
+import android.widget.TabWidget;
 import android.widget.TextView;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient;
@@ -103,6 +105,8 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
     private OfflinePageLoader offlinePageLoader;
 
     private AlertDialog _loadingCategoriesDialog;
+
+    private TabHost tabWidget;
 
     android.support.v7.widget.PopupMenu menu;
 
@@ -631,7 +635,7 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
             if(_stateId == null)
                 _pageJobId = Zup.getInstance().requestInventoryItems(_categoryId, _page, _sort, _order, this, this);
             else
-                _pageJobId = Zup.getInstance().searchInventoryItems(_page, 30, new int[] { _categoryId }, new Integer[] { _stateId }, null, null, null, null, null, null, null, null, this, this);
+                _pageJobId = Zup.getInstance().searchInventoryItems(_page, 30, new int[] { _categoryId }, new Integer[] { _stateId }, null, null, null, null, null, null, null, null, null, this, this);
         else
             _pageJobId = Zup.getInstance().searchInventoryItems(_page, 30, new int[] { _categoryId }, ( _stateId != null ? new Integer[] { _stateId } : null), _searchQuery, this, this);
             //_pageJobId = Zup.getInstance().searchInventoryItems(_page, 30, new int[] { _categoryId }, (_stateId != null ? new Integer[] { _stateId } : null), null, _searchQuery, null, null, null, null, null, null, this, this);
@@ -1044,7 +1048,7 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
             View view = setUpItemView(item);
             root.addView(view);
 
-            TranslateAnimation animation = new TranslateAnimation(root.getWidth() + ((float)root.getWidth() * 0.2f * (float)i), 0, 0, 0);
+            /*TranslateAnimation animation = new TranslateAnimation(root.getWidth() + ((float)root.getWidth() * 0.2f * (float)i), 0, 0, 0);
             animation.setDuration(250);
 
             AlphaAnimation animation1 = new AlphaAnimation(0, 1);
@@ -1053,7 +1057,7 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
             AnimationSet set = new AnimationSet(true);
             set.addAnimation(animation);
             set.addAnimation(animation1);
-            view.startAnimation(set);
+            view.startAnimation(set);*/
 
             i++;
         }

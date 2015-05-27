@@ -52,7 +52,7 @@ public class TransferItemsActivity extends ActionBarActivity implements View.OnC
     private void loadPage()
     {
         if(_stateId != null)
-            _pageJobId = Zup.getInstance().searchInventoryItems(_page, 30, new int[] { _categoryId }, new Integer[] { _stateId }, null, null, null, null, null, null, null, null, this, this);
+            _pageJobId = Zup.getInstance().searchInventoryItems(_page, 30, new int[] { _categoryId }, new Integer[] { _stateId }, null, null, null, null, null, null, null, null, null, this, this);
         else
             _pageJobId = Zup.getInstance().requestInventoryItems(_categoryId, _page, this, this);
 

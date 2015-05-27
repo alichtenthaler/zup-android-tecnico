@@ -93,6 +93,24 @@
                     android:gravity="center_vertical"
                     android:visibility="gone" />
             </LinearLayout>
+
+            <FrameLayout
+                android:layout_width="fill_parent"
+                android:layout_height="0dp"
+                android:background="#ff5544"
+                android:id="@+id/pickmap_invalid"
+                android:layout_gravity="bottom">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="O endereço não pertence ao município"
+                    android:id="@+id/textView11"
+                    android:layout_gravity="center"
+                    android:textColor="#fff"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="10dp" />
+            </FrameLayout>
         </FrameLayout>
 
         </com.ntxdev.zuptecnico.ui.InfinityScrollView>
@@ -133,7 +151,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:text="Enviar localização"
-                    android:id="@+id/button2"
+                    android:id="@+id/pickmap_send"
                     android:layout_weight="1"
                     android:background="@color/zupblue"
                     android:textColor="#fff"

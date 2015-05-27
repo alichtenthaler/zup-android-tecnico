@@ -31,7 +31,7 @@ public class InventoryItemFilterViewController
         Like,
         Between,
         Includes,
-
+        Excludes
     }
 
     private boolean isSelect;
@@ -54,22 +54,27 @@ public class InventoryItemFilterViewController
         if(this.field.kind.equals("select") || this.field.kind.equals("radio") || this.field.kind.equals("checkbox"))
         {
             this.setSelect();
-            return;
         }
+
+        this.setType(this.getAvailableTypes()[0]);
     }
 
     public void setValues(Object firstV, Object secondV)
     {
         if(isSelect)
         {
-            Integer[] val = null;
+            /*Integer[] val = null;
 
             if(firstV instanceof Integer[])
                 val = (Integer[]) firstV;
 
             int opt = 0;
             if(val != null && val.length > 0)
-                opt = val[0];
+                opt = val[0];*/
+
+            int opt = 0;
+            if(firstV != null && firstV instanceof Integer)
+                opt = (Integer)firstV;
 
             InventoryCategory.Section.Field.Option option = field.getOption(opt);
 
@@ -161,11 +166,11 @@ public class InventoryItemFilterViewController
         if(option == null)
             return;
 
-        Integer[] ret = new Integer[] { id };
+        //Integer[] ret = new Integer[] { id };
 
         TextView between = (TextView) findViewById(R.id.inventory_item_filter_between);
         between.setText(option.value);
-        between.setTag(ret);
+        between.setTag(id);
     }
 
     public Object[] getValues()
@@ -173,7 +178,10 @@ public class InventoryItemFilterViewController
         if(isSelect)
         {
             TextView between = (TextView) findViewById(R.id.inventory_item_filter_between);
-            return new Object[] { between.getTag(), null };
+            if(between.getTag() instanceof Integer)
+                return new Integer[] { (Integer)between.getTag(), null };
+            else
+                return new Object[] { between.getTag(), null };
         }
 
         EditText first = (EditText) findViewById(R.id.inventory_item_filter_first);
@@ -303,6 +311,9 @@ public class InventoryItemFilterViewController
 
             case Includes:
                 return "Inclui";
+
+            case Excludes:
+                return "Não inclui";
         }
 
         return null;
@@ -328,6 +339,14 @@ public class InventoryItemFilterViewController
         return false;
     }
 
+    public boolean isArray()
+    {
+        if(field.kind.equals("checkbox") || field.kind.equals("select"))
+            return true;
+
+        return false;
+    }
+
     FilterType[] getAvailableTypes()
     {
         if(field.kind.equals("text"))
@@ -342,7 +361,16 @@ public class InventoryItemFilterViewController
         {
             return new FilterType[]
                     { FilterType.Equals, FilterType.Different, FilterType.GreaterThan,
-                    FilterType.LessThan, FilterType.Between };
+                    FilterType.LessThan };
+        }
+        else if(field.kind.equals("select") || field.kind.equals("checkbox"))
+        {
+            return new FilterType[]
+                    { FilterType.Includes, FilterType.Excludes };
+        }
+        else if(field.kind.equals("radio"))
+        {
+            return new FilterType[] { FilterType.Equals, FilterType.Different };
         }
 
         return new FilterType[] { FilterType.Equals, FilterType.Different };
@@ -356,6 +384,38 @@ public class InventoryItemFilterViewController
     public FilterType getType()
     {
         return type;
+    }
+
+    public String getTypeString()
+    {
+        switch (getType())
+        {
+            case Equals:
+                return "equal_to";
+
+            case Like:
+                return "like";
+
+            case Between:
+                return "between";
+
+            case Different:
+                return "different";
+
+            case GreaterThan:
+                return "greater_than";
+
+            case Includes:
+                return "includes";
+
+            case LessThan:
+                return "lesser_than";
+
+            case Excludes:
+                return "excludes";
+        }
+
+        return "";
     }
 
     public void setType(FilterType type)

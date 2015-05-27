@@ -17,6 +17,7 @@ import com.ntxdev.zuptecnico.api.callbacks.InventoryItemsListener;
 import com.ntxdev.zuptecnico.api.callbacks.JobFailedListener;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
+import com.ntxdev.zuptecnico.entities.InventoryItemFilter;
 import com.ntxdev.zuptecnico.entities.MapCluster;
 import com.ntxdev.zuptecnico.ui.InfinityScrollView;
 import com.ntxdev.zuptecnico.ui.UIHelper;
@@ -188,7 +189,19 @@ public class InventoryItemsAdvancedSearchResultActivity extends ActionBarActivit
             catch (NumberFormatException ex) { }
         }
 
-        _pageJobId = Zup.getInstance().searchInventoryItems(_page, 30, new int[] { categoryId }, sstatuses, address, title, creation_from, creation_to, modification_from, modification_to, latitude, longitude, this, this);
+        ArrayList<InventoryItemFilter> filters = new ArrayList<InventoryItemFilter>();
+        for(int i = 0; i < 100; i++)
+        {
+            if(!searchData.hasExtra("filter" + i))
+                break;
+
+            InventoryItemFilter filter = (InventoryItemFilter) searchData.getSerializableExtra("filter" + i);
+            filters.add(filter);
+        }
+        InventoryItemFilter[] filterArray = new InventoryItemFilter[filters.size()];
+        filters.toArray(filterArray);
+
+        _pageJobId = Zup.getInstance().searchInventoryItems(_page, 30, new int[] { categoryId }, sstatuses, address, title, creation_from, creation_to, modification_from, modification_to, latitude, longitude, filterArray, this, this);
 
         findViewById(R.id.activity_items_loading).setVisibility(View.VISIBLE);
     }

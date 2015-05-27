@@ -1,10 +1,12 @@
 package com.ntxdev.zuptecnico.api;
 
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 
 import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
+import com.ntxdev.zuptecnico.entities.InventoryItemFilter;
 import com.ntxdev.zuptecnico.entities.Session;
 import com.ntxdev.zuptecnico.entities.collections.CaseCollection;
 import com.ntxdev.zuptecnico.entities.collections.FlowCollection;
@@ -22,6 +24,7 @@ import com.ntxdev.zuptecnico.entities.requests.TransferCaseStepRequest;
 import com.ntxdev.zuptecnico.entities.requests.UpdateCaseStepRequest;
 import com.ntxdev.zuptecnico.entities.responses.DeleteInventoryItemResponse;
 import com.ntxdev.zuptecnico.entities.responses.EditInventoryItemResponse;
+import com.ntxdev.zuptecnico.entities.responses.PositionValidationResponse;
 import com.ntxdev.zuptecnico.entities.responses.PublishInventoryItemResponse;
 import com.ntxdev.zuptecnico.entities.responses.TransferCaseStepResponse;
 import com.ntxdev.zuptecnico.entities.responses.UpdateCaseStepResponse;
@@ -31,6 +34,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Calendar;
 import java.util.Hashtable;
+import java.util.Objects;
 
 /**
  * Created by igorlira on 3/3/14.
@@ -191,7 +195,7 @@ public class ZupClient
         return result;
     }
 
-    public ApiHttpResult<InventoryItemCollection> searchInventoryItems(int page, int per_page, int[] inventory_category_ids, Integer[] inventory_statuses_ids, String address, String title, Calendar creation_from, Calendar creation_to, Calendar modification_from, Calendar modification_to, Float latitude, Float longitude)
+    public ApiHttpResult<InventoryItemCollection> searchInventoryItems(int page, int per_page, int[] inventory_category_ids, Integer[] inventory_statuses_ids, String address, String title, Calendar creation_from, Calendar creation_to, Calendar modification_from, Calendar modification_to, Float latitude, Float longitude, InventoryItemFilter[] filters)
     {
         String inventory_category_ids_joined = "";
         for(int i = 0; i < inventory_category_ids.length; i++)
@@ -249,7 +253,45 @@ public class ZupClient
         }
         catch (UnsupportedEncodingException ex) { }
 
-        ApiHttpResult<InventoryItemCollection> result = httpClient.get("search/inventory/items?page=" + page + "&per_page=" + per_page + "&inventory_categories_ids=" + inventory_category_ids_joined + (inventory_statuses_ids != null ? "&inventory_statuses_ids=" + inventory_statuses_ids_joined : "") + (address != null ? "&address=" + address : "") + (title != null ? "&title=" + title : "") + (created_at != null ? "&" + created_at + "" : "") + (updated_at != null ? "&" + updated_at + "" : "") + (position != null ? "&" + position + "" : "") + (sessionToken != null ? "&token=" + sessionToken : ""), InventoryItemCollection.class);
+        String filterQuery = "";
+        if(filters != null) {
+            for (InventoryItemFilter filter : filters) {
+                String str = "&fields[" + filter.fieldId + "][" + filter.type + "]" + (filter.isArray ? "[0]" : "") + "=";
+
+                if(filter.value1 instanceof String)
+                    str += Uri.encode((String)filter.value1);
+                else if(filter.value1 instanceof Integer)
+                    str += Integer.toString((Integer)filter.value1);
+                else if(filter.value1 instanceof Float)
+                    str += Float.toString((Float)filter.value1);
+                else if(filter.value1 instanceof Integer[])
+                {
+                    str = "";
+                    int i = 0;
+                    for(Integer val : (Integer[])filter.value1)
+                    {
+                        str = "&fields[" + filter.fieldId + "][" + filter.type + "][" + i + "]=" + val;
+                        i++;
+                    }
+                }
+                else if(filter.value1 instanceof String[])
+                {
+                    str = "";
+                    int i = 0;
+                    for(String val : (String[])filter.value1)
+                    {
+                        str = "&fields[" + filter.fieldId + "][" + filter.type + "][" + i + "]=" + Uri.encode(val);
+                        i++;
+                    }
+                }
+                else if(filter.value1 != null)
+                    str += filter.value1.toString();
+
+                filterQuery += str;
+            }
+        }
+
+        ApiHttpResult<InventoryItemCollection> result = httpClient.get("search/inventory/items?page=" + page + "&per_page=" + per_page + "&inventory_categories_ids=" + inventory_category_ids_joined + (inventory_statuses_ids != null ? "&inventory_statuses_ids=" + inventory_statuses_ids_joined : "") + (address != null ? "&address=" + address : "") + (title != null ? "&title=" + title : "") + (created_at != null ? "&" + created_at + "" : "") + (updated_at != null ? "&" + updated_at + "" : "") + (position != null ? "&" + position + "" : "") + filterQuery + (sessionToken != null ? "&token=" + sessionToken : ""), InventoryItemCollection.class);
         return result;
     }
 
@@ -316,6 +358,12 @@ public class ZupClient
     public ApiHttpResult<SingleFlowCollection> retrieveFlowVersion(int flowId, int version)
     {
         ApiHttpResult<SingleFlowCollection> result = httpClient.get("flows/" + flowId + "?version=" + version + "&display_type=full" + (sessionToken != null ? "&token=" + sessionToken : ""), SingleFlowCollection.class);
+        return result;
+    }
+
+    public ApiHttpResult<PositionValidationResponse> validateBoundaries(float latitude, float longitude)
+    {
+        ApiHttpResult<PositionValidationResponse> result = httpClient.get("utils/city-boundary/validate?latitude=" + latitude + "&longitude=" + longitude, PositionValidationResponse.class);
         return result;
     }
 
