@@ -31,13 +31,15 @@ import uk.co.senab.photoview.PhotoViewAttacher;
 /**
  * Created by igorlira on 5/7/14.
  */
-public class FullScreenImageActivity extends ActionBarActivity implements Runnable, ViewPager.OnPageChangeListener {
+public class FullScreenImageActivity extends ActionBarActivity implements ViewPager.OnPageChangeListener {
     int job_id;
     Thread worker;
     //ImageView imgDisplay;
     //PhotoViewAttacher attacher;
 
     ImageFragment[] fragments;
+    private static int TAP_INTERVAL = 300;
+    private TapDetector tapDetector;
 
     public static class ImageFragment extends Fragment
     {
@@ -301,31 +303,41 @@ public class FullScreenImageActivity extends ActionBarActivity implements Runnab
         finish();
     }
 
-    void imageLoaded()
-    {
-
-    }
-
     @Override
-    public void run() {
-        /*while(!Zup.getInstance().isResourceLoaded(job_id))
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if(tapDetector != null && ev.getAction() != MotionEvent.ACTION_UP) {
+            tapDetector.cancel(true);
+            tapDetector = null;
+        }
+        else if(ev.getAction() == MotionEvent.ACTION_DOWN)
         {
-            try {
-                Thread.sleep(1000);
-            }
-            catch (InterruptedException ex) { break; }
+            tapDetector = new TapDetector();
+            tapDetector.execute();
         }
 
-        if(Zup.getInstance().isResourceLoaded(job_id))
-        {
-            Zup.runOnMainThread(new Runnable() {
-                @Override
-                public void run() {
-                    imgDisplay.setImageBitmap(Zup.getInstance().getResourceBitmap(job_id));
-                    imgDisplay.setVisibility(View.VISIBLE);
-                    attacher = new PhotoViewAttacher(imgDisplay);
-                }
-            });
-        }*/
+        return super.dispatchTouchEvent(ev);
+    }
+
+    class TapDetector extends AsyncTask<Void, Void, Boolean>
+    {
+        @Override
+        protected Boolean doInBackground(Void... voids) {
+            try {
+                Thread.sleep(TAP_INTERVAL);
+                return true;
+            } catch (InterruptedException e) {
+
+            }
+
+            return false;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean aBoolean) {
+            if(aBoolean)
+                showHideActionBar();
+
+            tapDetector = null;
+        }
     }
 }
