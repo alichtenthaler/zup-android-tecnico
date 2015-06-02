@@ -7,6 +7,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.Interpolator;
+import android.view.animation.RotateAnimation;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -60,6 +63,20 @@ public class InventoryItemsAdvancedSearchResultActivity extends ActionBarActivit
 
         InfinityScrollView scroll = (InfinityScrollView) findViewById(R.id.items_scroll);
         scroll.setOnScrollViewListener(this);
+
+        View image = findViewById(R.id.activity_items_loading_image);
+        image.measure(0, 0);
+
+        RotateAnimation animation = new RotateAnimation(360, 0, image.getMeasuredWidth() / 2, image.getMeasuredHeight() / 2);
+        animation.setRepeatCount(Animation.INFINITE);
+        animation.setDuration(2000);
+        animation.setInterpolator(new Interpolator() {
+            @Override
+            public float getInterpolation(float v) {
+                return v;
+            }
+        });
+        findViewById(R.id.activity_items_loading_image).startAnimation(animation);
     }
 
     public void selectCancel(View view)
