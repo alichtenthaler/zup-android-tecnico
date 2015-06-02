@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 
@@ -43,7 +44,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
         sqLiteDatabase.execSQL("CREATE TABLE users (id INTEGER PRIMARY KEY, name VARCHAR(120), email VARCHAR(120), phone VARCHAR(120), document VARCHAR(120), address VARCHAR(120));");
-        sqLiteDatabase.execSQL("CREATE TABLE session (user_id INTEGER, token VARCHAR(120));");
+        sqLiteDatabase.execSQL("CREATE TABLE session (user_id INTEGER, token VARCHAR(120), has_full_load INTEGER DEFAULT 0);");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories (id INTEGER PRIMARY KEY, title VARCHAR(120), description VARCHAR(120), require_item_status INTEGER, created_at VARCHAR(120), plot_format VARCHAR(20), color VARCHAR(10));");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_sections (id INTEGER PRIMARY KEY, inventory_category_id INTEGER, title VARCHAR(120), required INTEGER);");
         sqLiteDatabase.execSQL("CREATE TABLE inventory_categories_sections_fields (id INTEGER PRIMARY KEY, inventory_category_id INTEGER, inventory_section_id INTEGER, title VARCHAR(120), kind VARCHAR(120), position INTEGER, label VARCHAR(120), size VARCHAR(120), required INTEGER, location INTEGER, available_values TEXT, minimum INTEGER NULL, maximum INTEGER NULL);");
@@ -67,7 +68,12 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         sqLiteDatabase.execSQL("CREATE TABLE cases_steps (id INTEGER PRIMARY KEY, case_id INTEGER, step_id INTEGER, step_version INTEGER, responsible_user_id INTEGER, executed INTEGER);");
         sqLiteDatabase.execSQL("CREATE TABLE cases_steps_data (id INTEGER PRIMARY KEY, case_step_id INTEGER, field_id INTEGER, value TEXT NULL, case_id INTEGER);");
 
-        sqLiteDatabase.execSQL("CREATE TABLE sync_actions (id INTEGER PRIMARY KEY, type INTEGER, date BIGINT, info TEXT, pending INTEGER, running INTEGER, successful INTEGER);");
+        sqLiteDatabase.execSQL("CREATE TABLE sync_actions (id INTEGER PRIMARY KEY, type INTEGER, date BIGINT, info TEXT, pending INTEGER, running INTEGER, successful INTEGER, inventory_item_id INTEGER);");
+
+        sqLiteDatabase.execSQL("CREATE INDEX inventory_categories_statuses_idx ON inventory_categories_statuses (inventory_category_id);");
+        sqLiteDatabase.execSQL("CREATE INDEX inventory_categories_sections_idx ON inventory_categories_sections (inventory_category_id);");
+        sqLiteDatabase.execSQL("CREATE INDEX inventory_categories_sections_fields_idx ON inventory_categories_sections_fields (inventory_category_id, inventory_section_id);");
+        sqLiteDatabase.execSQL("CREATE INDEX inventory_categories_sections_fields_options_idx ON inventory_categories_sections_fields_options (field_id);");
     }
 
     public void clear()
@@ -346,6 +352,12 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         getWritableDatabase().delete("cases_steps_data", "case_id=" + id, null);
     }
 
+    public boolean hasSyncActionRelatedToInventoryItem(int itemId)
+    {
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT id FROM sync_actions WHERE inventory_item_id=" + itemId, null);
+        return cursor.moveToNext();
+    }
+
     public void resetSyncActions()
     {
         getWritableDatabase().execSQL("UPDATE sync_actions SET pending=1, running=0, successful=0");
@@ -378,7 +390,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
 
         ObjectMapper mapper = new ObjectMapper();
 
-        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, date, type, info, pending, running, successful FROM sync_actions ORDER BY date ASC", null);
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, date, type, info, pending, running, successful, inventory_item_id FROM sync_actions ORDER BY date ASC", null);
         while(cursor.moveToNext())
         {
             try {
@@ -1189,7 +1201,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         return cursor.moveToNext();
     }
 
-    InventoryItem parseInventoryItem(Cursor cursor)
+    InventoryItem parseInventoryItem(Cursor cursor, boolean loadDdata)
     {
         InventoryItem item = new InventoryItem();
         item.id = cursor.getInt(0);
@@ -1203,28 +1215,77 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         item.address = cursor.getString(7);
         item.updated_at = cursor.getString(8);
 
-        cursor = getReadableDatabase().rawQuery("SELECT id, inventory_field_id, content FROM inventory_items_data WHERE inventory_item_id=?", new String[] { Integer.toString(item.id) });
-        while(cursor.moveToNext())
-        {
-            InventoryItem.Data data = new InventoryItem.Data();
-            data.id = cursor.getInt(0);
-            data.setFieldId(cursor.getInt(1));
+        if(loadDdata) {
+            cursor = getReadableDatabase().rawQuery("SELECT id, inventory_field_id, content FROM inventory_items_data WHERE inventory_item_id=?", new String[]{Integer.toString(item.id)});
+            while (cursor.moveToNext()) {
+                InventoryItem.Data data = new InventoryItem.Data();
+                data.id = cursor.getInt(0);
+                data.setFieldId(cursor.getInt(1));
 
-            String contentObj = cursor.getString(2);
-            if(contentObj != null)
-            {
-                try {
-                    ObjectMapper mapper = new ObjectMapper();
-                    JsonFactory factory = mapper.getFactory();
-                    data.content = mapper.readValue(contentObj, Object.class);
+                String contentObj = cursor.getString(2);
+                if (contentObj != null) {
+                    try {
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonFactory factory = mapper.getFactory();
+                        data.content = mapper.readValue(contentObj, Object.class);
 
-                    //JsonParser parser = factory.createParser(contentObj);
+                        //JsonParser parser = factory.createParser(contentObj);
 
-                    //LinkedHashMap dict = parser.readValueAs(LinkedHashMap.class);
-                    //data.content = dict.get("content");
+                        //LinkedHashMap dict = parser.readValueAs(LinkedHashMap.class);
+                        //data.content = dict.get("content");
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
                 }
-                catch (Exception ex)
-                {
+
+                item.data.add(data);
+            }
+        }
+
+        return item;
+    }
+
+    public InventoryItem getInventoryItem(int _id)
+    {
+        /*Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, latitude, longitude, inventory_category_id, inventory_status_id, created_at, address, updated_at FROM inventory_items WHERE id=?", new String[] { Integer.toString(id) });
+        if(!cursor.moveToNext())
+            return null;
+
+        InventoryItem item = parseInventoryItem(cursor, true);
+        return item;*/
+
+        Hashtable<Integer, InventoryItem> result = new Hashtable<Integer, InventoryItem>();
+
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT I.id, I.title, I.latitude, I.longitude, I.inventory_category_id, I.inventory_status_id, I.created_at, I.address, I.updated_at, D.id, D.inventory_field_id, D.content FROM inventory_items I "
+                + "LEFT OUTER JOIN inventory_items_data D ON D.inventory_item_id=I.id"
+                + " WHERE I.id=" + _id, null);
+
+        ObjectMapper mapper = new ObjectMapper();
+        while (cursor.moveToNext())
+        {
+            int id = cursor.getInt(0);
+            InventoryItem item;
+
+            if(!result.containsKey(id))
+            {
+                item = parseInventoryItem(cursor, false);
+                result.put(id, item);
+            }
+            else
+            {
+                item = result.get(id);
+            }
+
+
+            InventoryItem.Data data = new InventoryItem.Data();
+            data.id = cursor.getInt(9);
+            data.setFieldId(cursor.getInt(10));
+
+            String contentObj = cursor.getString(11);
+            if (contentObj != null) {
+                try {
+                    data.content = mapper.readValue(contentObj, Object.class);
+                } catch (Exception ex) {
                     ex.printStackTrace();
                 }
             }
@@ -1232,17 +1293,10 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
             item.data.add(data);
         }
 
-        return item;
-    }
+        if(result.containsKey(_id))
+            return result.get(_id);
 
-    public InventoryItem getInventoryItem(int id)
-    {
-        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, latitude, longitude, inventory_category_id, inventory_status_id, created_at, address, updated_at FROM inventory_items WHERE id=?", new String[] { Integer.toString(id) });
-        if(!cursor.moveToNext())
-            return null;
-
-        InventoryItem item = parseInventoryItem(cursor);
-        return item;
+        return null;
     }
 
     public Iterator<InventoryItem> getInventoryItemsIterator(Integer categoryId, Integer stateId, String searchQuery, int page)
@@ -1275,7 +1329,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, latitude, longitude, inventory_category_id, inventory_status_id, created_at, address, updated_at FROM inventory_items " + whereArgsString + " LIMIT " + fromIndex + ", " + itemsPerPage, searchQuery != null ? new String[] { "%" + searchQuery + "%" } : null);
 
         while (cursor.moveToNext()) {
-            InventoryItem item = parseInventoryItem(cursor);
+            InventoryItem item = parseInventoryItem(cursor, true);
             result.add(item);
         }
 
@@ -1289,7 +1343,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, latitude, longitude, inventory_category_id, inventory_status_id, created_at, address, updated_at FROM inventory_items", null);
 
         while (cursor.moveToNext()) {
-            InventoryItem item = parseInventoryItem(cursor);
+            InventoryItem item = parseInventoryItem(cursor, true);
             result.add(item);
         }
 
@@ -1298,16 +1352,52 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
 
     public Iterator<InventoryItem> getInventoryItemsIteratorByCategory(int categoryId)
     {
-        ArrayList<InventoryItem> result = new ArrayList<InventoryItem>();
+        Hashtable<Integer, InventoryItem> result = new Hashtable<Integer, InventoryItem>();
 
-        Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, latitude, longitude, inventory_category_id, inventory_status_id, created_at, address, updated_at FROM inventory_items WHERE inventory_category_id=?", new String[] { Integer.toString(categoryId) });
+        //Cursor cursor = getReadableDatabase().rawQuery("SELECT id, title, latitude, longitude, inventory_category_id, inventory_status_id, created_at, address, updated_at FROM inventory_items I JOIN inventory_category WHERE inventory_category_id=?", new String[] { Integer.toString(categoryId) });
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT I.id, I.title, I.latitude, I.longitude, I.inventory_category_id, I.inventory_status_id, I.created_at, I.address, I.updated_at, D.id, D.inventory_field_id, D.content FROM inventory_items I "
+                + "LEFT OUTER JOIN inventory_items_data D ON D.inventory_item_id=I.id"
+                + " WHERE I.inventory_category_id=" + categoryId, null);
 
-        while (cursor.moveToNext()) {
-            InventoryItem item = parseInventoryItem(cursor);
-            result.add(item);
+        ObjectMapper mapper = new ObjectMapper();
+        while (cursor.moveToNext())
+        {
+            int id = cursor.getInt(0);
+            InventoryItem item;
+
+            if(!result.containsKey(id))
+            {
+                item = parseInventoryItem(cursor, false);
+                result.put(id, item);
+            }
+            else
+            {
+                item = result.get(id);
+            }
+
+
+            InventoryItem.Data data = new InventoryItem.Data();
+            data.id = cursor.getInt(9);
+            data.setFieldId(cursor.getInt(10));
+
+            String contentObj = cursor.getString(11);
+            if (contentObj != null) {
+                try {
+                    data.content = mapper.readValue(contentObj, Object.class);
+
+                    //JsonParser parser = factory.createParser(contentObj);
+
+                    //LinkedHashMap dict = parser.readValueAs(LinkedHashMap.class);
+                    //data.content = dict.get("content");
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+
+            item.data.add(data);
         }
 
-        return result.iterator();
+        return result.values().iterator();
     }
 
     public void removeInventoryItem(int id)
@@ -1333,8 +1423,23 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
         values.put("user_id", userId);
         values.put("token", token);
+        values.put("has_full_load", 0);
 
         getWritableDatabase().insert("session", null, values);
+    }
+
+    public boolean hasFullLoad()
+    {
+        Cursor cursor = getReadableDatabase().rawQuery("SELECT has_full_load FROM session", null);
+        if(!cursor.moveToNext())
+            return false;
+
+        return cursor.getInt(0) == 1;
+    }
+
+    public void setHasFullLoad()
+    {
+        getWritableDatabase().execSQL("UPDATE session SET has_full_load=1");
     }
 
     public int getSessionUserId()

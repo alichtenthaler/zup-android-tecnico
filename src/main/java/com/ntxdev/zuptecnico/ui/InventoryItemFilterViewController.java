@@ -72,17 +72,17 @@ public class InventoryItemFilterViewController
             if(val != null && val.length > 0)
                 opt = val[0];*/
 
-            int opt = 0;
-            if(firstV != null && firstV instanceof Integer)
-                opt = (Integer)firstV;
+            String opt = "";
+            if(firstV != null && firstV instanceof String)
+                opt = (String)firstV;
 
-            InventoryCategory.Section.Field.Option option = field.getOption(opt);
+            InventoryCategory.Section.Field.Option option = field.getOptionWithValue(opt);
 
             TextView between = (TextView) findViewById(R.id.inventory_item_filter_between);
             if(option != null)
             {
                 between.setText(option.value);
-                between.setTag(option.id);
+                between.setTag(option.value);
             }
             else
             {
@@ -170,7 +170,8 @@ public class InventoryItemFilterViewController
 
         TextView between = (TextView) findViewById(R.id.inventory_item_filter_between);
         between.setText(option.value);
-        between.setTag(id);
+        between.setTag(option.value);
+        //between.setTag(id);
     }
 
     public Object[] getValues()

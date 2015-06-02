@@ -50,20 +50,20 @@ public class InventoryItem {
         public Object content;
 
         // ------------- //
-        @JsonIgnore
-        private int _fieldId;
+        //@JsonIgnore
+        public int inventory_field_id;
 
         public int getFieldId()
         {
             if(field != null)
                 return field.id;
             else
-                return _fieldId;
+                return inventory_field_id;
         }
 
         public void setFieldId(int id)
         {
-            _fieldId = id;
+            inventory_field_id = id;
         }
     }
 

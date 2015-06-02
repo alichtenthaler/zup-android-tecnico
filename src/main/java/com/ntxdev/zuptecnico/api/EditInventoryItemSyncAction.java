@@ -29,6 +29,7 @@ public class EditInventoryItemSyncAction extends SyncAction {
     public EditInventoryItemSyncAction(InventoryItem item)
     {
         this.item = item;
+        this.inventory_item_id = item.id;
     }
 
     public EditInventoryItemSyncAction(JSONObject object, ObjectMapper mapper) throws IOException
@@ -37,6 +38,7 @@ public class EditInventoryItemSyncAction extends SyncAction {
 
         this.item = serializer.item;
         this.error = serializer.error;
+        this.inventory_item_id = this.item.id;
     }
 
     public boolean onPerform() {

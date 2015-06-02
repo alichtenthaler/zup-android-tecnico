@@ -225,12 +225,67 @@ public class SyncActivity extends ActionBarActivity
 
     }
 
-    void showError(final SyncAction action)
+    void showItem(final SyncAction action)
+    {
+        int itemId, categoryId;
+
+        if(action instanceof PublishInventoryItemSyncAction)
+        {
+            itemId = ((PublishInventoryItemSyncAction)action).item.id;
+            categoryId = ((PublishInventoryItemSyncAction)action).item.inventory_category_id;
+        }
+        else if(action instanceof EditInventoryItemSyncAction)
+        {
+            itemId = ((EditInventoryItemSyncAction)action).item.id;
+            categoryId = ((EditInventoryItemSyncAction)action).item.inventory_category_id;
+        }
+        else
+            return;
+
+        Intent intent = new Intent(this, InventoryItemDetailsActivity.class);
+        intent.putExtra("item_id", itemId);
+        intent.putExtra("category_id", categoryId);
+        intent.putExtra("fake_create", true);
+        this.startActivityForResult(intent, 0);
+        this.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+    }
+
+    void showErrorMessage(final SyncAction action)
     {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Erro");
         builder.setMessage("Data: " + Zup.getInstance().getDateFormat().format(action.getDate()) + "\r\n\r\n" + action.getError());
-        builder.setPositiveButton("Tentar Novamente", new DialogInterface.OnClickListener() {
+        builder.create().show();
+    }
+
+    void showError(final SyncAction action)
+    {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Erro");
+
+        final boolean isItems = action instanceof PublishInventoryItemSyncAction || action instanceof EditInventoryItemSyncAction;
+
+        String[] defaultItems = new String[] { "Ver mensagem", "Tentar Novamente", "Cancelar ação", "Fechar" };
+        if(isItems)
+            defaultItems = new String[] { "Ver mensagem", "Tentar Novamente", "Cancelar ação", "Visualizar item", "Fechar" };
+
+        builder.setItems(defaultItems, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                if(i == 0)
+                    showErrorMessage(action);
+                else if(i == 1)
+                    tryAgain(action);
+                else if(i == 2)
+                    cancel(action);
+                else if(i == 3) {
+                    if(isItems)
+                        showItem(action);
+                }
+            }
+        });
+
+        /*builder.setPositiveButton("Tentar Novamente", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
                 tryAgain(action);
@@ -242,8 +297,8 @@ public class SyncActivity extends ActionBarActivity
             public void onClick(DialogInterface dialogInterface, int i) {
                 cancel(action);
             }
-        });
-        builder.show();
+        });*/
+        builder.create().show();
     }
 
     void tryAgain(SyncAction action)

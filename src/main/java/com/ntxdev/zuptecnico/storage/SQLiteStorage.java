@@ -240,4 +240,10 @@ public class SQLiteStorage implements IStorage {
     public Iterator<Case> getCasesIterator(int flowId) { return db.getCasesIterator(flowId); }
 
     public String getInventoryCateGoryColor(int id) { return db.getInventoryCateGoryColor(id); }
+
+    public boolean hasFullLoad() { return db.hasFullLoad(); };
+
+    public void setHasFullLoad() { db.setHasFullLoad(); };
+
+    public boolean hasSyncActionRelatedToInventoryItem(int itemId) { return db.hasSyncActionRelatedToInventoryItem(itemId); }
 }

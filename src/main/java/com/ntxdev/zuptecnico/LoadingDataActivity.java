@@ -1,6 +1,7 @@
 package com.ntxdev.zuptecnico;
 
 import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
@@ -38,7 +39,7 @@ public class LoadingDataActivity extends ActionBarActivity implements JobListene
         Zup.getInstance().initStorage(this);
 
         ImageView image = (ImageView) findViewById(R.id.loading_icon);
-        RotateAnimation animation = new RotateAnimation(360, 0, 73 / 2, 100 / 2);
+        RotateAnimation animation = new RotateAnimation(360, 0, 73 * getResources().getDisplayMetrics().density / 2, 100 * getResources().getDisplayMetrics().density / 2);
         animation.setRepeatCount(Animation.INFINITE);
         animation.setDuration(2000);
         animation.setInterpolator(new Interpolator() {
@@ -72,6 +73,9 @@ public class LoadingDataActivity extends ActionBarActivity implements JobListene
             if(jobId != -1)
                 this.loadPinsJobIds.add(jobId);
         }
+
+        if(this.loadPinsJobIds.size() == 0)
+            this.allPinsLoaded();
     }
 
     void loadStatuses()
@@ -88,6 +92,9 @@ public class LoadingDataActivity extends ActionBarActivity implements JobListene
             if(jobId != -1)
                 this.loadStatusesJobIds.add(jobId);
         }
+
+        if(this.loadStatusesJobIds.size() == 0)
+            this.allStatusesLoaded();
     }
 
     void setStatus(String status)
@@ -98,7 +105,8 @@ public class LoadingDataActivity extends ActionBarActivity implements JobListene
 
     void inventoryCategoriesLoaded()
     {
-        loadPins();
+        loadStatuses();
+        //loadPins();
     }
 
     void allPinsLoaded()
@@ -113,13 +121,20 @@ public class LoadingDataActivity extends ActionBarActivity implements JobListene
 
     void allStatusesLoaded()
     {
-        Intent intent = new Intent(this, ItemsActivity.class);
-        startActivity(intent);
+        everythingLoaded();
     }
 
     void statusLoaded()
     {
 
+    }
+
+    void everythingLoaded()
+    {
+        Zup.getInstance().getStorage().setHasFullLoad();
+
+        Intent intent = new Intent(this, ItemsActivity.class);
+        startActivity(intent);
     }
 
     @Override
@@ -154,7 +169,28 @@ public class LoadingDataActivity extends ActionBarActivity implements JobListene
     public void onJobFailed(int jobId)
     {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage("Não foi possível carregar as informações do servidor.");
+        builder.setCancelable(false);
+
+        if(Zup.getInstance().getStorage().hasFullLoad())
+        {
+            builder.setMessage("Não foi possível carregar as informações do servidor. Os dados desta sessão poderão estar desatualizados em relação ao servidor.");
+            builder.setPositiveButton("Continuar", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    everythingLoaded();
+                }
+            });
+        }
+        else
+        {
+            builder.setMessage("Não foi possível carregar as informações do servidor e as informações ainda não foram sincronizadas. Conecte-se à internet para tentar novamente.");
+            builder.setPositiveButton("Tentar novamente", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    loadInventoryCategories();
+                }
+            });
+        }
         builder.show();
     }
 }

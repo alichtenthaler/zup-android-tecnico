@@ -33,7 +33,7 @@ import java.util.List;
 /**
  * Created by igorlira on 2/9/14.
  */
-public class SingularTabHost extends FrameLayout implements View.OnClickListener
+public class SingularTabHost extends FrameLayout
 {
     public static class Tab
     {
@@ -133,13 +133,6 @@ public class SingularTabHost extends FrameLayout implements View.OnClickListener
         super.onLayout(changed, left, top, right, bottom);
 
         {
-            //if(layoutTask != null)
-              //  layoutTask.cancel(true);
-
-            //layoutTask = new LayoutTask();
-            //layoutTask.execute();
-
-            //adjustWidths();
         }
     }
 
@@ -155,34 +148,12 @@ public class SingularTabHost extends FrameLayout implements View.OnClickListener
 
     public void addTab(String identifier, String label)
     {
-        /*LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
-
-        CustomRipple tabView = new CustomRipple(getContext());
-        tabView.setLayoutParams(params);
-        this.container.addView(tabView);
-
-        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        lp.addRule(RelativeLayout.CENTER_HORIZONTAL);
-        lp.addRule(RelativeLayout.CENTER_VERTICAL);
-        lp.setMargins(30, 0, 30, 0);
-
-        TextView lbl = new TextView(getContext());
-        lbl.setText(label);
-        lbl.setLayoutParams(lp);
-        lbl.setTypeface(Typeface.DEFAULT_BOLD);
-        tabView.addView(lbl);
-
-        TabViewController controller = new TabViewController(tabView);
-        this.tabs.add(controller);
-
-        adjustWidths();*/
-
         int hashCode = 9923;
         if(identifier != null)
             hashCode = identifier.hashCode();
 
-        View tabView = new View(getContext());
-        tabView.setId(1337 + hashCode);
+        final View tabView = new View(getContext());
+        tabView.setId(hashCode);
         ((ViewGroup)this.tabHost.findViewById(android.R.id.tabcontent)).addView(tabView);
 
         TabHost.TabSpec spec = this.tabHost.newTabSpec(identifier);
@@ -190,48 +161,5 @@ public class SingularTabHost extends FrameLayout implements View.OnClickListener
         spec.setContent(tabView.getId());
         this.tabHost.addTab(spec);
 
-    }
-
-    void adjustWidths()
-    {
-        int totalWidth = 0;
-        for(TabViewController tvc : this.tabs)
-        {
-            totalWidth += tvc.tab.getWidth();
-        }
-
-        if(totalWidth < this.getWidth())
-        {
-            int newWidth = this.getWidth() / this.tabs.size();
-
-            for(TabViewController tvc : this.tabs)
-            {
-                LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) tvc.tab.getLayoutParams();
-                params.width = newWidth;
-
-                tvc.tab.setLayoutParams(params);
-            }
-        }
-    }
-
-    private void setActiveTab(Tab sender)
-    {
-
-
-        if(this.onTabChangeListener != null)
-        {
-            //this.onTabChangeListener.onTabChange(this, oldIdentifier, sender.getIdentifier());
-        }
-    }
-
-    private Tab getActiveTab()
-    {
-        return null;
-    }
-
-    @Override
-    public void onClick(View view) {
-        //Tab sender = (Tab)view;
-        //setActiveTab(sender);
     }
 }

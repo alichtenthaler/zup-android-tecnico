@@ -143,7 +143,7 @@ public class ZupClient
 
     public ApiHttpResult<InventoryCategoryCollection> retrieveInventoryCategories()
     {
-        ApiHttpResult<InventoryCategoryCollection> result = httpClient.get("inventory/categories?display_type=full" + (sessionToken != null ? "&token=" + sessionToken : ""), InventoryCategoryCollection.class);
+        ApiHttpResult<InventoryCategoryCollection> result = httpClient.get("inventory/categories?display_type=full&return_fields=id,title,plot_format,pin,marker,require_item_status,color,sections.id,sections.title,sections.disabled,sections.required,sections.location,sections.inventory_category_id,sections.position,sections.fields.id,sections.fields.disabled,sections.fields.title,sections.fields.kind,sections.fields.size,sections.fields.inventory_section_id,sections.fields.available_values,sections.fields.field_options,sections.fields.position,sections.fields.label,sections.fields.maximum,sections.fields.minimum,sections.fields.required,sections.fields.location,statuses" + (sessionToken != null ? "&token=" + sessionToken : ""), InventoryCategoryCollection.class);
         return result;
     }
 
@@ -321,7 +321,7 @@ public class ZupClient
 
     public ApiHttpResult<SingleInventoryItemCollection> retrieveInventoryItemInfo(int categoryId, int itemId)
     {
-        ApiHttpResult<SingleInventoryItemCollection> result = httpClient.get("inventory/categories/" + categoryId + "/items/" + itemId + "" + (sessionToken != null ? "?token=" + sessionToken : ""), SingleInventoryItemCollection.class);
+        ApiHttpResult<SingleInventoryItemCollection> result = httpClient.get("inventory/categories/" + categoryId + "/items/" + itemId + "?display_type=full&return_fields=id,title,address,inventory_status_id,position,inventory_category_id,data.id,data.inventory_field_id,data.content,data.selected_options,created_at,updated_at" + (sessionToken != null ? "&token=" + sessionToken : ""), SingleInventoryItemCollection.class);
         return result;
     }
 

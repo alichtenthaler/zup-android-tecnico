@@ -151,31 +151,12 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
                 loadPage();
                 UIHelper.setTitle(this, category.title);
 
-                new AsyncTask<Void, Void, Void>()
-                {
-                    @Override
-                    protected Void doInBackground(Void... voids) {
-                        try {
-                            Thread.sleep(1000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-
-                        return null;
-                    }
-
-                    @Override
-                    protected void onPostExecute(Void aVoid) {
-                        super.onPostExecute(aVoid);
-
-                        refreshTabHost();
-                    }
-                }.execute();
+                refreshTabHost();
             }
             i++;
         }
 
-        if(i == 0)
+        /*if(i == 0)
         {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setMessage("Carregando Categorias de Inventário...");
@@ -187,7 +168,7 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
             builder.setView(progress);
 
             _loadingCategoriesDialog = builder.show();
-        }
+        }*/
     }
 
     class ItemInfoWindowAdapter implements GoogleMap.InfoWindowAdapter {
@@ -392,7 +373,7 @@ public class ItemsActivity extends ActionBarActivity implements ResourceLoadedLi
 
         Zup.getInstance().setInventoryItemPublishedListener(this);
 
-        this.updateCategories.start();
+        updateCategoriesMenu();
         showBigLoading();
 
         View image = findViewById(R.id.activity_items_loading_image);

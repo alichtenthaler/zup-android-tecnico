@@ -3,13 +3,17 @@ package com.ntxdev.zuptecnico;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.ntxdev.zuptecnico.api.Zup;
@@ -141,13 +145,64 @@ public class AdvancedSearchActivity extends ActionBarActivity implements DatePic
         buildPage();
     }
 
-    private void buildPage()
+    class PageBuilder extends AsyncTask<Void, Void, View[]>
+    {
+        ViewGroup container;
+
+        public PageBuilder(ViewGroup container)
+        {
+            this.container = container;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            container.removeAllViews();
+            filters.clear();
+
+            ProgressBar bar = new ProgressBar(container.getContext());
+            bar.setIndeterminate(true);
+
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.gravity = Gravity.CENTER_HORIZONTAL;
+            params.topMargin = 100;
+            params.bottomMargin = 100;
+
+            bar.setLayoutParams(params);
+            container.addView(bar);
+        }
+
+        @Override
+        protected View[] doInBackground(Void... voids) {
+            return buildPageB();
+        }
+
+        @Override
+        protected void onPostExecute(View[] views) {
+            container.removeAllViews();
+            for(View v : views)
+            {
+                container.addView(v);
+            }
+        }
+    }
+
+    void buildPage()
     {
         ViewGroup container = (ViewGroup)findViewById(R.id.items_search_container);
+
+        PageBuilder builder = new PageBuilder(container);
+        builder.execute();
+    }
+
+    private View[] buildPageB()
+    {
+        //ViewGroup container = (ViewGroup)findViewById(R.id.items_search_container);
         InventoryCategory category = Zup.getInstance().getInventoryCategory(_categoryId);
 
-        container.removeAllViews();
-        filters.clear();
+        ArrayList<View> result = new ArrayList<View>();
+
+        //container.removeAllViews();
+        //filters.clear();
 
         if(category.sections != null)
         {
@@ -184,7 +239,8 @@ public class AdvancedSearchActivity extends ActionBarActivity implements DatePic
                 for(InventoryCategory.Section.Field field : section.fields)
                 {
                     ViewGroup vg = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_filter, null);
-                    container.addView(vg);
+                    //container.addView(vg);
+                    result.add(vg);
 
                     InventoryItemFilterViewController vc = new InventoryItemFilterViewController(vg, field, this);
                     filters.add(vc);
@@ -209,6 +265,11 @@ public class AdvancedSearchActivity extends ActionBarActivity implements DatePic
                 }
             }
         }
+
+        View[] resultarr = new View[result.size()];
+        result.toArray(resultarr);
+
+        return resultarr;
     }
 
     private void pickDate(ViewGroup fieldContainer, Calendar date)

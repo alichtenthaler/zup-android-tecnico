@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Base64;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -18,6 +19,7 @@ import android.view.ViewGroup;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -64,6 +66,7 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
     private int googlePlayStatus;
     private int jobId;
     private Menu menu;
+    private boolean isFakeCreate = false;
 
     public void onCreate(Bundle savedInstanceState)
     {
@@ -85,8 +88,9 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
         else if(ZupCache.hasInventoryItem(itemId))
             item = ZupCache.getInventoryItem(itemId);
         else
-        
             requestItemInfo(itemId, categoryId);
+
+        this.isFakeCreate = getIntent().getBooleanExtra("fake_create", false);
 
         mapFragment = new SupportMapFragment();
         getSupportFragmentManager().beginTransaction().add(R.id.items_mapcontainer, mapFragment).commit();
@@ -129,6 +133,29 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
         return true;
     }
 
+    void edit()
+    {
+        if(!isFakeCreate && Zup.getInstance().hasSyncActionRelatedToInventoryItem(this.item.id))
+        {
+            AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+            dialogBuilder.setTitle("Ops!");
+            dialogBuilder.setMessage("Existe uma sincronização pendente para este item. É necessário concluí-la antes de modificá-lo.");
+            dialogBuilder.setCancelable(true);
+            dialogBuilder.setNegativeButton("Fechar", null);
+            dialogBuilder.show();
+
+            return;
+        }
+
+        Intent intent = new Intent(this, CreateInventoryItemActivity.class);
+        intent.putExtra("create", false);
+        intent.putExtra("category_id", category.id);
+        intent.putExtra("item_id", this.item.id);
+        intent.putExtra("fake_create", this.isFakeCreate);
+        startActivityForResult(intent, 0);
+        overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if(this.item == null)
@@ -150,12 +177,7 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
         }
         else if(item.getItemId() == R.id.action_items_edit)
         {
-            Intent intent = new Intent(this, CreateInventoryItemActivity.class);
-            intent.putExtra("create", false);
-            intent.putExtra("category_id", category.id);
-            intent.putExtra("item_id", this.item.id);
-            startActivityForResult(intent, 0);
-            overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
+            edit();
         }
         else if(item.getItemId() == R.id.action_items_download)
         {
@@ -331,7 +353,6 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
         modifiedView.setText("Modificado:" + Zup.getInstance().formatIsoDate(item.updated_at));
 
         buildPage();
-        setUpMapIfNeeded();
     }
 
     private void setUpMapIfNeeded()
@@ -375,14 +396,66 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
     public void onResume()
     {
         super.onResume();
-        if(item != null)
-            setUpMapIfNeeded();
+        //if(item != null)
+        //    setUpMapIfNeeded();
     }
 
-    private void buildPage()
+    class PageBuilder extends AsyncTask<Void, Void, View[]>
+    {
+        ViewGroup container;
+
+        public PageBuilder(ViewGroup container)
+        {
+            this.container = container;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            container.removeAllViews();
+
+            ProgressBar bar = new ProgressBar(container.getContext());
+            bar.setIndeterminate(true);
+
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.gravity = Gravity.CENTER_HORIZONTAL;
+            params.topMargin = 100;
+            params.bottomMargin = 100;
+
+            bar.setLayoutParams(params);
+            container.addView(bar);
+        }
+
+        @Override
+        protected View[] doInBackground(Void... voids) {
+            return buildPageB();
+        }
+
+        @Override
+        protected void onPostExecute(View[] views) {
+            container.removeAllViews();
+            for(View v : views)
+            {
+                container.addView(v);
+            }
+
+            setUpMapIfNeeded();
+        }
+    }
+
+    void buildPage()
     {
         ViewGroup container = (ViewGroup)findViewById(R.id.inventory_item_details_container);
-        container.removeAllViews();
+
+        PageBuilder builder = new PageBuilder(container);
+        builder.execute();
+    }
+
+    private View[] buildPageB()
+    {
+        //ViewGroup container = (ViewGroup)findViewById(R.id.inventory_item_details_container);
+        //container.removeAllViews();
+
+        ArrayList<View> result = new ArrayList<View>();
 
         if(category.sections != null) {
             Arrays.sort(category.sections, new Comparator<InventoryCategory.Section>() {
@@ -415,12 +488,13 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
 
             for (int i = 0; i < category.sections.length; i++) {
                 InventoryCategory.Section section = category.sections[i];
-                ViewGroup sectionHeader = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_section_header, container, false);
+                ViewGroup sectionHeader = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_section_header, null, false);
 
                 TextView sectionTitle = (TextView) sectionHeader.findViewById(R.id.inventory_item_section_title);
                 sectionTitle.setText(section.title.toUpperCase());
 
-                container.addView(sectionHeader);
+                result.add(sectionHeader);
+                //container.addView(sectionHeader);
 
                 Arrays.sort(section.fields, new Comparator<InventoryCategory.Section.Field>() {
                     @Override
@@ -537,11 +611,12 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
                         }
                         scroll.addView(fieldView);
 
-                        container.addView(scroll);
+                        result.add(scroll);
+                        //container.addView(scroll);
                     }
                     else if(field.kind.equals("checkbox") || field.kind.equals("radio") || field.kind.equals("select"))
                     {
-                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_text, container, false);
+                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_text, null, false);
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
                         TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
 
@@ -584,11 +659,12 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
                         else
                             fieldValue.setText("");
 
-                        container.addView(fieldView);
+                        result.add(fieldView);
+                        //container.addView(fieldView);
                     }
                     else
                     {
-                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_text, container, false);
+                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_text, null, false);
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
                         TextView fieldValue = (TextView) fieldView.findViewById(R.id.inventory_item_text_value);
 
@@ -598,11 +674,17 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
                         else
                             fieldValue.setText("");
 
-                        container.addView(fieldView);
+                        result.add(fieldView);
+                        //container.addView(fieldView);
                     }
                 }
             }
         }
+
+        View[] resultarr = new View[result.size()];
+        result.toArray(resultarr);
+
+        return resultarr;
 
         //FrameLayout mapContainer = new FrameLayout(this);
         //mapContainer.setId(R.id.items_mapcontainer);

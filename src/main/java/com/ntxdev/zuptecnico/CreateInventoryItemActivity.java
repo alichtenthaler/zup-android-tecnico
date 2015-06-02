@@ -37,6 +37,7 @@ import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
@@ -44,7 +45,9 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationClient;
 import com.kbeanie.imagechooser.api.ChooserType;
 import com.kbeanie.imagechooser.api.ChosenImage;
@@ -225,6 +228,8 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
     private SelectDialogSearchTask searchTask = null;
 
+    private boolean isFakeCreate = false;
+
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_inventory_item_create);
@@ -238,6 +243,8 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
         this.locationFields = new ArrayList<ViewGroup>();
         LocalBroadcastManager manager = LocalBroadcastManager.getInstance(this);
         manager.registerReceiver(new Receiver(), new IntentFilter("android.net.conn.CONNECTIVITY_CHANGE"));
+
+        isFakeCreate = intent.getBooleanExtra("fake_create", false);
 
         createMode = intent.getBooleanExtra("create", true);
         if (createMode) {
@@ -265,7 +272,12 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
             public void onDisconnected() {
                 locationUnavailable();
             }
-        }, null);
+        }, new GoogleApiClient.OnConnectionFailedListener() {
+            @Override
+            public void onConnectionFailed(ConnectionResult connectionResult) {
+                locationUnavailable();
+            }
+        });
         locationClient.connect();
 
         if (category != null) {
@@ -474,6 +486,14 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
         if(!Zup.getInstance().hasInventoryItem(item.id))
             Zup.getInstance().addInventoryItem(item);
+
+        if(isFakeCreate)
+        {
+            Zup.getInstance().removeSyncActionsRelatedToInventoryItem(this.item.id);
+
+            if((this.item.id & InventoryItem.LOCAL_MASK) != 0)
+                createMode = true;
+        }
 
         Zup.getInstance().updateInventoryItemInfo(item.id, item);
         //Zup.getInstance().sync();
@@ -685,21 +705,72 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
         }
     }
 
-    private void buildPage()
+    class PageBuilder extends AsyncTask<Void, Void, View[]>
+    {
+        ViewGroup container;
+
+        public PageBuilder(ViewGroup container)
+        {
+            this.container = container;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            container.removeAllViews();
+
+            ProgressBar bar = new ProgressBar(container.getContext());
+            bar.setIndeterminate(true);
+
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.gravity = Gravity.CENTER_HORIZONTAL;
+            params.topMargin = 100;
+            params.bottomMargin = 100;
+
+            bar.setLayoutParams(params);
+            container.addView(bar);
+        }
+
+        @Override
+        protected View[] doInBackground(Void... voids) {
+            return buildPageB();
+        }
+
+        @Override
+        protected void onPostExecute(View[] views) {
+            container.removeAllViews();
+            for(View v : views)
+            {
+                container.addView(v);
+            }
+        }
+    }
+
+    void buildPage()
     {
         ViewGroup container = (ViewGroup)findViewById(R.id.inventory_item_create_container);
-        container.removeAllViews();
+
+        PageBuilder builder = new PageBuilder(container);
+        builder.execute();
+    }
+
+    private View[] buildPageB()
+    {
+        //ViewGroup container = (ViewGroup)findViewById(R.id.inventory_item_create_container);
+        //container.removeAllViews();
         locationFields.clear();
+
+        ArrayList<View> result = new ArrayList<View>();
 
         if(category.sections != null) {
             Iterator<InventoryCategoryStatus> statuses = Zup.getInstance().getInventoryCategoryStatusIterator(category.id);
             if(statuses.hasNext())
             {
-                ViewGroup sectionHeader = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_section_header, container, false);
+                ViewGroup sectionHeader = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_section_header, null, false);
 
                 TextView sectionTitle = (TextView) sectionHeader.findViewById(R.id.inventory_item_section_title);
                 sectionTitle.setText("ESTADO");
-                container.addView(sectionHeader);
+                //container.addView(sectionHeader);
+                result.add(sectionHeader);
 
                 RadioGroup statusesContainer = new RadioGroup(this);
                 statusesContainer.setOrientation(LinearLayout.VERTICAL);
@@ -723,7 +794,8 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                 }
 
                 statusesContainer.setTag(R.id.inventory_item_create_is_status_field, true);
-                container.addView(statusesContainer);
+                //container.addView(statusesContainer);
+                result.add(statusesContainer);
             }
 
             Arrays.sort(category.sections, new Comparator<InventoryCategory.Section>() {
@@ -758,16 +830,17 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
             for (int i = 0; i < category.sections.length; i++) {
                 InventoryCategory.Section section = category.sections[i];
-                ViewGroup sectionHeader = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_section_header, container, false);
+                ViewGroup sectionHeader = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_section_header, null, false);
 
                 TextView sectionTitle = (TextView) sectionHeader.findViewById(R.id.inventory_item_section_title);
                 sectionTitle.setText(section.title.toUpperCase());
 
-                container.addView(sectionHeader);
+                //container.addView(sectionHeader);
+                result.add(sectionHeader);
 
                 if(section.isLocationSection())
                 {
-                    ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_create_field_button, container, false);
+                    ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_create_field_button, null, false);
 
                     locationFields.add(fieldView);
 
@@ -820,7 +893,8 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                         }
                     });
 
-                    container.addView(fieldView);
+                    result.add(fieldView);
+                    //container.addView(fieldView);
                 }
 
                 Arrays.sort(section.fields, new Comparator<InventoryCategory.Section.Field>() {
@@ -864,7 +938,7 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
 
                     if(field.kind.equals("radio"))
                     {
-                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_radio_edit, container, false);
+                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_radio_edit, null, false);
                         fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
 
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
@@ -908,11 +982,12 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                             }
                             radiocontainer.addView(group);
                         }
-                        container.addView(fieldView);
+                        result.add(fieldView);
+                        //container.addView(fieldView);
                     }
                     else if(field.kind.equals("checkbox"))
                     {
-                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_radio_edit, container, false);
+                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_radio_edit, null, false);
                         fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
 
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
@@ -949,11 +1024,12 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                                     button.setChecked(true);
                             }
                         }
-                        container.addView(fieldView);
+                        result.add(fieldView);
+                        //container.addView(fieldView);
                     }
                     else if(field.kind.equals("images"))
                     {
-                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_images_edit, container, false);
+                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_images_edit, null, false);
                         fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
 
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
@@ -970,11 +1046,12 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                             }
                         });
 
-                        container.addView(fieldView);
+                        result.add(fieldView);
+                        //container.addView(fieldView);
                     }
                     else if(field.kind.equals("decimal") || field.kind.equals("integer") || field.kind.equals("meters") || field.kind.equals("centimeters") || field.kind.equals("kilometers") || field.kind.equals("years") || field.kind.equals("months") || field.kind.equals("days") || field.kind.equals("hours") || field.kind.equals("seconds") || field.kind.equals("angle"))
                     {
-                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_text_edit, container, false);
+                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_text_edit, null, false);
                         fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
 
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
@@ -1012,11 +1089,12 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                         if(!createMode && item.getFieldValue(field.id) != null)
                             fieldValue.setText(item.getFieldValue(field.id).toString());
 
-                        container.addView(fieldView);
+                        result.add(fieldView);
+                        //container.addView(fieldView);
                     }
                     else if(field.kind.equals("select"))
                     {
-                        final ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_select_edit, container, false);
+                        final ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_select_edit, null, false);
                         fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
 
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
@@ -1057,11 +1135,12 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                             }
                         });
 
-                        container.addView(fieldView);
+                        result.add(fieldView);
+                        //container.addView(fieldView);
                     }
                     else if(field.kind.equals("date"))
                     {
-                        final ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_select_edit, container, false);
+                        final ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_select_edit, null, false);
                         fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
 
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
@@ -1089,11 +1168,12 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                             }
                         });
 
-                        container.addView(fieldView);
+                        result.add(fieldView);
+                        //container.addView(fieldView);
                     }
                     else if(field.kind.equals("time"))
                     {
-                        final ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_select_edit, container, false);
+                        final ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_select_edit, null, false);
                         fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
 
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
@@ -1121,11 +1201,12 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                             }
                         });
 
-                        container.addView(fieldView);
+                        result.add(fieldView);
+                        //container.addView(fieldView);
                     }
                     else if(field.kind.equals("cpf") || field.kind.equals("cnpj"))
                     {
-                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_text_edit, container, false);
+                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_text_edit, null, false);
                         fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
 
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
@@ -1148,11 +1229,12 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                             }
                         });
 
-                        container.addView(fieldView);
+                        result.add(fieldView);
+                        //container.addView(fieldView);
                     }
                     else if(field.kind.equals("url") || field.kind.equals("email"))
                     {
-                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_text_edit, container, false);
+                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_text_edit, null, false);
                         fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
 
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
@@ -1169,10 +1251,11 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                             }
                         });
 
-                        container.addView(fieldView);
+                        result.add(fieldView);
+                        //container.addView(fieldView);
                     }
                     else {
-                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_text_edit, container, false);
+                        ViewGroup fieldView = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_item_text_edit, null, false);
                         fieldView.setTag(R.id.inventory_item_create_fieldid, field.id);
 
                         TextView fieldTitle = (TextView) fieldView.findViewById(R.id.inventory_item_text_name);
@@ -1202,7 +1285,8 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                             }
                         });
 
-                        container.addView(fieldView);
+                        result.add(fieldView);
+                        //container.addView(fieldView);
                     }
                     //else if(field.kind != null) { // unknown type
                     //    Log.e("FIELD RENDERING" , "Unknown field type: " + field.kind);
@@ -1210,6 +1294,11 @@ public class CreateInventoryItemActivity extends ActionBarActivity implements Im
                 }
             }
         }
+
+        View[] resultarr = new View[result.size()];
+        result.toArray(resultarr);
+
+        return resultarr;
     }
 
     private void createDatePickerDialog(final InventoryCategory.Section.Field field, final View fieldView)

@@ -18,6 +18,7 @@ public class DeleteInventoryItemSyncAction extends SyncAction {
     {
         this.categoryId = object.getInt("category_id");
         this.itemId = object.getInt("item_id");
+        this.inventory_item_id = this.itemId;
 
         if(object.has("error"))
             this.error = object.getString("error");
@@ -26,6 +27,7 @@ public class DeleteInventoryItemSyncAction extends SyncAction {
     public DeleteInventoryItemSyncAction(int categoryId, int id) {
         this.categoryId = categoryId;
         this.itemId = id;
+        this.inventory_item_id = id;
     }
 
     public boolean onPerform() {

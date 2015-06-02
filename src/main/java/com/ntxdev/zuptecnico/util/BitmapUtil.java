@@ -12,15 +12,27 @@ import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.MapCluster;
 
+import java.util.Dictionary;
+import java.util.Hashtable;
+
 /**
  * Created by igorlira on 5/8/15.
  */
 public class BitmapUtil
 {
+    private static Hashtable<String, Bitmap> bitmapCache;
+
     public static Bitmap getMapClusterBitmap(MapCluster cluster, DisplayMetrics metrics)
     {
+        if(bitmapCache == null)
+            bitmapCache = new Hashtable<String, Bitmap>();
+
         String color = Zup.getInstance().getInventoryCateGoryColor(cluster.category_id);
         //InventoryCategory category = Zup.getInstance().getInventoryCategory(cluster.category_id);
+
+        String bmpName = "cluster_" + color + "_" + cluster.count;
+        if(bitmapCache.containsKey(bmpName))
+            return bitmapCache.get(bmpName);
 
         String s = Integer.toString(cluster.count);
         Rect bounds = new Rect();
@@ -57,6 +69,8 @@ public class BitmapUtil
 
         int yPos = (int) ((size / 2) - ((paint.descent() + paint.ascent()) / 2)) ;
         canvas.drawText(s, size / 2, yPos, paint);
+
+        bitmapCache.put(bmpName, result);
 
         return result;
     }

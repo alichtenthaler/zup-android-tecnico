@@ -29,6 +29,7 @@ public abstract class SyncAction implements Serializable
     boolean pending = true;
     boolean successful = false;
     Date date;
+    public int inventory_item_id;
 
     public static final String ACTION_SYNC_CHANGED = "zuptecnico.sync_changed";
     public static final String ACTION_SYNC_BEGIN = "zuptecnico.sync_begin";
@@ -54,6 +55,7 @@ public abstract class SyncAction implements Serializable
         boolean pending = cursor.getInt(4) == 1;
         boolean running = cursor.getInt(5) == 1;
         boolean successful = cursor.getInt(6) == 1;
+        int itemId = cursor.getInt(7);
 
         JSONObject info_o = new JSONObject(info);
 
@@ -80,6 +82,7 @@ public abstract class SyncAction implements Serializable
         action.running = running;
         action.pending = pending;
         action.successful = successful;
+        action.inventory_item_id = itemId;
 
         Calendar cal = Calendar.getInstance();
         cal.setTimeInMillis(date);
@@ -109,6 +112,7 @@ public abstract class SyncAction implements Serializable
             values.put("pending", pending ? 1 : 0);
             values.put("running", running ? 1 : 0);
             values.put("successful", successful ? 1 : 0);
+            values.put("inventory_item_id", inventory_item_id);
 
             return values;
         }

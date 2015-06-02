@@ -226,6 +226,8 @@ public class Zup
 
     public ZupClient getClient() { return this.client; }
 
+    public IStorage getStorage() { return this.storage; }
+
     public boolean hasSession()
     {
         return this.sessionToken != null;
@@ -490,7 +492,7 @@ public class Zup
                         }
                     });
                 }
-                else
+                else if(listener != null)
                     listener.onJobFailed(jobId);
             }
         });
@@ -745,7 +747,8 @@ public class Zup
 
     public boolean hasSyncActionRelatedToInventoryItem(int id)
     {
-        Iterator<SyncAction> actions = storage.getSyncActionIterator();
+        return storage.hasSyncActionRelatedToInventoryItem(id);
+        /*Iterator<SyncAction> actions = storage.getSyncActionIterator();
         while(actions.hasNext())
         {
             SyncAction action = actions.next();
@@ -758,7 +761,30 @@ public class Zup
                 return true;
         }
 
-        return false;
+        return false;*/
+    }
+
+    public void removeSyncActionsRelatedToInventoryItem(int id)
+    {
+        ArrayList<SyncAction> actionsToRemove = new ArrayList<SyncAction>();
+
+        Iterator<SyncAction> actions = storage.getSyncActionIterator();
+        while(actions.hasNext())
+        {
+            SyncAction action = actions.next();
+
+            if(action instanceof PublishInventoryItemSyncAction && ((PublishInventoryItemSyncAction)action).item.id == id)
+                actionsToRemove.add(action);
+            else if(action instanceof EditInventoryItemSyncAction && ((EditInventoryItemSyncAction)action).item.id == id)
+                actionsToRemove.add(action);
+            else if(action instanceof DeleteInventoryItemSyncAction && ((DeleteInventoryItemSyncAction)action).itemId == id)
+                actionsToRemove.add(action);
+        }
+
+        for(SyncAction action : actionsToRemove)
+        {
+            this.removeSyncAction(action.id);
+        }
     }
 
     public boolean hasSyncActionRelatedToCase(int id)

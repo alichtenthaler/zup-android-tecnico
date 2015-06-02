@@ -60,13 +60,13 @@ public class DownloadedItemsActivity extends ActionBarActivity implements View.O
             }
         });
 
-        SingularTabHost tabHost = (SingularTabHost) findViewById(R.id.tabhost_documents);
+       // SingularTabHost tabHost = (SingularTabHost) findViewById(R.id.tabhost_documents);
         //tabHost.setOnTabChangeListener(this);
 
-        tabHost.addTab("all", "Todos estados");
-        tabHost.addTab("ok", "Saudável / OK");
-        tabHost.addTab("analysis", "Em análise");
-        tabHost.addTab("risk", "Em risco");
+        //tabHost.addTab("all", "Todos estados");
+        //tabHost.addTab("ok", "Saudável / OK");
+        //tabHost.addTab("analysis", "Em análise");
+        //tabHost.addTab("risk", "Em risco");
 
         InfinityScrollView scroll = (InfinityScrollView) findViewById(R.id.items_scroll);
     }

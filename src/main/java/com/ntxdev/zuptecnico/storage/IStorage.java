@@ -111,4 +111,10 @@ public interface IStorage {
     public Iterator<Case> getCasesIterator(int flowId);
 
     public String getInventoryCateGoryColor(int id);
+
+    public boolean hasFullLoad();
+
+    public void setHasFullLoad();
+
+    public boolean hasSyncActionRelatedToInventoryItem(int itemId);
 }

@@ -69,6 +69,20 @@ public class InventoryCategory
 
                 return null;
             }
+
+            public Option getOptionWithValue(String value)
+            {
+                if(field_options == null)
+                    return null;
+
+                for(Option opt : field_options)
+                {
+                    if(opt.value.equals(value))
+                        return opt;
+                }
+
+                return null;
+            }
         }
 
         public boolean isLocationSection()
