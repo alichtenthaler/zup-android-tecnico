@@ -27,37 +27,28 @@ import java.util.Hashtable;
  */
 public class ApiHttpClient
 {
-    //private HttpClient httpClient;
     public static String mBasePath;
 
     public ApiHttpClient()
     {
-        //this.mBasePath = "http://staging.zup.sapience.io/";
-        //this.mBasePath = "http://zup-api-sbc.cognita.ntxdev.com.br/";
-        if(BuildConfig.APPLICATION_ID != null && BuildConfig.APPLICATION_ID.equals("com.ntxdev.zuptecnico_boavista"))
+        if(BuildConfig.APPLICATION_ID != null && BuildConfig.APPLICATION_ID.equals("com.cognita.zuptecnico_boavista"))
         {
             ApiHttpClient.mBasePath = "http://zup-api-boa-vista.cognita.ntxdev.com.br/";
         }
-        else if(BuildConfig.APPLICATION_ID.equals("com.ntxdev.zuptecnico_sbc_hmg"))
+        else if(BuildConfig.APPLICATION_ID.equals("com.cognita.zuptecnico_sbc"))
         {
-            ApiHttpClient.mBasePath = "http://zuphmg.saobernardo.sp.gov.br:8282/";
+            ApiHttpClient.mBasePath = "http://vcsbc.saobernardo.sp.gov.br:8081/";
         }
-        else if(BuildConfig.APPLICATION_ID.equals("com.ntxdev.zuptecnico_sbc_ntx"))
-        {
-            ApiHttpClient.mBasePath = "http://zup-api-sbc.cognita.ntxdev.com.br/"; //"http://sbc.zeladoriaurbana.com.br/";
-        }
-        else if(BuildConfig.APPLICATION_ID.equals("com.ntxdev.zuptecnico_floripa"))
+        else if(BuildConfig.APPLICATION_ID.equals("com.cognita.zuptecnico_floripa"))
         {
             ApiHttpClient.mBasePath = "http://zup-api-florianopolis.cognita.ntxdev.com.br/";
         }
-        else if(BuildConfig.APPLICATION_ID.equals("com.ntxdev.zuptecnico_maceio"))
+        else if(BuildConfig.APPLICATION_ID.equals("com.cognita.zuptecnico_maceio"))
         {
             ApiHttpClient.mBasePath = "http://zup-api-maceio.cognita.ntxdev.com.br/";
         }
         else
             ApiHttpClient.mBasePath = "http://zup-staging.cognita.ntxdev.com.br/";
-        //this.mBasePath = "http://dti-zuphmg-01:9292/";
-        //this.httpClient = new DefaultHttpClient();
     }
 
     public <T> ApiHttpResult<T> get(String path, Class<T> resultType)
