@@ -23,6 +23,11 @@ public abstract class SyncAction implements Serializable
     static final int SYNCACTION_EDIT_ITEM = 1;
     static final int SYNCACTION_DELETE_ITEM = 2;
     static final int SYNCACTION_UPDATE_CASE_STEP = 3;
+    static final int SYNCACTION_PUBLISH_REPORT = 4;
+    static final int SYNCACTION_CREATE_USER = 5;
+    static final int SYNCACTION_DELETE_REPORT = 6;
+    static final int SYNCACTION_EDIT_REPORT = 7;
+    static final int SYNCACTION_CREATE_REPORT_COMMENT = 8;
 
     int id;
     boolean running = false;
@@ -75,6 +80,23 @@ public abstract class SyncAction implements Serializable
         else if(type == SYNCACTION_UPDATE_CASE_STEP)
         {
             action = new FillCaseStepSyncAction(info_o, mapper);
+        }
+        else if(type == SYNCACTION_PUBLISH_REPORT)
+        {
+            action = new PublishReportItemSyncAction(info_o, mapper);
+        }
+        else if(type == SYNCACTION_CREATE_USER)
+        {
+            action = new CreateUserSyncAction(info_o, mapper);
+        }
+        else if(type == SYNCACTION_DELETE_REPORT) {
+            action = new DeleteReportItemSyncAction(info_o, mapper);
+        }
+        else if(type == SYNCACTION_EDIT_REPORT) {
+            action = new EditReportItemSyncAction(info_o, mapper);
+        }
+        else if(type == SYNCACTION_CREATE_REPORT_COMMENT) {
+            action = new PublishReportCommentSyncAction(info_o, mapper);
         }
         else
             throw new Exception("Invalid sync action type");
@@ -154,6 +176,19 @@ public abstract class SyncAction implements Serializable
         manager.sendBroadcast(intent);
     }
 
+    public void broadcastAction(String action, Intent data) {
+        Intent intent = new Intent(action);
+        intent.putExtra("sync_action", this);
+        if(data != null)
+            intent.putExtras(data);
+
+        if(ZupApplication.getContext() == null)
+            return;
+
+        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(ZupApplication.getContext());
+        manager.sendBroadcast(intent);
+    }
+
     public boolean isRunning()
     {
         return running;
@@ -189,6 +224,16 @@ public abstract class SyncAction implements Serializable
             return SYNCACTION_DELETE_ITEM;
         else if(this instanceof FillCaseStepSyncAction)
             return SYNCACTION_UPDATE_CASE_STEP;
+        else if(this instanceof PublishReportItemSyncAction)
+            return SYNCACTION_PUBLISH_REPORT;
+        else if(this instanceof CreateUserSyncAction)
+            return SYNCACTION_CREATE_USER;
+        else if(this instanceof DeleteReportItemSyncAction)
+            return SYNCACTION_DELETE_REPORT;
+        else if(this instanceof EditReportItemSyncAction)
+            return SYNCACTION_EDIT_REPORT;
+        else if(this instanceof PublishReportCommentSyncAction)
+            return SYNCACTION_CREATE_REPORT_COMMENT;
         else
             return -1;
     }

@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:text="NOME"
         android:id="@+id/inventory_item_text_name"
-        android:textSize="18dp"
+        android:textSize="11dp"
         android:textColor="#666"
         android:layout_marginLeft="5dp"
         android:layout_marginBottom="3dp" />
@@ -23,7 +23,7 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:id="@+id/inventory_item_radio_container"
-        android:layout_marginLeft="15dp"></LinearLayout>
+        android:layout_marginLeft="10dp"></LinearLayout>
 
     <FrameLayout
         android:layout_width="fill_parent"

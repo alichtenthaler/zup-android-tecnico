@@ -1,13 +1,13 @@
 package com.ntxdev.zuptecnico;
 
-import android.app.AlertDialog;
+import android.support.v7.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.text.InputType;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -35,7 +35,7 @@ import java.util.Random;
 /**
  * Created by igorlira on 7/30/14.
  */
-public class ViewCaseStepFormActivity extends ActionBarActivity
+public class ViewCaseStepFormActivity extends AppCompatActivity
 {
     boolean editMode;
     Case theCase;
@@ -427,7 +427,7 @@ public class ViewCaseStepFormActivity extends ActionBarActivity
         ViewGroup container = (ViewGroup) view.findViewById(R.id.inventory_items_container);
 
         Intent intent = new Intent(this, AdvancedSearchActivity.class);
-        intent.putExtra("category_id", categoryId);
+        intent.putExtra("categoryId", categoryId);
         this.startActivityForResult(intent, REQUEST_INVENTORY_ITEM_SEARCH);
 
         inventoryItemSelectView = view;
@@ -815,7 +815,8 @@ public class ViewCaseStepFormActivity extends ActionBarActivity
 
     void showEditBar()
     {
-        getSupportActionBar().hide();
+        if(getSupportActionBar() != null)
+            getSupportActionBar().hide();
 
         View bar = findViewById(R.id.case_step_form_editbar);
         bar.setVisibility(View.VISIBLE);
@@ -823,7 +824,8 @@ public class ViewCaseStepFormActivity extends ActionBarActivity
 
     void hideEditBar()
     {
-        getSupportActionBar().show();
+        if(getSupportActionBar() != null)
+            getSupportActionBar().show();
         //findViewById(R.id.case_step_form_editbar).setVisibility(View.GONE);
 
         final View bar = findViewById(R.id.case_step_form_editbar);

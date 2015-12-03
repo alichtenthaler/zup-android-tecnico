@@ -1,11 +1,11 @@
 package com.ntxdev.zuptecnico;
 
-import android.app.AlertDialog;
+import android.support.v7.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,7 +17,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.ntxdev.zuptecnico.api.Zup;
-import com.ntxdev.zuptecnico.entities.Flow;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItemFilter;
@@ -30,15 +29,13 @@ import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Iterator;
 
-/**
- * Created by igorlira on 4/27/14.
- */
-public class AdvancedSearchActivity extends ActionBarActivity implements DatePickerDialog.OnDateSetListener
+public class AdvancedSearchActivity extends AppCompatActivity
+        implements DatePickerDialog.OnDateSetListener
 {
     public static final int REQUEST_SEARCH = 1;
     public static final int RESULT_SEARCH = 1;
 
-    private int _categoryId;
+    private int categoryId;
 
     private ArrayList<InventoryItemFilterViewController> filters;
 
@@ -46,16 +43,15 @@ public class AdvancedSearchActivity extends ActionBarActivity implements DatePic
     {
         super.onCreate(savedInstance);
         this.setContentView(R.layout.activity_inventory_items_advancedsearch);
-        getSupportActionBar().hide();
 
         Zup.getInstance().initStorage(getApplicationContext());
 
         Intent intent = getIntent();
-        int categoryId = intent.getIntExtra("category_id", -1);
+        int categoryId = intent.getIntExtra("categoryId", -1);
         if(categoryId == -1)
             return;
 
-        _categoryId = categoryId;
+        this.categoryId = categoryId;
 
         filters = new ArrayList<InventoryItemFilterViewController>();
 
@@ -82,6 +78,14 @@ public class AdvancedSearchActivity extends ActionBarActivity implements DatePic
         findViewById(R.id.modification_date_from_field).setOnClickListener(pickDateOnClickListener);
         findViewById(R.id.modification_date_to_field).setOnClickListener(pickDateOnClickListener);
 
+        loadPreviousData();
+
+        buildPage();
+    }
+
+    void loadPreviousData()
+    {
+        ViewGroup statusesContainer = (ViewGroup)findViewById(R.id.advancedsearch_status_container);
         if(getIntent().hasExtra("search_data"))
         {
             Intent searchData = (Intent)getIntent().getExtras().get("search_data");
@@ -117,11 +121,11 @@ public class AdvancedSearchActivity extends ActionBarActivity implements DatePic
             }
             if(searchData.hasExtra("statuses"))
             {
-                Object[] srch_statuses = (Object[])searchData.getExtras().get("statuses");
-                ArrayList<Integer> sstatuses = new ArrayList<Integer>();
-                for(int i = 0; i < srch_statuses.length; i++)
+                Object[] search_statuses = (Object[])searchData.getExtras().get("statuses");
+                ArrayList<Integer> statuses = new ArrayList<Integer>();
+                for(Object statusId : search_statuses)
                 {
-                    sstatuses.add((Integer)srch_statuses[i]);
+                    statuses.add((Integer)statusId);
                 }
                 for(int i = 0; i < statusesContainer.getChildCount(); i++)
                 {
@@ -130,7 +134,7 @@ public class AdvancedSearchActivity extends ActionBarActivity implements DatePic
 
                     CheckBox checkBox = (CheckBox)statusesContainer.getChildAt(i);
                     InventoryCategoryStatus status = (InventoryCategoryStatus)checkBox.getTag();
-                    if(sstatuses.contains(status.id))
+                    if(statuses.contains(status.id))
                         checkBox.setChecked(true);
                 }
             }
@@ -141,8 +145,6 @@ public class AdvancedSearchActivity extends ActionBarActivity implements DatePic
             if(searchData.hasExtra("address"))
                 ((EditText)findViewById(R.id.advancedsearch_address)).setText(searchData.getStringExtra("address"));
         }
-
-        buildPage();
     }
 
     class PageBuilder extends AsyncTask<Void, Void, View[]>
@@ -197,7 +199,7 @@ public class AdvancedSearchActivity extends ActionBarActivity implements DatePic
     private View[] buildPageB()
     {
         //ViewGroup container = (ViewGroup)findViewById(R.id.items_search_container);
-        InventoryCategory category = Zup.getInstance().getInventoryCategory(_categoryId);
+        InventoryCategory category = Zup.getInstance().getInventoryCategory(this.categoryId);
 
         ArrayList<View> result = new ArrayList<View>();
 
@@ -378,7 +380,7 @@ public class AdvancedSearchActivity extends ActionBarActivity implements DatePic
             }
         }
 
-        intent.putExtra("category_id", _categoryId);
+        intent.putExtra("categoryId", this.categoryId);
         this.setResult(RESULT_SEARCH, intent);
         finish();
         overridePendingTransition(R.anim.hold, R.anim.slide_out_bottom);
@@ -405,7 +407,7 @@ public class AdvancedSearchActivity extends ActionBarActivity implements DatePic
         for(int i = 0; i < container.getChildCount(); i++)
         {
             View child = container.getChildAt(i);
-            if(child.getClass() == objectClass)
+            if(objectClass.isInstance(child))
                 return (T)child;
         }
 

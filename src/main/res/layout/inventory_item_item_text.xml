@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:text="NOME"
         android:id="@+id/inventory_item_text_name"
-        android:textSize="18dp"
+        android:textSize="11dp"
         android:textColor="#666"
         android:layout_marginLeft="5dp"
         android:layout_marginBottom="5dp" />
@@ -24,16 +24,16 @@
         android:text="Arvore 57"
         android:id="@+id/inventory_item_text_value"
         android:textColor="#222"
-        android:layout_marginLeft="20dp"
+        android:layout_marginLeft="10dp"
         android:singleLine="false"
-        android:textSize="25dp"
+        android:textSize="15dp"
         android:gravity="center_vertical"
-        android:minHeight="44dp" />
+        android:minHeight="20dp" />
 
     <FrameLayout
         android:layout_width="fill_parent"
         android:layout_height="1dp"
         android:background="#ccc"
-        android:layout_marginTop="15dp"></FrameLayout>
+        android:layout_marginTop="10dp"></FrameLayout>
 
 </LinearLayout>

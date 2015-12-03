@@ -9,7 +9,7 @@ import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -22,6 +22,8 @@ import android.widget.ImageView;
 import com.ntxdev.zuptecnico.api.ApiHttpClient;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.entities.InventoryItemImage;
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.Picasso;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -31,7 +33,7 @@ import uk.co.senab.photoview.PhotoViewAttacher;
 /**
  * Created by igorlira on 5/7/14.
  */
-public class FullScreenImageActivity extends ActionBarActivity implements ViewPager.OnPageChangeListener {
+public class FullScreenImageActivity extends AppCompatActivity implements ViewPager.OnPageChangeListener {
     int job_id;
     Thread worker;
     //ImageView imgDisplay;
@@ -69,7 +71,7 @@ public class FullScreenImageActivity extends ActionBarActivity implements ViewPa
                 load(true);
         }
 
-        class ImageLoader extends AsyncTask<Object, Void, Object[]>
+        /*class ImageLoader extends AsyncTask<Object, Void, Object[]>
         {
             @Override
             protected Object[] doInBackground(Object... objects) {
@@ -113,7 +115,7 @@ public class FullScreenImageActivity extends ActionBarActivity implements ViewPa
                     attacher = new PhotoViewAttacher(imageView);
                 }
             }
-        }
+        }*/
 
         public void load(boolean bypassLoadCheck)
         {
@@ -126,7 +128,7 @@ public class FullScreenImageActivity extends ActionBarActivity implements ViewPa
                 loadOnCreate = true;
                 return;
             }
-            ImageView imgDisplay = (ImageView) getView().findViewById(R.id.imgDisplay);
+            final ImageView imgDisplay = (ImageView) getView().findViewById(R.id.imgDisplay);
 
             if(image.content != null)
             {
@@ -138,20 +140,21 @@ public class FullScreenImageActivity extends ActionBarActivity implements ViewPa
                 imgDisplay.setVisibility(View.VISIBLE);
                 attacher = new PhotoViewAttacher(imgDisplay);
             }
-            else if(Zup.getInstance().isResourceLoaded(image.versions.high))
-            {
-                imgDisplay.setImageBitmap(Zup.getInstance().getBitmap(image.versions.high));
-                imgDisplay.setVisibility(View.VISIBLE);
-                attacher = new PhotoViewAttacher(imgDisplay);
-            }
-            else
-            {
-                ImageLoader loader = new ImageLoader();
-                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.GINGERBREAD_MR1) {
-                    loader.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, image.versions.high, imgDisplay);
-                } else {
-                    loader.execute(image.versions.high, imgDisplay);
-                }
+            else {
+                Picasso.with(getActivity())
+                        .load(image.versions.high)
+                        .into(imgDisplay, new Callback() {
+                            @Override
+                            public void onSuccess() {
+                                imgDisplay.setVisibility(View.VISIBLE);
+                                attacher = new PhotoViewAttacher(imgDisplay);
+                            }
+
+                            @Override
+                            public void onError() {
+
+                            }
+                        });
             }
         }
     }
@@ -221,7 +224,6 @@ public class FullScreenImageActivity extends ActionBarActivity implements ViewPa
         if(index >= 0 && index < fragments.length)
             fragments[index].load(false);
 
-        this.getSupportActionBar().hide();
 
         /*View frame = findViewById(R.id.frame);
         InventoryItemImage image = (InventoryItemImage)getIntent().getSerializableExtra("image");

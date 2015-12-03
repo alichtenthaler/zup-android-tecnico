@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/report_item_background"
+    android:paddingBottom="@dimen/report_list_item_padding">
+    <FrameLayout
+        android:id="@+id/frameLayout6"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_alignParentLeft="false"
+        android:layout_alignParentRight="true"
+        android:layout_marginBottom="@dimen/report_list_item_padding"
+        android:background="#eee"></FrameLayout>
+
+    <TextView
+        android:id="@+id/status_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/report_list_item_padding"
+        android:layout_marginRight="@dimen/report_list_item_padding"
+        android:layout_below="@id/frameLayout6"
+        android:text="Finalizado"
+        android:textColor="#000"
+        android:textSize="@dimen/report_list_item_title" />
+
+
+    <CheckBox
+        android:id="@+id/status_selected_checkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="false"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentStart="false"
+        android:layout_marginRight="@dimen/report_list_item_padding"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
+        android:layout_alignRight="@id/status_name"
+        android:layout_centerVertical="true"
+        />
+
+</RelativeLayout>

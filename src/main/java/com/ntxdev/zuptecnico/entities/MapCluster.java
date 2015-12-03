@@ -9,6 +9,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 public class MapCluster
 {
     public float[] position;
-    public int category_id;
+    public Integer category_id;
     public int count;
 }

@@ -8,16 +8,21 @@
         android:title="Procurar"
         ntxdev:showAsAction="always"/>
 
+    <item android:id="@+id/action_items_filter"
+        android:icon="@drawable/actionbar_filter"
+        android:title="Filtrar por status"
+        ntxdev:showAsAction="always"/>
+
     <item android:id="@+id/action_items_map"
         android:icon="@drawable/actionbar_btn_mapa_branco"
-        android:title="Mapa"
-        ntxdev:showAsAction="always"/>
+        android:title="Ver Mapa"
+        ntxdev:showAsAction="ifRoom"/>
 
     <item android:id="@+id/action_items_list"
         android:icon="@drawable/actionbar_btn_lista_branco"
         android:visible="false"
-        android:title="Lista"
-        ntxdev:showAsAction="always"/>
+        android:title="Ver Lista"
+        ntxdev:showAsAction="ifRoom"/>
 
     <item android:id="@+id/action_items_add"
         android:icon="@drawable/ic_action_new"
@@ -50,12 +55,12 @@
             <item android:id="@+id/action_items_viewdownloaded"
                 android:title="Ver itens transferidos"
                 android:orderInCategory="100"
-                android:showAsAction="never" />
+                ntxdev:showAsAction="never" />
 
             <item android:id="@+id/action_items_transfer"
                 android:title="Transferir (armazenar offline)"
                 android:orderInCategory="100"
-                android:showAsAction="never" />
+                ntxdev:showAsAction="never" />
 
     <!--</item>-->
 </menu>

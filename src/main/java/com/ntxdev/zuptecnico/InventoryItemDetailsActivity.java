@@ -1,6 +1,6 @@
 package com.ntxdev.zuptecnico;
 
-import android.app.AlertDialog;
+import android.support.v7.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -9,8 +9,9 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Base64;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -39,12 +40,11 @@ import com.ntxdev.zuptecnico.api.ApiHttpClient;
 import com.ntxdev.zuptecnico.api.DeleteInventoryItemSyncAction;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.api.ZupCache;
-import com.ntxdev.zuptecnico.api.callbacks.InventoryItemListener;
-import com.ntxdev.zuptecnico.api.callbacks.JobFailedListener;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
 import com.ntxdev.zuptecnico.entities.InventoryItemImage;
+import com.ntxdev.zuptecnico.entities.collections.SingleInventoryItemCollection;
 import com.ntxdev.zuptecnico.ui.UIHelper;
 
 import java.net.MalformedURLException;
@@ -52,12 +52,13 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
+
+import retrofit.RetrofitError;
 
 /**
  * Created by igorlira on 3/3/14.
  */
-public class InventoryItemDetailsActivity extends ActionBarActivity implements InventoryItemListener, JobFailedListener
+public class InventoryItemDetailsActivity extends AppCompatActivity
 {
     private InventoryItem item;
     private InventoryCategory category;
@@ -67,6 +68,8 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
     private int jobId;
     private Menu menu;
     private boolean isFakeCreate = false;
+
+    private Tasker itemLoader;
 
     public void onCreate(Bundle savedInstanceState)
     {
@@ -82,7 +85,7 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
         MapsInitializer.initialize(this);
 
         int itemId = getIntent().getIntExtra("item_id", 0);
-        int categoryId = getIntent().getIntExtra("category_id", 0);
+        int categoryId = getIntent().getIntExtra("categoryId", 0);
         if(Zup.getInstance().hasInventoryItem(itemId))
             item = Zup.getInstance().getInventoryItem(itemId);
         else if(ZupCache.hasInventoryItem(itemId))
@@ -120,6 +123,12 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
                 menu.findItem(R.id.action_items_delete_download).setVisible(false);
                 menu.findItem(R.id.action_items_download).setVisible(true);
             }
+
+            menu.findItem(R.id.action_items_edit).setVisible(Zup.getInstance().getAccess()
+                    .canEditInventoryItem(item.inventory_category_id));
+
+            menu.findItem(R.id.action_items_discard).setVisible(Zup.getInstance().getAccess()
+                    .canDeleteInventoryItem(item.inventory_category_id));
         }
     }
 
@@ -149,7 +158,7 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
 
         Intent intent = new Intent(this, CreateInventoryItemActivity.class);
         intent.putExtra("create", false);
-        intent.putExtra("category_id", category.id);
+        intent.putExtra("categoryId", category.id);
         intent.putExtra("item_id", this.item.id);
         intent.putExtra("fake_create", this.isFakeCreate);
         startActivityForResult(intent, 0);
@@ -205,7 +214,11 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
 
     void requestItemInfo(int itemId, int categoryId)
     {
-        jobId = Zup.getInstance().requestInventoryItemInfo(categoryId, itemId, this, this);
+        if(itemLoader != null)
+            itemLoader.cancel(true);
+
+        itemLoader = new Tasker(categoryId, itemId);
+        itemLoader.execute();
     }
 
     @Override
@@ -218,64 +231,20 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
         }
     }
 
-    @Override
-    public void onInventoryItemReceived(InventoryItem item, int categoryId, int page, int job_id) {
-        if (job_id == jobId) {
-            ZupCache.addInventoryItem(item);
-            this.item = item;
-            fillItemInfo();
-        }
-    }
-
     private void finishWithResetSignal()
     {
         this.setResult(2);
         finish();
     }
 
-    class ImageLoader extends AsyncTask<Object, Void, Object[]>
+    void showLoading()
     {
-        @Override
-        protected Object[] doInBackground(Object... objects) {
-            String url;
+        findViewById(R.id.inventory_item_details_loading).setVisibility(View.VISIBLE);
+    }
 
-            try
-            {
-                URL urlObj = new URL(new URL(ApiHttpClient.mBasePath), (String) objects[0]);
-                url = urlObj.toString(); //(String) objects[0];
-            }
-            catch (MalformedURLException ex)
-            {
-                url = (String) objects[0];
-            }
-            ImageView imageView = (ImageView) objects[1];
-
-            int resourceId = Zup.getInstance().requestImage(url, false);
-            if(!Zup.getInstance().isResourceLoaded(resourceId))
-            {
-                return new Object[] { imageView, null };
-            }
-            else
-            {
-                return new Object[] { imageView, Zup.getInstance().getResourceBitmap(resourceId) };
-            }
-        }
-
-        @Override
-        protected void onPostExecute(Object[] objects) {
-            ImageView imageView = (ImageView) objects[0];
-            Bitmap bitmap = (Bitmap) objects[1];
-
-            if(bitmap == null)
-            {
-                imageView.setVisibility(View.INVISIBLE);
-            }
-            else
-            {
-                imageView.setVisibility(View.VISIBLE);
-                imageView.setImageBitmap(bitmap);
-            }
-        }
+    void hideLoading()
+    {
+        findViewById(R.id.inventory_item_details_loading).setVisibility(View.GONE);
     }
 
     void fillItemInfo()
@@ -284,7 +253,7 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
 
         category = Zup.getInstance().getInventoryCategory(item.inventory_category_id);
 
-        findViewById(R.id.inventory_item_details_loading).setVisibility(View.GONE);
+        hideLoading();
 
         UIHelper.setTitle(this, Zup.getInstance().getInventoryItemTitle(item));
 
@@ -400,48 +369,6 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
         //    setUpMapIfNeeded();
     }
 
-    class PageBuilder extends AsyncTask<Void, Void, View[]>
-    {
-        ViewGroup container;
-
-        public PageBuilder(ViewGroup container)
-        {
-            this.container = container;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            container.removeAllViews();
-
-            ProgressBar bar = new ProgressBar(container.getContext());
-            bar.setIndeterminate(true);
-
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            params.gravity = Gravity.CENTER_HORIZONTAL;
-            params.topMargin = 100;
-            params.bottomMargin = 100;
-
-            bar.setLayoutParams(params);
-            container.addView(bar);
-        }
-
-        @Override
-        protected View[] doInBackground(Void... voids) {
-            return buildPageB();
-        }
-
-        @Override
-        protected void onPostExecute(View[] views) {
-            container.removeAllViews();
-            for(View v : views)
-            {
-                container.addView(v);
-            }
-
-            setUpMapIfNeeded();
-        }
-    }
-
     void buildPage()
     {
         ViewGroup container = (ViewGroup)findViewById(R.id.inventory_item_details_container);
@@ -450,81 +377,90 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
         builder.execute();
     }
 
+    void sortSections()
+    {
+        Arrays.sort(category.sections, new Comparator<InventoryCategory.Section>() {
+            @Override
+            public int compare(InventoryCategory.Section section, InventoryCategory.Section section2) {
+                int pos1 = 0;
+                int pos2 = 0;
+
+                if (section.position != null) {
+                    pos1 = section.position;
+                }
+                if (section2.position != null) {
+                    pos2 = section2.position;
+                }
+
+                if (section.position == null)
+                    pos1 = pos2;
+
+                if (section2.position == null)
+                    pos2 = pos1;
+
+                if (pos1 < pos2)
+                    return -1;
+                else if (pos1 == pos2)
+                    return 0;
+                else
+                    return 1;
+            }
+        });
+    }
+
+    void sortSectionFields(InventoryCategory.Section section)
+    {
+        Arrays.sort(section.fields, new Comparator<InventoryCategory.Section.Field>() {
+            @Override
+            public int compare(InventoryCategory.Section.Field section, InventoryCategory.Section.Field section2) {
+                int pos1 = 0;
+                int pos2 = 0;
+
+                if(section.position != null)
+                {
+                    pos1 = section.position;
+                }
+                if(section2.position != null)
+                {
+                    pos2 = section2.position;
+                }
+
+                if(section.position == null)
+                    pos1 = pos2;
+
+                if(section2.position == null)
+                    pos2 = pos1;
+
+                if(pos1 < pos2)
+                    return -1;
+                else if(pos1 == pos2)
+                    return 0;
+                else
+                    return 1;
+            }
+        });
+    }
+
     private View[] buildPageB()
     {
-        //ViewGroup container = (ViewGroup)findViewById(R.id.inventory_item_details_container);
-        //container.removeAllViews();
-
         ArrayList<View> result = new ArrayList<View>();
 
+        ObjectMapper mapper = new ObjectMapper();
+
         if(category.sections != null) {
-            Arrays.sort(category.sections, new Comparator<InventoryCategory.Section>() {
-                @Override
-                public int compare(InventoryCategory.Section section, InventoryCategory.Section section2) {
-                    int pos1 = 0;
-                    int pos2 = 0;
-
-                    if (section.position != null) {
-                        pos1 = section.position;
-                    }
-                    if (section2.position != null) {
-                        pos2 = section2.position;
-                    }
-
-                    if (section.position == null)
-                        pos1 = pos2;
-
-                    if (section2.position == null)
-                        pos2 = pos1;
-
-                    if (pos1 < pos2)
-                        return -1;
-                    else if (pos1 == pos2)
-                        return 0;
-                    else
-                        return 1;
-                }
-            });
+            sortSections();
 
             for (int i = 0; i < category.sections.length; i++) {
                 InventoryCategory.Section section = category.sections[i];
+
                 ViewGroup sectionHeader = (ViewGroup) getLayoutInflater().inflate(R.layout.inventory_item_section_header, null, false);
 
                 TextView sectionTitle = (TextView) sectionHeader.findViewById(R.id.inventory_item_section_title);
                 sectionTitle.setText(section.title.toUpperCase());
 
                 result.add(sectionHeader);
-                //container.addView(sectionHeader);
 
-                Arrays.sort(section.fields, new Comparator<InventoryCategory.Section.Field>() {
-                    @Override
-                    public int compare(InventoryCategory.Section.Field section, InventoryCategory.Section.Field section2) {
-                        int pos1 = 0;
-                        int pos2 = 0;
-
-                        if(section.position != null)
-                        {
-                            pos1 = section.position;
-                        }
-                        if(section2.position != null)
-                        {
-                            pos2 = section2.position;
-                        }
-
-                        if(section.position == null)
-                            pos1 = pos2;
-
-                        if(section2.position == null)
-                            pos2 = pos1;
-
-                        if(pos1 < pos2)
-                            return -1;
-                        else if(pos1 == pos2)
-                            return 0;
-                        else
-                            return 1;
-                    }
-                });
+                sortSectionFields(section);
 
                 for (int j = 0; j < section.fields.length; j++) {
                     InventoryCategory.Section.Field field = section.fields[j];
@@ -546,13 +482,9 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
                             if(images.get(im) instanceof InventoryItemImage)
                                 image = (InventoryItemImage)images.get(im);
                             else {
-                                LinkedHashMap map = (LinkedHashMap) images.get(im);
-                                ObjectMapper mapper = new ObjectMapper();
+                                Object map = images.get(im);
                                 image = mapper.convertValue(map, InventoryItemImage.class);
                             }
-
-                            //LinkedHashMap versions = (LinkedHashMap)map.get("versions");
-                            //String thumb = (String)versions.get("thumb");
 
                             LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(150, 150);
                             layoutParams.setMargins(0, 0, 15, 0);
@@ -571,7 +503,7 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
                                         if(images.get(x) instanceof InventoryItemImage)
                                             img = (InventoryItemImage)images.get(x);
                                         else {
-                                            LinkedHashMap map = (LinkedHashMap) images.get(x);
+                                            Object map = images.get(x);
                                             ObjectMapper mapper = new ObjectMapper();
                                             img = mapper.convertValue(map, InventoryItemImage.class);
                                         }
@@ -612,7 +544,6 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
                         scroll.addView(fieldView);
 
                         result.add(scroll);
-                        //container.addView(scroll);
                     }
                     else if(field.kind.equals("checkbox") || field.kind.equals("radio") || field.kind.equals("select"))
                     {
@@ -637,8 +568,8 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
                         {
                             for(int x = 0; x < value.size(); x++)
                             {
-                                //String val = (String)value.get(x);
-                                Integer val = (Integer)value.get(x);
+                                Object valObj = value.get(x);
+                                Integer val = mapper.convertValue(valObj, Integer.class);
                                 if(val == null)
                                     continue;
 
@@ -660,7 +591,6 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
                             fieldValue.setText("");
 
                         result.add(fieldView);
-                        //container.addView(fieldView);
                     }
                     else
                     {
@@ -675,7 +605,6 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
                             fieldValue.setText("");
 
                         result.add(fieldView);
-                        //container.addView(fieldView);
                     }
                 }
             }
@@ -685,17 +614,143 @@ public class InventoryItemDetailsActivity extends ActionBarActivity implements I
         result.toArray(resultarr);
 
         return resultarr;
-
-        //FrameLayout mapContainer = new FrameLayout(this);
-        //mapContainer.setId(R.id.items_mapcontainer);
-        //mapContainer.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 300));
-        //container.addView(mapContainer);
-
-        //getSupportFragmentManager().beginTransaction().add(R.id.items_mapcontainer, mapFragment).commit();
     }
 
-    @Override
-    public void onJobFailed(int job_id) {
-        Toast.makeText(this, "Não foi possível obter detalhes sobre o item.", 3).show();
+    class Tasker extends AsyncTask<Void, Void, InventoryItem>
+    {
+        int catId;
+        int itemId;
+
+        public Tasker(int categoryId, int itemId)
+        {
+            this.catId = categoryId;
+            this.itemId = itemId;
+        }
+
+        @Override
+        protected void onPreExecute()
+        {
+            showLoading();
+        }
+
+        @Override
+        protected InventoryItem doInBackground(Void... voids)
+        {
+            try
+            {
+                SingleInventoryItemCollection result = Zup.getInstance().getService().getInventoryItem(catId, itemId);
+                if (result == null)
+                    return null;
+
+                return result.item;
+            }
+            catch (RetrofitError error)
+            {
+                Log.e("Retrofit", "Failed to load inventory item", error);
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(InventoryItem inventoryItem)
+        {
+            if(inventoryItem == null)
+            {
+                Toast.makeText(InventoryItemDetailsActivity.this, "Não foi possível obter detalhes sobre o item.", Toast.LENGTH_LONG).show();
+            }
+            else
+            {
+                ZupCache.addInventoryItem(inventoryItem);
+                InventoryItemDetailsActivity.this.item = inventoryItem;
+                fillItemInfo();
+            }
+        }
+    }
+
+    class ImageLoader extends AsyncTask<Object, Void, Object[]>
+    {
+        @Override
+        protected Object[] doInBackground(Object... objects) {
+            String url;
+
+            try
+            {
+                URL urlObj = new URL(new URL(ApiHttpClient.mBasePath), (String) objects[0]);
+                url = urlObj.toString(); //(String) objects[0];
+            }
+            catch (MalformedURLException ex)
+            {
+                url = (String) objects[0];
+            }
+            ImageView imageView = (ImageView) objects[1];
+
+            int resourceId = Zup.getInstance().requestImage(url, false);
+            if(!Zup.getInstance().isResourceLoaded(resourceId))
+            {
+                return new Object[] { imageView, null };
+            }
+            else
+            {
+                return new Object[] { imageView, Zup.getInstance().getResourceBitmap(resourceId) };
+            }
+        }
+
+        @Override
+        protected void onPostExecute(Object[] objects) {
+            ImageView imageView = (ImageView) objects[0];
+            Bitmap bitmap = (Bitmap) objects[1];
+
+            if(bitmap == null)
+            {
+                imageView.setVisibility(View.INVISIBLE);
+            }
+            else
+            {
+                imageView.setVisibility(View.VISIBLE);
+                imageView.setImageBitmap(bitmap);
+            }
+        }
+    }
+
+    class PageBuilder extends AsyncTask<Void, Void, View[]>
+    {
+        ViewGroup container;
+
+        public PageBuilder(ViewGroup container)
+        {
+            this.container = container;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            container.removeAllViews();
+
+            ProgressBar bar = new ProgressBar(container.getContext());
+            bar.setIndeterminate(true);
+
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.gravity = Gravity.CENTER_HORIZONTAL;
+            params.topMargin = 100;
+            params.bottomMargin = 100;
+
+            bar.setLayoutParams(params);
+            container.addView(bar);
+        }
+
+        @Override
+        protected View[] doInBackground(Void... voids) {
+            return buildPageB();
+        }
+
+        @Override
+        protected void onPostExecute(View[] views) {
+            container.removeAllViews();
+            for(View v : views)
+            {
+                container.addView(v);
+            }
+
+            setUpMapIfNeeded();
+        }
     }
 }

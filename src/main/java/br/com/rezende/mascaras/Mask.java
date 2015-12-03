@@ -8,12 +8,12 @@ public abstract class Mask {
     public static String unmask(String s) {
         return s.replaceAll("[.]", "").replaceAll("[-]", "")
                 .replaceAll("[/]", "").replaceAll("[(]", "")
-                .replaceAll("[)]", "");
+                .replaceAll("[)]", "").replaceAll("[ ]", "");
     }
 
     public static TextWatcher insert(final String mask, final EditText ediTxt) {
         return new TextWatcher() {
-            boolean isUpdating;
+            private boolean isUpdating;
             String old = "";
 
             public void onTextChanged(CharSequence s, int start, int before,

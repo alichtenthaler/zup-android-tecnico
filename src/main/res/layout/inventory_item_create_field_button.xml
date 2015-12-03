@@ -18,7 +18,7 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Preencher Localização"
+        android:text="Preencher"
         android:id="@+id/inventory_item_fill_pos_button"
         android:textSize="16dp" />
 </LinearLayout>

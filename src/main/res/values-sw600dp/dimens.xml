@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="report_list_item_padding">25dp</dimen>
+    <dimen name="report_list_item_margin_between">5dp</dimen>
+    <dimen name="report_list_item_icon">60dp</dimen>
+    <dimen name="report_list_item_title">16dp</dimen>
+    <dimen name="report_list_item_subtitle">14dp</dimen>
+
+    <dimen name="report_card_container_margin">30dp</dimen>
+
+    <dimen name="report_card_padding_x">60dp</dimen>
+    <dimen name="report_card_padding_y">40dp</dimen>
+    <dimen name="report_card_margin_between_items">30dp</dimen>
+    <dimen name="report_card_title_text_size">34sp</dimen>
+    <dimen name="report_card_title_property_text_size">16sp</dimen>
+</resources>

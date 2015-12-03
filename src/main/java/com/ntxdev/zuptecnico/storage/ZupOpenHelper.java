@@ -397,7 +397,7 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
                 SyncAction action = SyncAction.load(cursor, mapper);
                 result.add(action);
             } catch (Exception ex) {
-                Log.e("ZUP", "ERROR PARSING SYNC ACTION");
+                Log.e("ZUP", "ERROR PARSING SYNC ACTION", ex);
             }
         }
 
@@ -1525,17 +1525,35 @@ public class ZupOpenHelper extends SQLiteOpenHelper {
         getWritableDatabase().insert("inventory_categories", null, values);
 
         // inventory_category_id INTEGER, web VARCHAR(255), mobile VARCHAR(255)
+        InventoryCategory.Pins.Pin pin = category.pin._default;
+        if(pin == null)
+            pin = category.pin.retina;
+        if(pin == null)
+        {
+            pin = new InventoryCategory.Pins.Pin();
+            pin.mobile = "";
+            pin.web = "";
+        }
         values = new ContentValues();
         values.put("inventory_category_id", category.id);
-        values.put("url_web", category.pin._default.web);
-        values.put("url_mobile", category.pin._default.mobile);
+        values.put("url_web", pin.web);
+        values.put("url_mobile", pin.mobile);
 
         long l = getWritableDatabase().insert("inventory_categories_pins", null, values);
 
+        InventoryCategory.Pins.Pin marker = category.marker._default;
+        if(marker == null)
+            marker = category.marker.retina;
+        if(marker == null)
+        {
+            marker = new InventoryCategory.Pins.Pin();
+            marker.mobile = "";
+            marker.web = "";
+        }
         values = new ContentValues();
         values.put("inventory_category_id", category.id);
-        values.put("url_web", category.marker._default.web);
-        values.put("url_mobile", category.marker._default.mobile);
+        values.put("url_web", marker.web);
+        values.put("url_mobile", marker.mobile);
 
         l = getWritableDatabase().insert("inventory_categories_markers", null, values);
 

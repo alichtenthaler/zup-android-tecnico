@@ -54,16 +54,6 @@ public class ZupClient
         this.sessionToken = sessionToken;
     }
 
-    public ApiHttpResult<Session> authenticate(String email, String password)
-    {
-        Hashtable<String, String> postData = new Hashtable<String, String>();
-        postData.put("email", email);
-        postData.put("password", password);
-
-        ApiHttpResult<Session> result = httpClient.post("authenticate", postData, Session.class);
-        return result;
-    }
-
     public ApiHttpResult<SingleUserCollection> retrieveUser(int id)
     {
         return httpClient.get("users/" + id + "" + (sessionToken != null ? "?token=" + sessionToken : ""), SingleUserCollection.class);
@@ -138,36 +128,6 @@ public class ZupClient
     public ApiHttpResult<DeleteInventoryItemResponse> deleteInventoryItem(int categoryId, int itemId)
     {
         ApiHttpResult<DeleteInventoryItemResponse> result = httpClient.delete("inventory/categories/" + categoryId + "/items/" + itemId + "" + (sessionToken != null ? "?token=" + sessionToken : ""), DeleteInventoryItemResponse.class);
-        return result;
-    }
-
-    public ApiHttpResult<InventoryCategoryCollection> retrieveInventoryCategories()
-    {
-        ApiHttpResult<InventoryCategoryCollection> result = httpClient.get("inventory/categories?display_type=full&return_fields=id,title,plot_format,pin,marker,require_item_status,color,sections.id,sections.title,sections.disabled,sections.required,sections.location,sections.inventory_category_id,sections.position,sections.fields.id,sections.fields.disabled,sections.fields.title,sections.fields.kind,sections.fields.size,sections.fields.inventory_section_id,sections.fields.available_values,sections.fields.field_options,sections.fields.position,sections.fields.label,sections.fields.maximum,sections.fields.minimum,sections.fields.required,sections.fields.location,statuses" + (sessionToken != null ? "&token=" + sessionToken : ""), InventoryCategoryCollection.class);
-        return result;
-    }
-
-    public ApiHttpResult<SingleInventoryCategoryCollection> retrieveInventoryCategoryInfo(int categoryId)
-    {
-        ApiHttpResult<SingleInventoryCategoryCollection> result = httpClient.get("inventory/categories/" + categoryId + "" + (sessionToken != null ? "?token=" + sessionToken : ""), SingleInventoryCategoryCollection.class);
-        return result;
-    }
-
-    public ApiHttpResult<InventoryCategoryStatusCollection> retrieveInventoryCategoryStatuses(int categoryId)
-    {
-        ApiHttpResult<InventoryCategoryStatusCollection> result = httpClient.get("inventory/categories/" + categoryId + "/statuses" + (sessionToken != null ? "?token=" + sessionToken : ""), InventoryCategoryStatusCollection.class);
-        return result;
-    }
-
-    public ApiHttpResult<InventoryCategory> retrieveInventoryCategoryForm(int categoryId)
-    {
-        ApiHttpResult<InventoryCategory> result = httpClient.get("inventory/categories/" + categoryId + "/form" + (sessionToken != null ? "?token=" + sessionToken : ""), InventoryCategory.class);
-        return result;
-    }
-
-    public ApiHttpResult<InventoryItemCollection> retrieveInventoryItems()
-    {
-        ApiHttpResult<InventoryItemCollection> result = httpClient.get("inventory/items" + (sessionToken != null ? "?token=" + sessionToken : ""), InventoryItemCollection.class);
         return result;
     }
 
@@ -315,7 +275,7 @@ public class ZupClient
     {
         // display_type=basic
         // position,id,inventory_category_id,title
-        ApiHttpResult<InventoryItemCollection> result = httpClient.get("search/inventory/items?clusterize=true&return_fields=count,category_id,position,id,inventory_category_id,title&inventory_categories_ids=" + categoryId + "&position[latitude]=" + latitude + "&position[longitude]=" + longitude + "&position[distance]=" + radius + "&zoom=" + (int)zoom + (sessionToken != null ? "&limit=100&token=" + sessionToken : ""), InventoryItemCollection.class);
+        ApiHttpResult<InventoryItemCollection> result = httpClient.get("search/inventory/items?clusterize=true&return_fields=count,categoryId,position,id,inventory_category_id,title&inventory_categories_ids=" + categoryId + "&position[latitude]=" + latitude + "&position[longitude]=" + longitude + "&position[distance]=" + radius + "&zoom=" + (int)zoom + (sessionToken != null ? "&limit=100&token=" + sessionToken : ""), InventoryItemCollection.class);
         return result;
     }
 
@@ -358,12 +318,6 @@ public class ZupClient
     public ApiHttpResult<SingleFlowCollection> retrieveFlowVersion(int flowId, int version)
     {
         ApiHttpResult<SingleFlowCollection> result = httpClient.get("flows/" + flowId + "?version=" + version + "&display_type=full" + (sessionToken != null ? "&token=" + sessionToken : ""), SingleFlowCollection.class);
-        return result;
-    }
-
-    public ApiHttpResult<PositionValidationResponse> validateBoundaries(float latitude, float longitude)
-    {
-        ApiHttpResult<PositionValidationResponse> result = httpClient.get("utils/city-boundary/validate?latitude=" + latitude + "&longitude=" + longitude, PositionValidationResponse.class);
         return result;
     }
 

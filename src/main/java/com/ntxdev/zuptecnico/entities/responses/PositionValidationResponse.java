@@ -8,5 +8,5 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PositionValidationResponse
 {
-    public boolean inside_boundaries;
+    public Boolean inside_boundaries;
 }

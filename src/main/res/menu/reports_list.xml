@@ -1,0 +1,28 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:ntxdev="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.ntxdev.zuptecnico.activities.reports.ReportsListActivity">
+
+    <item
+        android:id="@+id/action_search"
+        android:icon="@drawable/ic_action_search"
+        android:title="Procurar"
+        ntxdev:showAsAction="always"
+        />
+
+    <item
+        android:id="@+id/action_items_filter"
+        android:title="Filtrar por status"
+        android:icon="@drawable/ic_filter_list_white_24dp"
+        ntxdev:showAsAction="ifRoom" />
+
+    <item android:id="@+id/action_map"
+        android:icon="@drawable/actionbar_btn_mapa_branco"
+        android:title="Ver Mapa"
+        ntxdev:showAsAction="ifRoom"/>
+
+    <item android:id="@+id/action_list"
+        android:icon="@drawable/actionbar_btn_lista_branco"
+        android:title="Ver Lista"
+        ntxdev:showAsAction="ifRoom" />
+</menu>

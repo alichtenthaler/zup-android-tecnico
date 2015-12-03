@@ -22,13 +22,11 @@ public class BitmapUtil
 {
     private static Hashtable<String, Bitmap> bitmapCache;
 
-    public static Bitmap getMapClusterBitmap(MapCluster cluster, DisplayMetrics metrics)
-    {
+    public static Bitmap getMapClusterBitmap(MapCluster cluster, DisplayMetrics metrics, String color) {
         if(bitmapCache == null)
-            bitmapCache = new Hashtable<String, Bitmap>();
+            bitmapCache = new Hashtable<>();
 
-        String color = Zup.getInstance().getInventoryCateGoryColor(cluster.category_id);
-        //InventoryCategory category = Zup.getInstance().getInventoryCategory(cluster.category_id);
+        //InventoryCategory category = Zup.getInstance().getInventoryCategory(cluster.categoryId);
 
         String bmpName = "cluster_" + color + "_" + cluster.count;
         if(bitmapCache.containsKey(bmpName))
@@ -73,5 +71,13 @@ public class BitmapUtil
         bitmapCache.put(bmpName, result);
 
         return result;
+    }
+
+    public static Bitmap getMapClusterBitmap(MapCluster cluster, DisplayMetrics metrics) {
+        String color = null;
+        if(cluster.category_id != null) {
+            color = Zup.getInstance().getInventoryCateGoryColor(cluster.category_id);
+        }
+        return getMapClusterBitmap(cluster, metrics, color);
     }
 }

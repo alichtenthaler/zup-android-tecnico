@@ -1,6 +1,6 @@
 package com.ntxdev.zuptecnico;
 
-import android.app.AlertDialog;
+import android.support.v7.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
@@ -9,7 +9,7 @@ import android.location.Address;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Build;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -45,6 +45,7 @@ import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.ntxdev.zuptecnico.adapters.AddressAdapter;
 import com.ntxdev.zuptecnico.api.ApiHttpResult;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.api.callbacks.ResourceLoadedListener;
@@ -69,8 +70,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import retrofit.RetrofitError;
 
-public class PickMapLocationActivity extends ActionBarActivity implements ResourceLoadedListener, GoogleMap.OnCameraChangeListener, AdapterView.OnItemClickListener {
+
+public class PickMapLocationActivity extends AppCompatActivity implements ResourceLoadedListener, GoogleMap.OnCameraChangeListener, AdapterView.OnItemClickListener {
 
     private SupportMapFragment mapFragment;
     private GoogleMap map;
@@ -97,114 +100,7 @@ public class PickMapLocationActivity extends ActionBarActivity implements Resour
     private boolean isValidPosition = false;
 
     private InventoryCategory category;
-
-    class AddressAdapter extends ArrayAdapter<String> implements Filterable
-    {
-        private ArrayList<String> resultList;
-
-        private static final String PLACES_API_BASE = "https://maps.googleapis.com/maps/api/place";
-        private static final String TYPE_AUTOCOMPLETE = "/autocomplete";
-        private static final String OUT_JSON = "/json";
-
-        public AddressAdapter(Context context, int resource) {
-            super(context, resource);
-        }
-
-        @Override
-        public int getCount() {
-            if(resultList == null)
-                return 0;
-
-            return resultList.size();
-        }
-
-        @Override
-        public String getItem(int position) {
-            return resultList.get(position);
-        }
-
-        private ArrayList<String> autocomplete(String input) {
-            ArrayList<String> resultList = null;
-
-            HttpURLConnection conn = null;
-            StringBuilder jsonResults = new StringBuilder();
-            try {
-                StringBuilder sb = new StringBuilder(PLACES_API_BASE + TYPE_AUTOCOMPLETE + OUT_JSON);
-                sb.append("?sensor=true&key=" + GeoUtils.PLACES_KEY);
-                sb.append("&components=country:br");
-                sb.append("&language=pt-BR");
-                //sb.append("&types=(regions)");
-                sb.append("&location=").append(getLatitude()).append(",").append(getLongitude());
-                sb.append("&input=" + URLEncoder.encode(input, "utf8"));
-
-                URL url = new URL(sb.toString());
-                conn = (HttpURLConnection) url.openConnection();
-                InputStreamReader in = new InputStreamReader(conn.getInputStream());
-
-                // Load the results into a StringBuilder
-                int read;
-                char[] buff = new char[1024];
-                while ((read = in.read(buff)) != -1) {
-                    jsonResults.append(buff, 0, read);
-                }
-            } catch (MalformedURLException e) {
-                Log.e("ZUP", "Error processing Places API URL", e);
-                return resultList;
-            } catch (IOException e) {
-                Log.e("ZUP", "Error connecting to Places API", e);
-                return resultList;
-            } finally {
-                if (conn != null) {
-                    conn.disconnect();
-                }
-            }
-
-            try {
-                // Create a JSON object hierarchy from the results
-                JSONObject jsonObj = new JSONObject(jsonResults.toString());
-                JSONArray predsJsonArray = jsonObj.getJSONArray("predictions");
-
-                // Extract the Place descriptions from the results
-                resultList = new ArrayList<String>(predsJsonArray.length());
-                for (int i = 0; i < predsJsonArray.length(); i++) {
-                    resultList.add(predsJsonArray.getJSONObject(i).getString("description"));
-                }
-            } catch (JSONException e) {
-                Log.e("ZUP", "Cannot process JSON results", e);
-            }
-
-            return resultList;
-        }
-
-        @Override
-        public Filter getFilter() {
-            return new Filter() {
-                @Override
-                protected FilterResults performFiltering(CharSequence constraint) {
-                    FilterResults filterResults = new FilterResults();
-                    if (constraint != null) {
-                        // Retrieve the autocomplete results.
-                        resultList = autocomplete(constraint.toString());
-
-                        // Assign the data to the FilterResults
-                        filterResults.values = resultList;
-                        filterResults.count = resultList.size();
-                    }
-                    return filterResults;
-                }
-
-                @Override
-                protected void publishResults(CharSequence charSequence, FilterResults results) {
-                    if (results != null && results.count > 0) {
-                        notifyDataSetChanged();
-                    }
-                    else {
-                        notifyDataSetInvalidated();
-                    }
-                }
-            };
-        }
-    }
+    private AddressAdapter adapter;
 
     double getLatitude()
     {
@@ -223,14 +119,24 @@ public class PickMapLocationActivity extends ActionBarActivity implements Resour
 
         Zup.getInstance().initStorage(getApplicationContext());
 
-        getSupportActionBar().hide();
-
         if(getIntent().hasExtra("position_latitude") && getIntent().hasExtra("position_longitude"))
         {
             gavePosition = true;
             givenLatitude = getIntent().getDoubleExtra("position_latitude", 0);
             givenLongitude = getIntent().getDoubleExtra("position_longitude", 0);
         }
+
+        this.adapter = new AddressAdapter(this, R.layout.pick_map_location_suggestion, new AddressAdapter.PositionManager() {
+            @Override
+            public double getLatitude() {
+                return PickMapLocationActivity.this.getLatitude();
+            }
+
+            @Override
+            public double getLongitude() {
+                return PickMapLocationActivity.this.getLongitude();
+            }
+        });
 
         googlePlayStatus = GooglePlayServicesUtil.isGooglePlayServicesAvailable(this);
         MapsInitializer.initialize(this);
@@ -239,7 +145,7 @@ public class PickMapLocationActivity extends ActionBarActivity implements Resour
         getSupportFragmentManager().beginTransaction().add(R.id.mapcontainer, mapFragment).commit();
 
         final AutoCompleteTextView tvEndereco = (AutoCompleteTextView) findViewById(R.id.pick_location_address);
-        tvEndereco.setAdapter(new AddressAdapter(this, R.layout.pick_map_location_suggestion));
+        tvEndereco.setAdapter(this.adapter);
         tvEndereco.setOnItemClickListener(this);
 
         final EditText tvNumero = (EditText) findViewById(R.id.pick_location_number);
@@ -425,8 +331,6 @@ public class PickMapLocationActivity extends ActionBarActivity implements Resour
         getIntent().putExtra("result_latitude", map.getCameraPosition().target.latitude);
         getIntent().putExtra("result_longitude", map.getCameraPosition().target.longitude);
         getIntent().putExtra("result_address", enderecoAtual);
-        //getIntent().putExtra("result_latitude", marker.getPosition().latitude);
-        //getIntent().putExtra("result_longitude", marker.getPosition().longitude);
         setResult(1, getIntent());
         finish();
     }
@@ -481,11 +385,6 @@ public class PickMapLocationActivity extends ActionBarActivity implements Resour
             }
 
             map.setOnCameraChangeListener(this);
-
-            //MarkerOptions markerOptions = new MarkerOptions();
-            //markerOptions.position(pos);
-            //markerOptions.draggable(true);
-            //marker = map.addMarker(markerOptions);
         }
     }
 
@@ -497,7 +396,6 @@ public class PickMapLocationActivity extends ActionBarActivity implements Resour
                 if(!locationAcquired) {
                     locationAcquired = true;
                     map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 15));
-                    //marker.setPosition(new LatLng(location.getLatitude(), location.getLongitude()));
                 }
             }
         });
@@ -562,10 +460,8 @@ public class PickMapLocationActivity extends ActionBarActivity implements Resour
 
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.GINGERBREAD_MR1) {
                 addressWaitTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, lat, lng);
-                //addressTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, lat, lng);
             } else {
                 addressWaitTask.execute(lat, lng);
-                //addressTask.execute(lat, lng);
             }
         }
     }
@@ -721,7 +617,7 @@ public class PickMapLocationActivity extends ActionBarActivity implements Resour
             AddressAdapter nullAdapter = null;
             tvEndereco.setAdapter(nullAdapter);
             tvEndereco.setText(rua);
-            tvEndereco.setAdapter(new AddressAdapter(PickMapLocationActivity.this, R.layout.pick_map_location_suggestion));
+            tvEndereco.setAdapter(adapter);
 
             if(!manualNumber)
                 tvNumero.setText(numero);
@@ -745,11 +641,16 @@ public class PickMapLocationActivity extends ActionBarActivity implements Resour
         @Override
         protected Boolean doInBackground(Float... doubles)
         {
-            ApiHttpResult<PositionValidationResponse> result = Zup.getInstance().getClient().validateBoundaries(doubles[0], doubles[1]);
-            if(result == null || result.result == null)
+            try
+            {
+                PositionValidationResponse result = Zup.getInstance().getService().validatePosition(doubles[0], doubles[1]);
+                return result != null && ((result.inside_boundaries == null) || result.inside_boundaries);
+            }
+            catch (RetrofitError error)
+            {
+                Log.e("Retrofit", "Could not validate boundaries", error);
                 return false;
-
-            return result.result.inside_boundaries;
+            }
         }
 
         @Override

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal" android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/report_item_default">
+
+    <View
+        android:layout_width="5dp"
+        android:layout_height="match_parent"
+        android:layout_marginTop="20dp"
+        android:layout_marginRight="10dp"
+        android:background="@color/fake_comment_bg"
+        android:id="@+id/fake_comment_indicator" />
+
+    <LinearLayout android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/report_item_default">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        style="@style/ReportCommentItemHeader">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="User Name"
+            android:id="@+id/comment_username"
+            android:textColor="@color/comment_item_text"
+            android:textStyle="bold"
+            android:textSize="16dp"
+            android:layout_marginRight="10dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="00/00/0000"
+            android:id="@+id/comment_date"
+            android:textColor="@color/comment_item_subtext"
+            android:textSize="12dp" />
+
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Comment text"
+        android:id="@+id/comment_text"
+        android:textColor="@color/comment_item_text"
+        android:textSize="16dp"
+        android:layout_marginTop="10dp" />
+</LinearLayout>
+
+</LinearLayout>

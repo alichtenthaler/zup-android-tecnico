@@ -2,7 +2,7 @@ package com.ntxdev.zuptecnico;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.PopupMenu;
 import android.util.Log;
 import android.view.Menu;
@@ -26,7 +26,7 @@ import com.ntxdev.zuptecnico.util.ResizeAnimation;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class DownloadedCasesActivity extends ActionBarActivity implements SingularTabHost.OnTabChangeListener, InfinityScrollView.OnScrollViewListener
+public class DownloadedCasesActivity extends AppCompatActivity implements SingularTabHost.OnTabChangeListener, InfinityScrollView.OnScrollViewListener
 {
     private int _flowId;
     private int _page = 1;

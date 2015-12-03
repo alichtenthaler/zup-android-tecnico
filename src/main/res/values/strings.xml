@@ -10,8 +10,6 @@
     <string name="title_activity_profile">ProfileActivity</string>
     <string name="title_activity_pick_map_location">PickMapLocationActivity</string>
 
-    <!--  field.kind.equals("hours") || field.kind.equals("seconds") || field.kind.equals("angle") -->
-
     <string name="inventory_item_extra_integer"></string>
     <string name="inventory_item_extra_meters">m</string>
     <string name="inventory_item_extra_centimeters">cm</string>
@@ -45,4 +43,165 @@
     <string name="lab_capture_video">Capture Video</string>
     <string name="lab_ok">OK</string>
     <string name="lab_cancel">Cancel</string>
+
+    <string name="activity_title_reports">Relatos</string>
+    <string name="activity_title_report_item">Item de Relato</string>
+    <string name="activity_title_create_report_item">Criar item de Relato</string>
+
+    <string name="error_network">Não foi possível conectar ao servidor</string>
+
+    <string name="usure">Tem certeza?</string>
+    <string name="delete">Excluir</string>
+    <string name="cancel">Cancelar</string>
+    <string name="delete_report_confirm_text">Tem certeza de que deseja excluir o relato? Essa operação é irreversível</string>
+
+    <string name="report_history_someone_changedstatus">alterou o estado do relato</string>
+    <string name="report_history_changedstatus">O estado do relato foi alterado</string>
+    <string name="report_history_from">de</string>
+    <string name="report_history_to">para</string>
+    <string name="report_history_someone_changedcategory">alterou a categoria do relato</string>
+    <string name="report_history_changedcategory">A categoria do relato foi alterada</string>
+    <string name="report_history_someone_forwarded">encaminhou o relato para o grupo</string>
+    <string name="report_history_forwarded">O relato foi encaminhado</string>
+    <string name="report_history_fromgroup">do group</string>
+    <string name="report_history_togroup">para o grupo</string>
+    <string name="report_history_someone_assigneduser">associou o relato </string>
+    <string name="report_history_assigneduser">O relato foi associado</string>
+    <string name="report_history_fromuser">do usuário</string>
+    <string name="report_history_touser">para o usuário</string>
+    <string name="report_history_inserted">inseriu</string>
+    <string name="report_history_privatecomment">uma resposta privada para o munícipe:</string>
+    <string name="report_history_publiccoment">uma resposta pública para o munícipe:</string>
+    <string name="report_history_internalcommend">o comentário interno:</string>
+    <string name="report_history_created">criou o relato</string>
+    <string name="report_history_withstatus">com o status</string>
+    <string name="report_history_someone_changedproperty">alterou a propriedade</string>
+    <string name="report_history_changedproperty">A propriedade foi alterada</string>
+
+    <string name="report_property_name_address">Endereço</string>
+    <string name="report_property_name_description">Descrição</string>
+
+    <string name="report_creation_failed_address">Para criar um relato é necessário preencher seu endereço</string>
+    <string name="deleting_report">Excluindo relato...</string>
+    <string name="report_deleted">O relato foi excluído.</string>
+
+    <string name="comment_private">Resposta privada</string>
+    <string name="listview_noitems">Não há itens para exibir.</string>
+    <string name="report_list_offline">Seu dispositivo está sem conexão com o servidor. Exibindo apenas itens armazenados localmente. Toque aqui para tentar novamente.</string>
+    <string name="map_location_offline_warning">Seu dispositivo está sem conexão com a internet. Por favor, conecte-se e toque aqui para recarregar a tela.</string>
+
+    <string name="search_by_protocol_hint">Busque por protocolo ou endereço</string>
+    <string name="internal_comments_title">Observações internas</string>
+    <string name="creating_report">Criando relato...</string>
+    <string name="included_at">"Incluído em "</string>
+    <string name="filter_by_status_title">Filtrar itens por status</string>
+    <string name="all_status_filter">Todos os estados</string>
+    <string name="new_inventory_item_title">Novo item de inventário</string>
+    <string name="message_report_created">O relato foi criado</string>
+    <string name="select_items_to_add_hint">Selecione os itens que deseja adicionar ao documento</string>
+    <string name="suggestion_zoom_in_map">Para visualizar os itens desta região, favor aproximar o mapa</string>
+    <string name="add_title">Adicionar</string>
+    <string name="cancel_title">Cancelar</string>
+    <string name="message_wait_loading_data">Aguarde enquanto os dados são carregados</string>
+    <string name="message_no_items_to_show">Não há itens para exibir</string>
+    <string name="users_selected_text"> usuários selecionados</string>
+    <string name="all_users">Todos os usuários</string>
+    <string name="clear_selected_items">Limpar itens selecionados</string>
+    <string name="categories_selected_filter">categorias selecionadas</string>
+    <string name="all_categories_filter">Todas as categorias</string>
+    <string name="status_selected_filter">estados selecionados</string>
+    <string name="define_date_filter">Defina uma data</string>
+    <string name="define_filter_hint">Defina um filtro</string>
+    <string name="related_to_me_filter">Associados a mim</string>
+    <string name="related_to_my_group_filter">Associados a meu grupo</string>
+    <string name="with_categories_filter_report">Com as categorias</string>
+    <string name="with_status_filter_title">Com os estados</string>
+    <string name="created_from_date_filter">Criados a partir de</string>
+    <string name="until_text">Até</string>
+    <string name="requested_by_filter">Solicitados por</string>
+    <string name="created_by_filter">Criados por</string>
+    <string name="notifications_title">Notificações emitidas</string>
+    <string name="confirm_title">Confirmar</string>
+    <string name="show_reports_having_title">Exibir relatos contendo</string>
+    <string name="days_since_last_notification_title">Dias desde a última notificação emitida</string>
+    <string name="days_for_last_notification_title">Dias para o vencimento da última notificação emitida</string>
+    <string name="days_for_overdue_notification_title">Dias em atraso para notificações vencidas</string>
+    <string name="with_minimum_of">Com mínimo de</string>
+    <string name="minimum_of_title">Mínimo de</string>
+    <string name="error_category_not_found">"#### Category not found: "</string>
+    <string name="protocol_title">Protocolo</string>
+    <string name="inclusion_date_title">Data de inclusão:</string>
+    <string name="ago">atrás</string>
+
+    <string name="loading_inventory_categories">Carregando categorias de Inventário...</string>
+    <string name="loading_inventory_status">Carregando estados de inventário...</string>
+    <string name="loading_report_categories">Carregando categorias de relato...</string>
+    <string name="loading_user_details">Carregando dados do usuário...</string>
+    <string name="notification_sent_title">Notificação emitida</string>
+    <string name="notification_created_at_title">Emitida em: </string>
+    <string name="notification_days_to_deadline">Prazo restante: </string>
+    <string name="notification_deadline_in_days">Prazo total: </string>
+    <string name="view_title">Visualizar</string>
+    <string name="close_title">Fechar</string>
+    <string name="error_loading_report_item">Não foi possível carregar o item</string>
+    <string name="overdue_notification_label_text"><![CDATA[<font color=\'#EE0000\'>Vencido</font>]]></string>
+    <string name="search_title">Buscar</string>
+    <string name="error_invalid_address">Endereço inválido</string>
+    <string name="error_invalid_address_message">O endereço inserido é inválido</string>
+    <string name="error_address_not_found">Endereço não encontrado</string>
+    <string name="address_title">Logradouro</string>
+    <string name="number_title">Número</string>
+    <string name="neighborhood_title">Bairro</string>
+    <string name="zipcode_title">CEP</string>
+    <string name="reference_address_title">Ponto de referência</string>
+    <string name="error_address_out_of_bounds">O endereço não pertence ao município</string>
+    <string name="error_no_internet_toast">Sem conexão com a internet.</string>
+    <string name="create_inventory_item_title">Criar Item de Inventário</string>
+    <string name="edit_inventory_item_title">Editar Item de Inventário</string>
+    <string name="delete_inventory_item_title">Remover Item de Inventário</string>
+    <string name="category_title">Categoria</string>
+    <string name="id_title">Id</string>
+    <string name="fill_case_step">Preencher Etapa do Caso</string>
+    <string name="case_title">Caso</string>
+    <string name="step_title">Etapa</string>
+    <string name="invalid_category">Categoria Inválida</string>
+    <string name="delete_report_title">Excluir relato</string>
+    <string name="edit_report_title">Editar Relato</string>
+    <string name="create_comment_report_title">Criar comentário no relato</string>
+    <string name="pending_title">Pendente</string>
+    <string name="in_execution">Em execução</string>
+    <string name="done">Concluído</string>
+    <string name="save_new_report">Salvar novo protocolo</string>
+    <string name="undo_changes">Descartar alterações</string>
+    <string name="not_found_report_message_header">O servidor não encontrou o relato de protocolo nº:</string>
+    <string name="not_found_report_footer">, pois ele deve ter sido removido por outro usuário.\n Gostaria de salvar como um novo relato?</string>
+    <string name="date_title">Data</string>
+    <string name="see_message">Ver mensagem</string>
+    <string name="try_again">Tentar Novamente</string>
+    <string name="cancel_action">Cancelar ação</string>
+    <string name="view_item_title">Visualizar item</string>
+    <string name="warning">Aviso</string>
+    <string name="cancel_sync_warning_message">Ao cancelar uma sincronização, o item associado a ela será removido do dispositivo e ficará indisponível enquanto não houver conexão com a internet. Deseja cancelar mesmo assim?</string>
+    <string name="yes">Sim</string>
+    <string name="no">Não</string>
+    <string name="pick_report_location_title">Localize o relato</string>
+    <string name="pick_report_location_hint">Digite o endereço ou arraste o pino até a posição exata</string>
+    <string name="error_user_not_allowed_message">Usuário não tem permissão para acessar o painel administrativo. Por favor, entre em contato com a administração do sistema.</string>
+    <string name="error_title">Erro</string>
+    <string name="no_results_found">Não foi encontrado nenhum resultado.</string>
+    <string name="results_title_text">Resultados</string>
+    <string name="logout_text">Sair da conta</string>
+    <string name="register_title">Cadastro</string>
+    <string name="username_title">Nome de Usuário</string>
+    <string name="email_title">Email</string>
+    <string name="group_title">Grupo</string>
+    <string name="responsable_coordinator_title">Coordenador Responsável</string>
+    <string name="wait_sync_message">Aguarde enquanto os dados são sincronizados</string>
+    <string name="loading_item_message">Carregando item...</string>
+    <string name="error_unable_load_report_item">Não foi possível baixar o relato.</string>
+    <string name="unable_create_comment">Não foi possível criar o comentário</string>
+    <string name="continue_text">Continuar</string>
+    <string name="error_session_outdated">Não foi possível carregar as informações do servidor. Os dados desta sessão poderão estar desatualizados em relação ao servidor.</string>
+    <string name="error_no_internet_loading">Não foi possível carregar as informações do servidor e as informações ainda não foram sincronizadas. Conecte-se à internet para tentar novamente.</string>
+>>>>>>> master
 </resources>

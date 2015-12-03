@@ -1,8 +1,10 @@
 package com.ntxdev.zuptecnico;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -22,21 +24,28 @@ import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
 import com.ntxdev.zuptecnico.entities.InventoryItemFilter;
 import com.ntxdev.zuptecnico.entities.MapCluster;
+import com.ntxdev.zuptecnico.entities.collections.InventoryItemCollection;
 import com.ntxdev.zuptecnico.ui.InfinityScrollView;
 import com.ntxdev.zuptecnico.ui.UIHelper;
+import com.ntxdev.zuptecnico.util.Utilities;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
+
+import retrofit.RetrofitError;
 
 /**
  * Created by igorlira on 4/27/14.
  */
-public class InventoryItemsAdvancedSearchResultActivity extends ActionBarActivity implements InventoryItemsListener, InfinityScrollView.OnScrollViewListener, JobFailedListener
+public class InventoryItemsAdvancedSearchResultActivity extends AppCompatActivity implements InfinityScrollView.OnScrollViewListener
 {
     private boolean selectMode;
     private Intent searchData;
     private int _page;
-    private int _pageJobId;
+
+    private Tasker tasker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +63,9 @@ public class InventoryItemsAdvancedSearchResultActivity extends ActionBarActivit
 
         if(selectMode)
         {
-            getSupportActionBar().hide();
+            if(getSupportActionBar() != null)
+                getSupportActionBar().hide();
+
             findViewById(R.id.items_select_buttons).setVisibility(View.VISIBLE);
         }
 
@@ -127,7 +138,7 @@ public class InventoryItemsAdvancedSearchResultActivity extends ActionBarActivit
         if(item.getItemId() == R.id.action_items_edit)
         {
             Intent intent = new Intent(this, AdvancedSearchActivity.class);
-            intent.putExtra("category_id", searchData.getIntExtra("category_id", -1));
+            intent.putExtra("categoryId", searchData.getIntExtra("categoryId", -1));
             intent.putExtra("search_data", searchData);
             startActivityForResult(intent, AdvancedSearchActivity.REQUEST_SEARCH);
             overridePendingTransition(R.anim.slide_in_bottom, R.anim.hold);
@@ -142,6 +153,7 @@ public class InventoryItemsAdvancedSearchResultActivity extends ActionBarActivit
         {
             if(resultCode == AdvancedSearchActivity.RESULT_SEARCH)
             {
+                hideNoItems();
                 this.searchData = data;
                 this.clear();
                 _page = 1;
@@ -156,7 +168,7 @@ public class InventoryItemsAdvancedSearchResultActivity extends ActionBarActivit
         int scrollHeight = v.getHeight();
 
         int bottom = height - scrollHeight - t;
-        if (bottom < 50 * getResources().getDisplayMetrics().density && _pageJobId == 0) {
+        if (bottom < 50 * getResources().getDisplayMetrics().density && (tasker == null)) {
             loadPage();
         }
     }
@@ -167,60 +179,11 @@ public class InventoryItemsAdvancedSearchResultActivity extends ActionBarActivit
     }
 
     private void loadPage() {
-        int categoryId = searchData.getIntExtra("category_id", 0);
-        String address = searchData.getStringExtra("address");
-        String title = searchData.getStringExtra("name");
-        Calendar creation_from = (Calendar)searchData.getExtras().get("creation_from");
-        Calendar creation_to = (Calendar)searchData.getExtras().get("creation_to");
-        Calendar modification_from = (Calendar)searchData.getExtras().get("modification_from");
-        Calendar modification_to = (Calendar)searchData.getExtras().get("modification_to");
-        String raw_latitude = searchData.getStringExtra("latitude");
-        String raw_longitude = searchData.getStringExtra("longitude");
-        Object[] statuses = (Object[])searchData.getExtras().get("statuses");
+        if(tasker != null)
+            tasker.cancel(true);
 
-        Integer[] sstatuses = null;
-        if(statuses != null) {
-            sstatuses = new Integer[statuses.length];
-            for (int i = 0; i < statuses.length; i++) {
-                sstatuses[i] = (Integer) statuses[i];
-            }
-        }
-
-        Float latitude = null;
-        Float longitude = null;
-
-        if(raw_latitude != null && !raw_latitude.equals(""))
-        {
-            try
-            {
-                latitude = Float.parseFloat(raw_latitude);
-            }
-            catch (NumberFormatException ex) { }
-        }
-        if(raw_longitude != null && !raw_longitude.equals(""))
-        {
-            try
-            {
-                longitude = Float.parseFloat(raw_latitude);
-            }
-            catch (NumberFormatException ex) { }
-        }
-
-        ArrayList<InventoryItemFilter> filters = new ArrayList<InventoryItemFilter>();
-        for(int i = 0; i < 100; i++)
-        {
-            if(!searchData.hasExtra("filter" + i))
-                break;
-
-            InventoryItemFilter filter = (InventoryItemFilter) searchData.getSerializableExtra("filter" + i);
-            filters.add(filter);
-        }
-        InventoryItemFilter[] filterArray = new InventoryItemFilter[filters.size()];
-        filters.toArray(filterArray);
-
-        _pageJobId = Zup.getInstance().searchInventoryItems(_page, 30, new int[] { categoryId }, sstatuses, address, title, creation_from, creation_to, modification_from, modification_to, latitude, longitude, filterArray, this, this);
-
-        findViewById(R.id.activity_items_loading).setVisibility(View.VISIBLE);
+        tasker = new Tasker(this.searchData);
+        tasker.execute();
     }
 
     private View setUpItemView(InventoryItem item)
@@ -233,7 +196,7 @@ public class InventoryItemsAdvancedSearchResultActivity extends ActionBarActivit
             public void onClick(View view) {
                 Intent intent = new Intent(InventoryItemsAdvancedSearchResultActivity.this, InventoryItemDetailsActivity.class);
                 intent.putExtra("item_id", (Integer)view.getTag(R.id.tag_item_id));
-                intent.putExtra("category_id", (Integer)view.getTag(R.id.tag_category_id));
+                intent.putExtra("categoryId", (Integer)view.getTag(R.id.tag_category_id));
                 InventoryItemsAdvancedSearchResultActivity.this.startActivityForResult(intent, 0);
                 InventoryItemsAdvancedSearchResultActivity.this.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
             }
@@ -285,28 +248,135 @@ public class InventoryItemsAdvancedSearchResultActivity extends ActionBarActivit
         }
     }
 
-    @Override
-    public void onInventoryItemsReceived(InventoryItem[] items, int page, int per_page, int[] inventory_category_ids, String address, String title, Calendar creation_from, Calendar creation_to, Calendar modification_from, Calendar modification_to, Float latitude, Float longitude, int job_id) {
-        if (job_id == _pageJobId) {
-            _page++; // Next page that will be loaded
-            _pageJobId = 0;
-            fillCategoryItems(items);
-            findViewById(R.id.activity_items_loading).setVisibility(View.INVISIBLE);
+    void showBigLoading()
+    {
+        findViewById(R.id.activity_items_loading).setVisibility(View.VISIBLE);
+    }
+
+    void hideBigLoading()
+    {
+        findViewById(R.id.activity_items_loading).setVisibility(View.GONE);
+    }
+
+    void showLoading()
+    {
+        findViewById(R.id.activity_items_loading_old).setVisibility(View.VISIBLE);
+    }
+
+    void hideLoading()
+    {
+        findViewById(R.id.activity_items_loading_old).setVisibility(View.INVISIBLE);
+    }
+
+    void showNoItems()
+    {
+        findViewById(R.id.activity_items_noitems).setVisibility(View.VISIBLE);
+    }
+
+    void hideNoItems()
+    {
+        findViewById(R.id.activity_items_noitems).setVisibility(View.GONE);
+    }
+
+    class Tasker extends AsyncTask<Void, Void, InventoryItemCollection>
+    {
+        int categoryId;
+
+        Map<String, Object> options;
+
+        public Tasker(Intent searchData)
+        {
+            this.options = new HashMap<String, Object>();
+
+            if(searchData.hasExtra("categoryId"))
+            {
+                this.categoryId = searchData.getIntExtra("categoryId", 0);
+            }
+
+            if(searchData.hasExtra("address"))
+                this.options.put("address", searchData.getStringExtra("address"));
+
+            if(searchData.hasExtra("name"))
+                this.options.put("title", searchData.getStringExtra("name"));
+
+            if(searchData.hasExtra("creation_from"))
+                this.options.put("created_at[begin]", Zup.getIsoDate(((Calendar) searchData.getExtras().get("creation_from")).getTime()));
+
+            if(searchData.hasExtra("creation_to"))
+                this.options.put("created_at[end]", Zup.getIsoDate(((Calendar)searchData.getExtras().get("creation_to")).getTime()));
+
+            if(searchData.hasExtra("modification_from"))
+                this.options.put("updated_at[begin]", Zup.getIsoDate(((Calendar)searchData.getExtras().get("modification_from")).getTime()));
+
+            if(searchData.hasExtra("modification_to"))
+                this.options.put("updated_at[end]", Zup.getIsoDate(((Calendar)searchData.getExtras().get("modification_to")).getTime()));
+
+            if(searchData.hasExtra("latitude"))
+                this.options.put("latitude", searchData.getStringExtra("latitude"));
+
+            if(searchData.hasExtra("longitude"))
+                this.options.put("longitude", searchData.getStringExtra("longitude"));
+
+            Object[] statuses = (Object[])searchData.getExtras().get("statuses");
+            if(statuses != null)
+                this.options.put("inventory_statuses_ids", Utilities.joinAsInteger(statuses));
+
+            for(int i = 0; i < 100; i++)
+            {
+                if(!searchData.hasExtra("filter" + i))
+                    break;
+
+                InventoryItemFilter filter = (InventoryItemFilter) searchData.getSerializableExtra("filter" + i);
+                filter.serialize(this.options);
+            }
         }
-    }
 
-    @Override
-    public void onInventoryItemsReceived(InventoryItem[] items, int categoryId, int page, int job_id) {
+        @Override
+        protected void onPreExecute()
+        {
+            if(_page == 1)
+                showBigLoading();
+            else
+                showLoading();
+        }
 
-    }
+        @Override
+        protected InventoryItemCollection doInBackground(Void... voids)
+        {
+            try
+            {
+                return Zup.getInstance().getService().searchInventoryItems(this.categoryId, _page, this.options);
+            }
+            catch (RetrofitError error)
+            {
+                Log.e("Retrofit", "Could not search inventory items", error);
+            }
 
-    @Override
-    public void onInventoryItemsReceived(InventoryItem[] items, MapCluster[] clusters, double latitude, double longitude, double radius, double zoom, int job_id) {
+            return null;
+        }
 
-    }
+        @Override
+        protected void onPostExecute(InventoryItemCollection inventoryItemCollection)
+        {
+            if(inventoryItemCollection == null || inventoryItemCollection.items == null)
+            {
+                hideNoItems();
+                Toast.makeText(InventoryItemsAdvancedSearchResultActivity.this, "Não foi possível buscar itens.", Toast.LENGTH_LONG).show();
+            }
+            else if(inventoryItemCollection.items.length == 0)
+            {
+                showNoItems();
+            }
+            else
+            {
+                _page++; // Next page that will be loaded
+                hideNoItems();
+                fillCategoryItems(inventoryItemCollection.items);
+            }
+            hideLoading();
+            hideBigLoading();
 
-    @Override
-    public void onJobFailed(int job_id) {
-        Toast.makeText(this, "Não foi possível buscar itens.", 3).show();
+            tasker = null;
+        }
     }
 }

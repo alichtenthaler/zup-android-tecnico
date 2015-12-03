@@ -3,6 +3,9 @@ package com.ntxdev.zuptecnico.entities;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Arrays;
+import java.util.Comparator;
+
 /**
  * Created by igorlira on 3/3/14.
  */
@@ -94,6 +97,39 @@ public class InventoryCategory
             }
 
             return false;
+        }
+
+        public void sortFields()
+        {
+            Arrays.sort(fields, new Comparator<InventoryCategory.Section.Field>() {
+                @Override
+                public int compare(InventoryCategory.Section.Field section, InventoryCategory.Section.Field section2) {
+                    int pos1 = 0;
+                    int pos2 = 0;
+
+                    if(section.position != null)
+                    {
+                        pos1 = section.position;
+                    }
+                    if(section2.position != null)
+                    {
+                        pos2 = section2.position;
+                    }
+
+                    if(section.position == null)
+                        pos1 = pos2;
+
+                    if(section2.position == null)
+                        pos2 = pos1;
+
+                    if(pos1 < pos2)
+                        return -1;
+                    else if(pos1 == pos2)
+                        return 0;
+                    else
+                        return 1;
+                }
+            });
         }
     }
 
@@ -199,5 +235,36 @@ public class InventoryCategory
         }
 
         return null;
+    }
+
+    public void sortSections()
+    {
+        Arrays.sort(sections, new Comparator<Section>() {
+            @Override
+            public int compare(InventoryCategory.Section section, InventoryCategory.Section section2) {
+                int pos1 = 0;
+                int pos2 = 0;
+
+                if (section.position != null) {
+                    pos1 = section.position;
+                }
+                if (section2.position != null) {
+                    pos2 = section2.position;
+                }
+
+                if (section.position == null)
+                    pos1 = pos2;
+
+                if (section2.position == null)
+                    pos2 = pos1;
+
+                if (pos1 < pos2)
+                    return -1;
+                else if (pos1 == pos2)
+                    return 0;
+                else
+                    return 1;
+            }
+        });
     }
 }

@@ -12,7 +12,7 @@
 
         <RelativeLayout
             android:layout_width="fill_parent"
-            android:layout_height="140dp">
+            android:layout_height="150dp">
 
             <ImageView
                 android:layout_width="100dp"
@@ -34,9 +34,9 @@
                 android:layout_alignParentTop="true"
                 android:layout_toRightOf="@+id/inventory_item_details_state_icon"
                 android:layout_marginLeft="20dp"
-                android:layout_marginTop="25dp"
+                android:layout_marginTop="28dp"
                 android:textColor="#222"
-                android:textSize="25dp" />
+                android:textSize="20dp" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -46,8 +46,9 @@
                 android:layout_below="@+id/inventory_item_details_title"
                 android:layout_alignLeft="@+id/inventory_item_details_title"
                 android:layout_alignStart="@+id/inventory_item_details_title"
-                android:textSize="18dp"
-                android:textColor="#777" />
+                android:textSize="15dp"
+                android:textColor="#777"
+                android:layout_marginTop="10dp" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -58,7 +59,7 @@
                 android:layout_alignLeft="@+id/inventory_item_details_added"
                 android:layout_alignStart="@+id/inventory_item_details_added"
                 android:textColor="#777"
-                android:textSize="18dp"
+                android:textSize="15dp"
                 android:layout_marginTop="5dp" />
 
             <FrameLayout
@@ -69,11 +70,11 @@
                 android:layout_alignParentEnd="false"
                 android:background="#ccc"
                 android:layout_alignParentLeft="true"
-                android:layout_marginTop="15dp"
-                android:id="@+id/inventory_item_details_divider"></FrameLayout>
+                android:id="@+id/inventory_item_details_divider"
+                android:layout_marginTop="15dp"></FrameLayout>
 
             <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="New Text"
                 android:id="@+id/inventory_item_details_state_desc"
@@ -85,7 +86,8 @@
                 android:paddingBottom="2dp"
                 android:textColor="#fff"
                 android:background="#999"
-                android:textSize="18dp" />
+                android:textSize="15dp"
+                android:gravity="center_horizontal" />
         </RelativeLayout>
 
         <ScrollView

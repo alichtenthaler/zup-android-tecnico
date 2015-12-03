@@ -114,6 +114,37 @@
                 android:background="#ddd"></FrameLayout>
 
             <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="65dp"
+                android:id="@+id/sidebar_cell_reports"
+                android:clickable="true"
+                android:background="@drawable/sidebar_cell"
+                android:visibility="visible">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Relatos"
+                    android:id="@+id/sidebar_label_reports"
+                    android:layout_gravity="left|center_vertical"
+                    android:textColor="#000"
+                    android:layout_marginLeft="65dp" />
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/sidebar_icon_reports"
+                    android:layout_gravity="left|center_vertical"
+                    android:src="@drawable/sidebar_icon_documentos_cinza"
+                    android:layout_marginLeft="20dp" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="fill_parent"
+                android:layout_height="1dp"
+                android:background="#ddd"></FrameLayout>
+
+            <FrameLayout
                 android:layout_width="fill_parent"
                 android:layout_height="65dp"
                 android:id="@+id/sidebar_cell_items"

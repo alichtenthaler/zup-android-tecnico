@@ -1,7 +1,7 @@
 package com.ntxdev.zuptecnico;
 
 import android.content.Intent;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -20,7 +20,7 @@ import com.ntxdev.zuptecnico.ui.UIHelper;
 
 import java.util.Iterator;
 
-public class DocumentsActivity extends ActionBarActivity implements SingularTabHost.OnTabChangeListener {
+public class DocumentsActivity extends AppCompatActivity implements SingularTabHost.OnTabChangeListener {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +51,7 @@ public class DocumentsActivity extends ActionBarActivity implements SingularTabH
         menu.getMenu().add(Menu.NONE, 4, 3, "Entulho");
         menu.getMenu().add(Menu.NONE, 5, 4, "Sinalização de trânsito");
 
-        final ActionBarActivity activity = this;
+        final AppCompatActivity activity = this;
         menu.setOnMenuItemClickListener(new android.support.v7.widget.PopupMenu.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem menuItem) {

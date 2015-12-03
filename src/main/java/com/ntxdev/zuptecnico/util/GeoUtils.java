@@ -1,11 +1,15 @@
 package com.ntxdev.zuptecnico.util;
 
 import android.location.Address;
+import android.location.Geocoder;
 import android.util.Log;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.VisibleRegion;
+import com.ntxdev.zuptecnico.ZupApplication;
+import com.ntxdev.zuptecnico.config.Constants;
+import com.ntxdev.zuptecnico.entities.Place;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -13,13 +17,11 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -50,6 +52,15 @@ public class GeoUtils {
         return visibleRegion.latLngBounds.contains(position);
     }
 
+    public static Address search(String str) throws IOException {
+        Geocoder geocoder = new Geocoder(ZupApplication.getContext(), Locale.getDefault());
+        List<Address> addressList = geocoder.getFromLocationName(str, 1);
+        if(addressList != null && addressList.size() > 0){
+            return addressList.get(0);
+        }
+        return null;
+    }
+
     public static Address search(String str, double lat, double lng) {
         StringBuilder address = new StringBuilder("https://maps.googleapis.com/maps/api/place/search/json");
         address.append("?sensor=true");
@@ -69,9 +80,7 @@ public class GeoUtils {
 
             if ("OK".equalsIgnoreCase(jsonObject.getString("status"))) {
                 JSONObject result = jsonObject.getJSONArray("results").getJSONObject(0);
-                //String indiStr = result.getString("formatted_address");
                 Address addr = new Address(Locale.getDefault());
-                //addr.setAddressLine(0, indiStr);
                 addr.setLatitude(result.getJSONObject("geometry").getJSONObject("location").getDouble("lat"));
                 addr.setLongitude(result.getJSONObject("geometry").getJSONObject("location").getDouble("lng"));
                 return addr;
@@ -87,9 +96,9 @@ public class GeoUtils {
         return null;
     }
 
-   /* public static Address getFromPlace(Place place) {
+    public static Address getFromPlace(Place place) {
         String address = "https://maps.googleapis.com/maps/api/place/details/json?reference=" +
-                place.getReference() + "&sensor=true&language=" + Locale.getDefault() + "&key=" + Constantes.PLACES_KEY;
+                place.getReference() + "&sensor=true&language=" + Locale.getDefault() + "&key=" + Constants.PLACES_KEY;
         HttpGet httpGet = new HttpGet(address);
         HttpClient client = new DefaultHttpClient();
         HttpResponse response;
@@ -116,7 +125,7 @@ public class GeoUtils {
         }
 
         return null;
-    }*/
+    }
 
     public static Address getFromPlace(String adr) {
         String address = "https://maps.googleapis.com/maps/api/place/details/json?reference=" +
@@ -150,37 +159,13 @@ public class GeoUtils {
     }
 
     public static List<Address> getFromLocation(double lat, double lng, int maxResults) {
-        String address = String.format(Locale.ENGLISH, "http://maps.googleapis.com/maps/api/geocode/json?latlng=%1$f,%2$f&sensor=true&language=" + Locale.getDefault().getCountry(), lat, lng);
-        HttpGet httpGet = new HttpGet(address);
-        HttpClient client = new DefaultHttpClient();
-        HttpResponse response;
-
         List<Address> retList = null;
 
         try {
-            response = client.execute(httpGet);
-            JSONObject jsonObject = new JSONObject(EntityUtils.toString(response.getEntity(), "UTF-8"));
-
-            retList = new ArrayList<Address>();
-
-            if ("OK".equalsIgnoreCase(jsonObject.getString("status"))) {
-                JSONArray results = jsonObject.getJSONArray("results");
-                for (int i = 0; i < (results.length() > maxResults ? maxResults : results.length()); i++) {
-                    JSONObject result = results.getJSONObject(i);
-                    String indiStr = result.getString("formatted_address");
-                    Address addr = new Address(Locale.getDefault());
-                    addr.setAddressLine(0, indiStr);
-                    addr.setLatitude(result.getJSONObject("geometry").getJSONObject("location").getDouble("lat"));
-                    addr.setLongitude(result.getJSONObject("geometry").getJSONObject("location").getDouble("lng"));
-                    retList.add(addr);
-                }
-            }
-        } catch (ClientProtocolException e) {
-            Log.e("ZUP", "Error calling Google geocode webservice.", e);
+            Geocoder geocoder = new Geocoder(ZupApplication.getContext(), Locale.getDefault());
+            retList = geocoder.getFromLocation(lat, lng, 10);
         } catch (IOException e) {
             Log.e("ZUP", "Error calling Google geocode webservice.", e);
-        } catch (JSONException e) {
-            Log.e("ZUP", "Error parsing Google geocode webservice response.", e);
         }
 
         return retList;

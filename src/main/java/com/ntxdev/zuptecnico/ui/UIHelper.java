@@ -1,7 +1,7 @@
 package com.ntxdev.zuptecnico.ui;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+import android.support.v7.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -10,7 +10,7 @@ import android.content.IntentFilter;
 import android.graphics.drawable.ColorDrawable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
@@ -32,6 +32,7 @@ import com.ntxdev.zuptecnico.ProfileActivity;
 import com.ntxdev.zuptecnico.R;
 import com.ntxdev.zuptecnico.SearchBarListener;
 import com.ntxdev.zuptecnico.SyncActivity;
+import com.ntxdev.zuptecnico.activities.reports.ReportsListActivity;
 import com.ntxdev.zuptecnico.api.SyncAction;
 import com.ntxdev.zuptecnico.api.Zup;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
@@ -48,9 +49,9 @@ public class UIHelper
 {
     static class Receiver extends BroadcastReceiver
     {
-        ActionBarActivity activity;
+        AppCompatActivity activity;
 
-        public Receiver(ActionBarActivity activity)
+        public Receiver(AppCompatActivity activity)
         {
             this.activity = activity;
         }
@@ -65,56 +66,56 @@ public class UIHelper
         }
     }
 
-    public static void initActivity(final ActionBarActivity activity, boolean isRoot)
+    public static void initActivity(final AppCompatActivity activity, boolean isRoot)
     {
         initActionBar(activity);
         initSidebar(activity);
 
-        ViewGroup actionBar = (ViewGroup)activity.getSupportActionBar().getCustomView();
-        ImageView drawer = (ImageView)actionBar.findViewById(R.id.sidebar_drawer);
+        if(activity.getSupportActionBar() != null) {
+            ViewGroup actionBar = (ViewGroup) activity.getSupportActionBar().getCustomView();
+            ImageView drawer = (ImageView) actionBar.findViewById(R.id.sidebar_drawer);
 
-        if(isRoot)
-        {
-            drawer.setClickable(true);
-            drawer.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    toggleSidebar(activity);
-                }
-            });
-            drawer.setImageDrawable(activity.getResources().getDrawable(R.drawable.actionbar_drawer_dynamic));
+            if (isRoot) {
+                drawer.setClickable(true);
+                drawer.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        toggleSidebar(activity);
+                    }
+                });
+                drawer.setImageDrawable(activity.getResources().getDrawable(R.drawable.ic_menu_white_24dp));
+            } else {
+                drawer.setClickable(true);
+                drawer.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        back(activity);
+                    }
+                });
+                drawer.setImageDrawable(activity.getResources().getDrawable(R.drawable.ic_arrow_back_white_24dp));
+            }
+
+            LocalBroadcastManager manager = LocalBroadcastManager.getInstance(activity);
+
+            manager.registerReceiver(new Receiver(activity), new IntentFilter(SyncAction.ACTION_SYNC_BEGIN));
+            manager.registerReceiver(new Receiver(activity), new IntentFilter(SyncAction.ACTION_SYNC_END));
         }
-        else
-        {
-            drawer.setClickable(true);
-            drawer.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    back(activity);
-                }
-            });
-            drawer.setImageDrawable(activity.getResources().getDrawable(R.drawable.actionbar_back_dynamic));
-        }
-
-        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(activity);
-
-        manager.registerReceiver(new Receiver(activity), new IntentFilter(SyncAction.ACTION_SYNC_BEGIN));
-        manager.registerReceiver(new Receiver(activity), new IntentFilter(SyncAction.ACTION_SYNC_END));
     }
 
-    private static void showSyncProcess(ActionBarActivity activity)
+    private static void showSyncProcess(AppCompatActivity activity)
     {
         activity.findViewById(R.id.actionbar_sync_progress).setVisibility(View.VISIBLE);
     }
 
-    private static void hideSyncProcess(ActionBarActivity activity)
+    private static void hideSyncProcess(AppCompatActivity activity)
     {
         activity.findViewById(R.id.actionbar_sync_progress).setVisibility(View.GONE);
     }
 
-    private static void initActionBar(ActionBarActivity activity)
+    private static void initActionBar(AppCompatActivity activity)
     {
-        activity.getSupportActionBar().setBackgroundDrawable(new ColorDrawable(activity.getResources().getColor(R.color.zupblue)));
+        if(activity.getSupportActionBar() == null)
+            return;
 
         ViewGroup actionBarLayout = (ViewGroup)activity.getLayoutInflater().inflate(R.layout.action_bar, null);
 
@@ -127,7 +128,7 @@ public class UIHelper
 
     }
 
-    public static void showSearchBar(final ActionBarActivity activity, final SearchBarListener listener, final Menu menu)
+    public static void showSearchBar(final AppCompatActivity activity, final SearchBarListener listener, final Menu menu)
     {
         activity.findViewById(R.id.actionbar_search).setVisibility(View.VISIBLE);
         activity.findViewById(R.id.actionbar_title).setVisibility(View.GONE);
@@ -186,7 +187,7 @@ public class UIHelper
                 ViewUtils.hideKeyboard(activity, searchText);
             }
         });
-        drawer.setImageDrawable(activity.getResources().getDrawable(R.drawable.actionbar_back_dynamic));
+        drawer.setImageDrawable(activity.getResources().getDrawable(R.drawable.ic_arrow_back_white_24dp));
     }
 
     private static void showSearchHelp(Activity activity)
@@ -225,7 +226,7 @@ public class UIHelper
                 dialogInterface.dismiss();
 
                 Intent intent = new Intent(activity, AdvancedSearchActivity.class);
-                intent.putExtra("category_id", category.id);
+                intent.putExtra("categoryId", category.id);
                 activity.startActivityForResult(intent, AdvancedSearchActivity.REQUEST_SEARCH);
                 activity.overridePendingTransition(R.anim.slide_in_bottom, R.anim.hold);
                 //activity.overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
@@ -235,17 +236,19 @@ public class UIHelper
         builder.show();
     }
 
-    public static void showProgress(ActionBarActivity activity)
+    public static void showProgress(AppCompatActivity activity)
     {
-        activity.getSupportActionBar().getCustomView().findViewById(R.id.actionbar_progress).setVisibility(View.VISIBLE);
+        if(activity.getSupportActionBar() != null)
+            activity.getSupportActionBar().getCustomView().findViewById(R.id.actionbar_progress).setVisibility(View.VISIBLE);
     }
 
-    public static void hideProgress(ActionBarActivity activity)
+    public static void hideProgress(AppCompatActivity activity)
     {
-        activity.getSupportActionBar().getCustomView().findViewById(R.id.actionbar_progress).setVisibility(View.GONE);
+        if(activity.getSupportActionBar() != null)
+            activity.getSupportActionBar().getCustomView().findViewById(R.id.actionbar_progress).setVisibility(View.GONE);
     }
 
-    public static void hideSearchBar(final ActionBarActivity activity, final SearchBarListener listener, final Menu menu)
+    public static void hideSearchBar(final AppCompatActivity activity, final SearchBarListener listener, final Menu menu)
     {
         activity.findViewById(R.id.actionbar_search).setVisibility(View.GONE);
         activity.findViewById(R.id.actionbar_title).setVisibility(View.VISIBLE);
@@ -268,17 +271,17 @@ public class UIHelper
                 toggleSidebar(activity);
             }
         });
-        drawer.setImageDrawable(activity.getResources().getDrawable(R.drawable.actionbar_drawer_dynamic));
+        drawer.setImageDrawable(activity.getResources().getDrawable(R.drawable.ic_menu_white_24dp));
     }
 
-    public static void setTitle(final ActionBarActivity activity, String title)
+    public static void setTitle(final AppCompatActivity activity, String title)
     {
         ViewGroup actionBar = (ViewGroup)activity.getSupportActionBar().getCustomView();
         TextView textTitle = (TextView)actionBar.findViewById(R.id.actionbar_title);
         textTitle.setText(title);
     }
 
-    public static android.support.v7.widget.PopupMenu initMenu(ActionBarActivity activity)
+    public static android.support.v7.widget.PopupMenu initMenu(AppCompatActivity activity)
     {
         ViewGroup actionBar = (ViewGroup)activity.getSupportActionBar().getCustomView();
         View drawer = actionBar.findViewById(R.id.sidebar_drawer);
@@ -328,6 +331,7 @@ public class UIHelper
         }
 
         View cellProfile = sidebar.findViewById(R.id.sidebar_cell_profile);
+        View cellReports = sidebar.findViewById(R.id.sidebar_cell_reports);
         View cellDocuments = sidebar.findViewById(R.id.sidebar_cell_documents);
         View cellItems = sidebar.findViewById(R.id.sidebar_cell_items);
         View cellNotifications = sidebar.findViewById(R.id.sidebar_cell_notifications);
@@ -369,6 +373,26 @@ public class UIHelper
             labelSync.setTextColor(0xffffffff);
             iconSync.setImageDrawable(activity.getResources().getDrawable(R.drawable.sidebar_icon_inventario_branco));
         }
+        else if(activity instanceof ReportsListActivity)
+        {
+            TextView labelSync = (TextView)cellReports.findViewById(R.id.sidebar_label_reports);
+            ImageView iconSync = (ImageView)cellReports.findViewById(R.id.sidebar_icon_reports);
+
+            cellReports.setBackgroundColor(activity.getResources().getColor(R.color.sidebar_selected));
+            labelSync.setTextColor(0xffffffff);
+            iconSync.setImageDrawable(activity.getResources().getDrawable(R.drawable.sidebar_icon_documentos_branco));
+        }
+
+        cellReports.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(activity instanceof ReportsListActivity) {
+                    toggleSidebar(activity);
+                } else {
+                    activity.startActivity(new Intent(activity, ReportsListActivity.class));
+                }
+            }
+        });
 
         cellProfile.setOnClickListener(new View.OnClickListener() {
             @Override

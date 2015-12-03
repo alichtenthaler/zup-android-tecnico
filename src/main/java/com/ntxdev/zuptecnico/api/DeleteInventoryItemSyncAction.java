@@ -16,7 +16,7 @@ public class DeleteInventoryItemSyncAction extends SyncAction {
 
     public DeleteInventoryItemSyncAction(JSONObject object, ObjectMapper mapper) throws JSONException
     {
-        this.categoryId = object.getInt("category_id");
+        this.categoryId = object.getInt("categoryId");
         this.itemId = object.getInt("item_id");
         this.inventory_item_id = this.itemId;
 
@@ -60,7 +60,7 @@ public class DeleteInventoryItemSyncAction extends SyncAction {
     protected JSONObject serialize() throws JSONException
     {
         JSONObject result = new JSONObject();
-        result.put("category_id", categoryId);
+        result.put("categoryId", categoryId);
         result.put("item_id", itemId);
         result.put("error", error);
 

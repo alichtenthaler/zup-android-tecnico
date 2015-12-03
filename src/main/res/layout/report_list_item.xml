@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:background="@drawable/report_item_background">
+
+    <com.ntxdev.zuptecnico.ui.WebImageView
+        android:layout_width="@dimen/report_list_item_icon"
+        android:layout_height="@dimen/report_list_item_icon"
+        android:id="@+id/report_category_image"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginLeft="@dimen/report_list_item_padding"
+        android:layout_marginTop="@dimen/report_list_item_padding" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Poda de galhos em áreas públicas"
+        android:id="@+id/user_name"
+        android:layout_toLeftOf="@+id/report_saved"
+        android:layout_alignTop="@+id/report_category_image"
+        android:layout_toRightOf="@+id/report_category_image"
+        android:layout_toEndOf="@+id/report_category_image"
+        android:layout_marginLeft="@dimen/report_list_item_padding"
+        android:textSize="@dimen/report_list_item_title"
+        android:textStyle="bold"
+        android:textColor="#222"
+        android:layout_marginRight="@dimen/report_list_item_padding" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Protocolo 2749 - Rua Tibério Pedreschi, 1-137"
+        android:id="@+id/user_email"
+        android:layout_below="@+id/user_name"
+        android:layout_alignLeft="@+id/user_name"
+        android:layout_alignStart="@+id/user_name"
+        android:textSize="@dimen/report_list_item_subtitle"
+        android:textColor="#666"
+        android:layout_marginTop="@dimen/report_list_item_margin_between"
+        android:layout_marginRight="@dimen/report_list_item_padding" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Data de inclusão: 08/07/15 00:39"
+        android:id="@+id/report_date"
+        android:layout_below="@+id/user_email"
+        android:layout_alignLeft="@+id/user_email"
+        android:layout_alignStart="@+id/user_email"
+        android:textSize="@dimen/report_list_item_subtitle"
+        android:textColor="#666"
+        android:layout_marginTop="@dimen/report_list_item_margin_between"
+        android:layout_toLeftOf="@+id/report_status"
+        android:layout_marginRight="15dp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:layout_marginTop="@dimen/report_list_item_padding"
+        android:layout_alignParentLeft="false"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/report_date"
+        android:layout_alignLeft="@+id/user_name"
+        android:background="#ddd"
+        android:id="@+id/frameLayout6"></View>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Aberto"
+        android:id="@+id/report_status"
+        android:layout_alignTop="@+id/report_date"
+        android:textSize="@dimen/report_list_item_subtitle"
+        android:textColor="#ddaa00"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="@dimen/report_list_item_padding" />
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/report_saved"
+        android:layout_centerVertical="true"
+        android:src="@drawable/list_offline_icon"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:visibility="gone"
+        android:layout_alignTop="@id/report_category_image"
+        android:layout_marginLeft="@dimen/report_list_item_padding"
+        android:layout_marginRight="@dimen/report_list_item_padding"/>
+</RelativeLayout>

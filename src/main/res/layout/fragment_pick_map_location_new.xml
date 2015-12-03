@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/editscreen_button">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:focusable="true"
+        android:focusableInTouchMode="true"/>
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp">
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="7"
+                android:paddingRight="30dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/address_title"
+                    android:layout_marginLeft="5dp"
+                    android:textSize="14dp"
+                    android:textColor="@color/field_label_color" />
+
+                <RelativeLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <AutoCompleteTextView
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:id="@+id/address_street"
+                        android:textSize="16dp"
+                        android:textColor="@color/pick_map_location_text"
+                        android:lines="1" />
+
+                    <ProgressBar
+                        style="?android:attr/progressBarStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/address_street_progress"
+                        android:layout_marginLeft="10dp"
+                        android:layout_marginTop="10dp"
+                        android:indeterminate="true" />
+
+                </RelativeLayout>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="3">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/number_title"
+                    android:layout_marginLeft="5dp"
+                    android:textColor="@color/field_label_color"
+                    android:textSize="14dp" />
+
+                <RelativeLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <EditText
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:id="@+id/address_number"
+                        android:textSize="16dp"
+                        android:textColor="@color/pick_map_location_text"
+                        android:lines="1"
+                        android:maxLines="1"
+                        android:inputType="number" />
+
+                    <ProgressBar
+                        style="?android:attr/progressBarStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/address_number_progress"
+                        android:layout_marginLeft="10dp"
+                        android:layout_marginTop="10dp"
+                        android:indeterminate="true" />
+                </RelativeLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="7"
+                android:paddingRight="30dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/neighborhood_title"
+                    android:layout_marginLeft="5dp"
+                    android:textSize="14dp"
+                    android:textColor="#aaa" />
+
+                <RelativeLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <AutoCompleteTextView
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:id="@+id/address_neighborhood"
+                        android:textSize="16dp"
+                        android:textColor="#000"
+                        android:lines="1" />
+
+                    <ProgressBar
+                        style="?android:attr/progressBarStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/address_neighborhood_progress"
+                        android:layout_marginLeft="10dp"
+                        android:layout_marginTop="10dp"
+                        android:indeterminate="true" />
+
+                </RelativeLayout>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="3">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/zipcode_title"
+                    android:layout_marginLeft="5dp"
+                    android:textColor="#aaa"
+                    android:textSize="14dp" />
+
+                <RelativeLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <EditText
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:id="@+id/address_zip_number"
+                        android:textSize="16dp"
+                        android:textColor="#000"
+                        android:lines="1"
+                        android:maxLines="1"
+                        android:maxLength="8"
+                        android:inputType="number" />
+
+                    <ProgressBar
+                        style="?android:attr/progressBarStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/address_zip_number_progress"
+                        android:layout_marginLeft="10dp"
+                        android:layout_marginTop="10dp"
+                        android:indeterminate="true" />
+                </RelativeLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="20dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/reference_address_title"
+                android:layout_marginLeft="5dp"
+                android:textSize="14dp"
+                android:textColor="@color/field_label_color" />
+
+            <EditText
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:id="@+id/address_reference"
+                android:textSize="16dp"
+                android:textColor="@color/pick_map_location_text"
+                android:lines="1" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:focusable="true"
+        android:focusableInTouchMode="true">
+
+        <fragment
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            android:id="@+id/pick_location_map" />
+
+        <com.ntxdev.zuptecnico.ui.WebImageView
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:id="@+id/address_marker"
+            android:layout_gravity="center"
+            android:layout_marginTop="-25dp"
+            android:src="@drawable/ic_marker" />
+
+        <FrameLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/pickmap_invalid_bg"
+            android:id="@+id/pickmap_invalid"
+            android:layout_gravity="bottom"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/error_address_out_of_bounds"
+                android:layout_gravity="center"
+                android:textColor="@color/editscreen_button"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp" />
+        </FrameLayout>
+    </FrameLayout>
+
+</LinearLayout>

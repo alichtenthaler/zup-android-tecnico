@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <android.support.v7.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp">
+
+        <LinearLayout android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:paddingBottom="@dimen/report_card_padding_y">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Imagens"
+                android:id="@+id/textView16"
+                android:layout_marginLeft="@dimen/report_card_padding_x"
+                android:layout_marginTop="@dimen/report_card_padding_y"
+                android:layout_marginRight="@dimen/report_card_padding_x"
+                style="@style/ReportCardTitle" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/horizontalScrollView"
+                android:layout_marginTop="@dimen/report_card_margin_between_items">
+
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:id="@+id/imageContainer"
+                    android:paddingLeft="@dimen/report_card_padding_x"
+                    android:paddingRight="@dimen/report_card_padding_x"></LinearLayout>
+            </HorizontalScrollView>
+
+
+        </LinearLayout>
+
+    </android.support.v7.widget.CardView>
+</FrameLayout>

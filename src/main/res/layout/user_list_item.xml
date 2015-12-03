@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/report_item_background">
+
+    <TextView
+        android:id="@+id/user_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/report_list_item_padding"
+        android:layout_marginRight="@dimen/report_list_item_padding"
+        android:layout_marginTop="@dimen/report_list_item_padding"
+        android:text="User name"
+        android:textColor="#000"
+        android:textSize="@dimen/report_list_item_title" />
+
+    <TextView
+        android:id="@+id/user_email"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/user_name"
+        android:layout_alignStart="@+id/user_name"
+        android:layout_below="@+id/user_name"
+        android:layout_marginRight="@dimen/report_list_item_padding"
+        android:layout_marginTop="@dimen/report_list_item_margin_between"
+        android:text="user@email.com"
+        android:textColor="#666"
+        android:textSize="@dimen/report_list_item_subtitle" />
+
+    <FrameLayout
+        android:id="@+id/frameLayout6"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_alignParentLeft="false"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/user_email"
+        android:layout_marginTop="@dimen/report_list_item_padding"
+        android:background="#eee"></FrameLayout>
+
+    <ImageView
+        android:id="@+id/user_selected"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="false"
+        android:layout_alignParentRight="false"
+        android:layout_alignParentStart="false"
+        android:layout_alignRight="@+id/user_name"
+        android:layout_centerVertical="true"
+        android:src="@drawable/ic_action_accept_blue"
+        android:visibility="visible" />
+
+    <CheckBox
+        android:id="@+id/user_selected_checkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="false"
+        android:layout_alignParentRight="false"
+        android:layout_alignParentStart="false"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
+        android:layout_alignRight="@+id/user_name"
+        android:layout_centerVertical="true"
+        android:visibility="gone" />
+
+</RelativeLayout>

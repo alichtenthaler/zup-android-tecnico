@@ -3,7 +3,7 @@ package com.ntxdev.zuptecnico;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -21,7 +21,7 @@ import com.ntxdev.zuptecnico.ui.UIHelper;
 /**
  * Created by igorlira on 7/26/14.
  */
-public class CaseDetailsActivity extends ActionBarActivity
+public class CaseDetailsActivity extends AppCompatActivity
 {
     private final int REQUEST_STEP_FILL = 1;
 

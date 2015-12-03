@@ -2,7 +2,7 @@ package com.ntxdev.zuptecnico;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
@@ -15,7 +15,7 @@ import com.ntxdev.zuptecnico.ui.UIHelper;
 /**
  * Created by igorlira on 2/22/14.
  */
-public class DocumentDetailsActivity extends ActionBarActivity {
+public class DocumentDetailsActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

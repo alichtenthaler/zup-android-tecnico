@@ -2,7 +2,7 @@ package com.ntxdev.zuptecnico;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -20,7 +20,7 @@ import com.ntxdev.zuptecnico.ui.UIHelper;
 
 import java.util.Iterator;
 
-public class DownloadedItemsActivity extends ActionBarActivity implements View.OnClickListener {
+public class DownloadedItemsActivity extends AppCompatActivity implements View.OnClickListener {
     private Menu _menu;
     private int _categoryId;
 
@@ -49,7 +49,7 @@ public class DownloadedItemsActivity extends ActionBarActivity implements View.O
         }
 
 
-        final ActionBarActivity activity = this;
+        final AppCompatActivity activity = this;
         menu.setOnMenuItemClickListener(new android.support.v7.widget.PopupMenu.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem menuItem) {
@@ -151,7 +151,7 @@ public class DownloadedItemsActivity extends ActionBarActivity implements View.O
 
         Intent intent = new Intent(this, InventoryItemDetailsActivity.class);
         intent.putExtra("item_id", itemId);
-        intent.putExtra("category_id", categoryId);
+        intent.putExtra("categoryId", categoryId);
         this.startActivityForResult(intent, 0);
     }
 }

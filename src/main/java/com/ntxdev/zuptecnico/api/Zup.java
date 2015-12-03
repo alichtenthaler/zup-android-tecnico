@@ -3,9 +3,11 @@ package com.ntxdev.zuptecnico.api;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.net.http.AndroidHttpClient;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.widget.TextView;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,9 +22,11 @@ import com.ntxdev.zuptecnico.api.callbacks.JobListener;
 import com.ntxdev.zuptecnico.api.callbacks.LoginListener;
 import com.ntxdev.zuptecnico.api.callbacks.ResourceLoadedListener;
 import com.ntxdev.zuptecnico.api.notifications.ZupNotificationCenter;
+import com.ntxdev.zuptecnico.config.Constants;
 import com.ntxdev.zuptecnico.entities.Case;
 import com.ntxdev.zuptecnico.entities.Document;
 import com.ntxdev.zuptecnico.entities.Flow;
+import com.ntxdev.zuptecnico.entities.Group;
 import com.ntxdev.zuptecnico.entities.InventoryCategory;
 import com.ntxdev.zuptecnico.entities.InventoryCategoryStatus;
 import com.ntxdev.zuptecnico.entities.InventoryItem;
@@ -48,10 +52,23 @@ import com.ntxdev.zuptecnico.entities.responses.TransferCaseStepResponse;
 import com.ntxdev.zuptecnico.entities.responses.UpdateCaseStepResponse;
 import com.ntxdev.zuptecnico.storage.IStorage;
 import com.ntxdev.zuptecnico.storage.SQLiteStorage;
+import com.ntxdev.zuptecnico.storage.service.GroupService;
+import com.ntxdev.zuptecnico.storage.service.ReportCategoryService;
+import com.ntxdev.zuptecnico.storage.service.ReportItemService;
+import com.ntxdev.zuptecnico.storage.service.StorageServiceManager;
+import com.ntxdev.zuptecnico.storage.service.UserService;
+import com.ntxdev.zuptecnico.ui.ImageLoadedListener;
 import com.ntxdev.zuptecnico.ui.UIHelper;
 import com.ntxdev.zuptecnico.util.InventoryItemLoaderTask;
 import com.ntxdev.zuptecnico.util.UserLoaderTask;
+import com.snappydb.DB;
+import com.snappydb.DBFactory;
+import com.snappydb.SnappydbException;
 
+import org.apache.http.impl.client.DefaultHttpClient;
+
+import java.io.IOException;
+import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -60,6 +77,19 @@ import java.util.Date;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+
+import retrofit.RequestInterceptor;
+import retrofit.RestAdapter;
+import retrofit.client.ApacheClient;
+import retrofit.client.Client;
+import retrofit.client.OkClient;
+import retrofit.client.Request;
+import retrofit.client.Response;
+import retrofit.converter.ConversionException;
+import retrofit.converter.Converter;
+import retrofit.converter.JacksonConverter;
+import retrofit.mime.TypedInput;
+import retrofit.mime.TypedOutput;
 
 /**
  * Created by igorlira on 2/9/14.
@@ -76,11 +106,12 @@ public class Zup
         public boolean loaded;
     }
 
+    private ObjectMapper objectMapper;
+
     private boolean isSyncing = false;
     private SimpleDateFormat dateFormat;
     private ZupClient client;
     private static Zup instance;
-    //private Storage storage;
     private IStorage storage;
     private ArrayList<BitmapResource> bitmaps;
     private ZupNotificationCenter notificationCenter;
@@ -89,22 +120,66 @@ public class Zup
     private String sessionToken;
     private int sessionUserId;
 
-    //private ArrayList<SyncAction> syncActions;
     private Hashtable<Integer, Integer> categoriesPinResources;
 
     private InventoryItemPublishedListener inventoryItemPublishedListener;
     private ResourceLoadedListener resourceLoadedListener;
 
+    private StorageServiceManager storageServiceManager;
+
+    private ZupService service;
+    private ZupAccess access;
+
     private Zup()
     {
+        this.objectMapper = new ObjectMapper();
         this.client = new ZupClient();
-        //this.storage = new Storage();
         this.bitmaps = new ArrayList<BitmapResource>();
         this.dateFormat = new SimpleDateFormat("dd/MM/yyyy");
         this.notificationCenter = new ZupNotificationCenter();
-        //this.syncActions = new ArrayList<SyncAction>();
         this.categoriesPinResources = new Hashtable<Integer, Integer>();
         this.lastJobId = 0;
+
+        RestAdapter adapter = new RestAdapter.Builder()
+                .setEndpoint(Constants.API_URL)
+                .setRequestInterceptor(new RequestInterceptor() {
+                    @Override
+                    public void intercept(RequestFacade requestFacade) {
+                        if(Zup.getInstance().hasSessionToken())
+                            requestFacade.addQueryParam("token", sessionToken);
+                    }
+                })
+                .setConverter(new JacksonConverter())
+                .setClient(new OkClient())
+                .setLogLevel(RestAdapter.LogLevel.FULL)
+                .build();
+
+        this.service = adapter.create(ZupService.class);
+    }
+
+    public ObjectMapper getObjectMapper() {
+        return this.objectMapper;
+    }
+
+    public ZupService getService()
+    {
+        return this.service;
+    }
+
+    public ReportCategoryService getReportCategoryService() {
+        return this.storageServiceManager.reportCategory();
+    }
+
+    public ReportItemService getReportItemService() {
+        return this.storageServiceManager.reportItem();
+    }
+
+    public UserService getUserService() {
+        return this.storageServiceManager.user();
+    }
+
+    public GroupService getGroupService() {
+        return this.storageServiceManager.group();
     }
 
     public void clearStorage()
@@ -116,6 +191,8 @@ public class Zup
         this.sessionToken = null;
         this.sessionUserId = 0;
         //this.syncActions.clear();
+
+        storageServiceManager.clear();
     }
 
     public void initStorage(Context context)
@@ -126,9 +203,48 @@ public class Zup
         this.storage = new SQLiteStorage(context);
         this.storage.resetSyncActions();
 
+        try {
+            storageServiceManager = new StorageServiceManager(context);
+        } catch (SnappydbException ex) {
+            // What should we do?
+        }
+
         sessionToken = storage.getSessionToken();
         sessionUserId = storage.getSessionUserId();
         client.setSessionToken(sessionToken);
+
+        refreshAccess();
+    }
+
+    public void refreshAccess() {
+        this.access = new ZupAccess(getUserService().getUser(sessionUserId));
+    }
+
+    public void close() {
+        if(this.storage == null)
+            return;
+
+        try {
+            this.storageServiceManager.close();
+        } catch (SnappydbException ex) {
+            Log.e("Snappydb", "Could not close db", ex);
+        }
+    }
+
+    public void setSession(Session session)
+    {
+        // Keeping this for compatibility. This should be removed after all endpoints are handled by retrofit.
+        this.client.setSessionToken(session.token);
+
+        this.sessionToken = session.token;
+        this.sessionUserId = session.user.id;
+
+        this.storage.setSession(this.sessionUserId, this.sessionToken);
+        this.refreshAccess();
+    }
+
+    public ZupAccess getAccess() {
+        return this.access;
     }
 
     public void addFlowStep(Flow.Step step)
@@ -335,44 +451,6 @@ public class Zup
         return resource.loaded;
     }
 
-    public void tryLogin(final String email, final String password, final LoginListener listener)
-    {
-        Thread worker = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                final ApiHttpResult<Session> result = client.authenticate(email, password);
-                if(result.statusCode == 200 || result.statusCode == 201)
-                {
-                    sessionToken = result.result.token;
-                    sessionUserId = result.result.user.id;
-                    client.setSessionToken(sessionToken);
-
-                    storage.addUser(result.result.user);
-                    storage.setSession(sessionUserId, sessionToken);
-                    runOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            listener.onLoginSuccess();
-                        }
-                    });
-                }
-                else
-                {
-                    runOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if(result.result != null && result.result.error != null)
-                                listener.onLoginError(result.statusCode, result.result.error);
-                            else
-                                listener.onLoginError(result.statusCode, "Não foi possível conectar ao servidor");
-                        }
-                    });
-                }
-            }
-        });
-        worker.start();
-    }
-
     public void updateInventoryItemInfo(int id, InventoryItem copyFrom)
     {
         this.storage.updateInventoryItemInfo(id, copyFrom);
@@ -415,7 +493,7 @@ public class Zup
             if(images.get(0) instanceof InventoryItemImage)
                 image = (InventoryItemImage)images.get(0);
             else {
-                LinkedHashMap map = (LinkedHashMap) images.get(0);
+                Object map = images.get(0);
                 ObjectMapper mapper = new ObjectMapper();
                 image = mapper.convertValue(map, InventoryItemImage.class);
             }
@@ -508,6 +586,11 @@ public class Zup
 
     public int requestImage(final String imageUrl, boolean async)
     {
+        return requestImage(imageUrl, async, null);
+    }
+
+    public int requestImage(final String imageUrl, boolean async, final ImageLoadedListener listener)
+    {
         final BitmapResource resource = new BitmapResource();
         resource.id = getFreeResourceId();
         resource.url = imageUrl;
@@ -518,6 +601,13 @@ public class Zup
                 @Override
                 public void run() {
                     client.loadResource(imageUrl, resource); // STAHP
+                    if(listener != null)
+                        Zup.runOnMainThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                listener.onImageLoaded(resource.id);
+                            }
+                        });
                 }
             });
             worker.start();
@@ -558,28 +648,7 @@ public class Zup
         });
     }
 
-    public int requestInventoryCategoryStatuses(final int categoryId, final JobListener listener)
-    {
-        final int jobId = this.generateJobId();
-
-        Thread worker = new Thread(new Runnable() {
-            @Override
-            public void run() {
-            ApiHttpResult<InventoryCategoryStatusCollection> result = client.retrieveInventoryCategoryStatuses(categoryId);
-            if(result.statusCode == 200) {
-                inventoryCategoryStatusesReceived(result.result);
-                runSuccessOnMainThread(listener, jobId);
-            }
-            else
-                runFailOnMainThread(listener, jobId);
-            }
-        });
-        worker.start();
-
-        return jobId;
-    }
-
-    private void inventoryCategoryStatusesReceived(InventoryCategoryStatusCollection result)
+    public void inventoryCategoryStatusesReceived(InventoryCategoryStatusCollection result)
     {
         for(int i = 0; i < result.statuses.length; i++)
         {
@@ -636,54 +705,6 @@ public class Zup
             return category.title + " *";
     }
 
-    public int refreshInventoryItemCategories(final JobListener listener)
-    {
-        final int jobId = generateJobId();
-
-        Thread worker = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ApiHttpResult<InventoryCategoryCollection> result = client.retrieveInventoryCategories();
-                if(result.success && result.statusCode == 200 && result.result != null)
-                {
-                    InventoryCategoryCollection collection = client.retrieveInventoryCategories().result;
-                    inventoryItemCategoriesReceived(collection);
-                    runSuccessOnMainThread(listener, jobId);
-                }
-                else
-                    runFailOnMainThread(listener, jobId);
-            }
-        });
-        worker.start();
-
-        return jobId;
-    }
-
-    public void refreshInventoryItemCategoryInfo(final int categoryId)
-    {
-        Thread worker = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                SingleInventoryCategoryCollection category = client.retrieveInventoryCategoryInfo(categoryId).result;
-                inventoryItemCategoryInfoReceived(category.category);
-            }
-        });
-        worker.start();
-    }
-
-    public void refreshInventoryItemCategoryForm(final int categoryId)
-    {
-        Thread worker = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ApiHttpResult<InventoryCategory> result = client.retrieveInventoryCategoryForm(categoryId);
-                InventoryCategory category = result.result;
-                storage.updateInventoryCategoryInfo(categoryId, category);
-            }
-        });
-        worker.start();
-    }
-
     private void inventoryItemCategoryInfoReceived(InventoryCategory category)
     {
         if(storage.hasInventoryCategory(category.id))
@@ -701,7 +722,7 @@ public class Zup
         }
     }
 
-    private void inventoryItemCategoriesReceived(InventoryCategoryCollection collection)
+    public void inventoryItemCategoriesReceived(InventoryCategoryCollection collection)
     {
         if(collection == null)
         {
@@ -748,20 +769,6 @@ public class Zup
     public boolean hasSyncActionRelatedToInventoryItem(int id)
     {
         return storage.hasSyncActionRelatedToInventoryItem(id);
-        /*Iterator<SyncAction> actions = storage.getSyncActionIterator();
-        while(actions.hasNext())
-        {
-            SyncAction action = actions.next();
-
-            if(action instanceof PublishInventoryItemSyncAction && ((PublishInventoryItemSyncAction)action).item.id == id)
-                return true;
-            else if(action instanceof EditInventoryItemSyncAction && ((EditInventoryItemSyncAction)action).item.id == id)
-                return true;
-            else if(action instanceof DeleteInventoryItemSyncAction && ((DeleteInventoryItemSyncAction)action).itemId == id)
-                return true;
-        }
-
-        return false;*/
     }
 
     public void removeSyncActionsRelatedToInventoryItem(int id)
@@ -1274,27 +1281,19 @@ public class Zup
         return storage.getFlow(id, version);
     }
 
-    /*public Flow getFlowLastKnownVersion(int id)
-    {
-        return storage.getFlowLastKnownVersion(id);
-    }*/
-
     public Iterator<Document> getDocuments(Document.State state)
     {
         return new ArrayList<Document>().iterator();
-        //return this.storage.getDocumentsIterator(state);
     }
 
     public Iterator<Document> getDocuments()
     {
         return new ArrayList<Document>().iterator();
-        //return this.storage.getDocumentsIterator();
     }
 
     public Document getDocument(int id)
     {
         return null;
-        //return this.storage.getDocument(id);
     }
 
     public int getCaseStatusDrawable(String status)
